@@ -35,6 +35,6 @@ namespace VietTravel.Core.Models
         public int GuestCount { get; set; }
         
         [Column("status")]
-        public string Status { get; set; } = "Chờ xử lý"; // "Chờ xử lý", "Đã xác nhận", "Hủy"
+        public string Status { get; set; } = "Chờ thanh toán"; // "Chờ thanh toán", "Chờ xử lý", "Đã xác nhận", "Đã hủy"
     }
 }

@@ -62,7 +62,7 @@ namespace VietTravel.UI.ViewModels
 
                 // Bookings
                 var bookResponse = await client.From<Booking>().Get();
-                ActiveBookings = bookResponse.Models.Count(b => b.Status == "Chờ xử lý");
+                ActiveBookings = bookResponse.Models.Count(b => b.Status == "Chờ xử lý" || b.Status == "Chờ thanh toán");
                 PendingBookings = ActiveBookings;
 
                 // Departures
@@ -71,7 +71,9 @@ namespace VietTravel.UI.ViewModels
 
                 // Revenue
                 var payResponse = await client.From<Payment>().Get();
-                var revenue = payResponse.Models.Where(p => p.Status == "Đã thanh toán").Sum(p => p.PaidAmount);
+                var revenue = payResponse.Models
+                    .Where(p => p.Status == "Đã thanh toán đủ" || p.Status == "Đã thanh toán")
+                    .Sum(p => p.PaidAmount);
                 TotalRevenue = $"{revenue:N0} đ";
 
                 // Recent bookings

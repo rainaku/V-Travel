@@ -65,9 +65,9 @@ namespace VietTravel.UI.ViewModels
         private void UpdateStats()
         {
             TotalBookings = Bookings.Count;
-            PendingCount = Bookings.Count(b => b.Status == "Chờ xử lý");
+            PendingCount = Bookings.Count(b => b.Status == "Chờ xử lý" || b.Status == "Chờ thanh toán");
             ConfirmedCount = Bookings.Count(b => b.Status == "Đã xác nhận");
-            CancelledCount = Bookings.Count(b => b.Status == "Hủy");
+            CancelledCount = Bookings.Count(b => b.Status == "Đã hủy" || b.Status == "Hủy");
         }
 
         [RelayCommand]
@@ -146,24 +146,111 @@ namespace VietTravel.UI.ViewModels
                 return;
             }
 
+            Departure? latestDeparture = null;
+            int originalAvailableSlots = 0;
+            string originalDepartureStatus = string.Empty;
+            bool hasReservedSlots = false;
+            int createdBookingId = 0;
+
             try
             {
                 var client = await SupabaseClientFactory.GetClientAsync();
+
+                // Always re-check from database to avoid overbooking due to stale UI data.
+                var depResp = await client.From<Departure>().Get();
+                latestDeparture = depResp.Models.FirstOrDefault(d => d.Id == FormDeparture.Id);
+                if (latestDeparture == null)
+                {
+                    MessageBox.Show("Không tìm thấy lịch khởi hành.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (latestDeparture.Status != "Mở bán")
+                {
+                    MessageBox.Show("Lịch khởi hành hiện không mở bán.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (guests > latestDeparture.AvailableSlots)
+                {
+                    MessageBox.Show($"Chỉ còn {latestDeparture.AvailableSlots} chỗ trống.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                var tourResp = await client.From<Tour>().Get();
+                var tour = tourResp.Models.FirstOrDefault(t => t.Id == latestDeparture.TourId);
+                if (tour == null)
+                {
+                    MessageBox.Show("Không tìm thấy thông tin tour của lịch khởi hành.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                originalAvailableSlots = latestDeparture.AvailableSlots;
+                originalDepartureStatus = latestDeparture.Status;
+
+                latestDeparture.AvailableSlots -= guests;
+                if (latestDeparture.AvailableSlots <= 0)
+                {
+                    latestDeparture.AvailableSlots = 0;
+                    if (latestDeparture.Status != "Đóng")
+                        latestDeparture.Status = "Hết chỗ";
+                }
+                latestDeparture.Tour = null;
+                await client.From<Departure>().Update(latestDeparture);
+                hasReservedSlots = true;
+
                 var booking = new Booking
                 {
                     CustomerId = FormCustomer.Id,
-                    DepartureId = FormDeparture.Id,
+                    DepartureId = latestDeparture.Id,
                     UserId = _mainViewModel.CurrentUser?.Id ?? 1,
                     BookingDate = DateTime.Now,
                     GuestCount = guests,
-                    Status = "Chờ xử lý"
+                    Status = "Chờ thanh toán"
                 };
-                await client.From<Booking>().Insert(booking);
+
+                var bookingResp = await client.From<Booking>().Insert(booking);
+                var createdBooking = bookingResp.Models.FirstOrDefault();
+                if (createdBooking == null)
+                    throw new InvalidOperationException("Không lấy được dữ liệu booking sau khi tạo.");
+
+                createdBookingId = createdBooking.Id;
+                var payment = new Payment
+                {
+                    BookingId = createdBooking.Id,
+                    TotalAmount = tour.BasePrice * guests,
+                    PaidAmount = 0,
+                    Status = "Chưa thanh toán",
+                    PaymentMethod = "Tiền mặt"
+                };
+                await client.From<Payment>().Insert(payment);
+
                 IsFormVisible = false;
                 await LoadDataAsync();
             }
             catch (Exception ex)
             {
+                try
+                {
+                    var client = await SupabaseClientFactory.GetClientAsync();
+                    if (createdBookingId > 0)
+                    {
+                        await client.From<Booking>().Where(b => b.Id == createdBookingId).Delete();
+                    }
+
+                    if (hasReservedSlots && latestDeparture != null)
+                    {
+                        latestDeparture.AvailableSlots = originalAvailableSlots;
+                        latestDeparture.Status = originalDepartureStatus;
+                        latestDeparture.Tour = null;
+                        await client.From<Departure>().Update(latestDeparture);
+                    }
+                }
+                catch
+                {
+                    // Ignore rollback errors and show original failure to user.
+                }
+
                 MessageBox.Show($"Lỗi tạo booking: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -172,13 +259,38 @@ namespace VietTravel.UI.ViewModels
         private async Task ConfirmBookingAsync(Booking booking)
         {
             if (booking == null) return;
+            if (booking.Status == "Đã hủy" || booking.Status == "Hủy")
+            {
+                MessageBox.Show("Booking đã hủy, không thể xác nhận.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (booking.Status == "Đã xác nhận") return;
+
             try
             {
+                var client = await SupabaseClientFactory.GetClientAsync();
+                var payResp = await client.From<Payment>().Get();
+                var payment = payResp.Models.FirstOrDefault(p => p.BookingId == booking.Id);
+                if (payment == null)
+                {
+                    MessageBox.Show("Booking chưa có phiếu thanh toán.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                var hasValidPayment = payment.Status == "Đã cọc"
+                                      || payment.Status == "Đã thanh toán đủ"
+                                      || payment.Status == "Đã thanh toán";
+                if (!hasValidPayment)
+                {
+                    MessageBox.Show("Cần thanh toán cọc hoặc thanh toán đủ trước khi xác nhận booking.",
+                        "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 booking.Status = "Đã xác nhận";
                 booking.Customer = null;
                 booking.Departure = null;
                 booking.User = null;
-                var client = await SupabaseClientFactory.GetClientAsync();
                 await client.From<Booking>().Update(booking);
                 await LoadDataAsync();
             }
@@ -192,17 +304,32 @@ namespace VietTravel.UI.ViewModels
         private async Task CancelBookingAsync(Booking booking)
         {
             if (booking == null) return;
+            if (booking.Status == "Đã hủy" || booking.Status == "Hủy") return;
             var result = MessageBox.Show("Bạn có chắc chắn muốn hủy booking này?",
                 "Xác nhận hủy", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (result != MessageBoxResult.Yes) return;
 
             try
             {
-                booking.Status = "Hủy";
+                var client = await SupabaseClientFactory.GetClientAsync();
+
+                var depResp = await client.From<Departure>().Get();
+                var departure = depResp.Models.FirstOrDefault(d => d.Id == booking.DepartureId);
+                if (departure != null)
+                {
+                    departure.AvailableSlots = Math.Min(departure.MaxSlots, departure.AvailableSlots + booking.GuestCount);
+                    if (departure.Status != "Đóng")
+                    {
+                        departure.Status = departure.AvailableSlots > 0 ? "Mở bán" : "Hết chỗ";
+                    }
+                    departure.Tour = null;
+                    await client.From<Departure>().Update(departure);
+                }
+
+                booking.Status = "Đã hủy";
                 booking.Customer = null;
                 booking.Departure = null;
                 booking.User = null;
-                var client = await SupabaseClientFactory.GetClientAsync();
                 await client.From<Booking>().Update(booking);
                 await LoadDataAsync();
             }

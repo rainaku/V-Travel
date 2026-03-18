@@ -23,7 +23,7 @@ namespace VietTravel.Core.Models
         public decimal PaidAmount { get; set; }
         
         [Column("status")]
-        public string Status { get; set; } = "Chưa thanh toán"; // "Chưa thanh toán", "Đã cọc", "Đã thanh toán"
+        public string Status { get; set; } = "Chưa thanh toán"; // "Chưa thanh toán", "Đã cọc", "Đã thanh toán đủ"
         
         [Column("payment_date")]
         public DateTime? PaymentDate { get; set; }

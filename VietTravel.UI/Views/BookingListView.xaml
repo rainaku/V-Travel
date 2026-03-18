@@ -44,7 +44,7 @@
                         </Grid>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="{Binding PendingCount}" FontFamily="{StaticResource AppFont}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
-                            <TextBlock Text="Chờ xử lý" FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Text="Chờ xử lý/TT" FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>

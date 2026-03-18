@@ -46,3 +46,5 @@
 ehthumbs.db
 Thumbs.db
 crash.txt
+database.sql
+*.txt

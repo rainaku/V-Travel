@@ -57,7 +57,7 @@ namespace VietTravel.UI.ViewModels
         {
             UnpaidCount = Payments.Count(p => p.Status == "Chưa thanh toán");
             DepositCount = Payments.Count(p => p.Status == "Đã cọc");
-            PaidCount = Payments.Count(p => p.Status == "Đã thanh toán");
+            PaidCount = Payments.Count(p => p.Status == "Đã thanh toán đủ" || p.Status == "Đã thanh toán");
         }
 
         [RelayCommand]
@@ -92,10 +92,21 @@ namespace VietTravel.UI.ViewModels
             if (payment == null) return;
             try
             {
+                if (payment.Status == "Đã thanh toán đủ" || payment.Status == "Đã thanh toán")
+                {
+                    return;
+                }
+
                 payment.Status = "Đã cọc";
+                if (payment.PaidAmount <= 0)
+                {
+                    payment.PaidAmount = Math.Round(payment.TotalAmount * 0.3m, 0);
+                }
+                payment.PaymentDate = DateTime.Now;
                 payment.Booking = null;
                 var client = await SupabaseClientFactory.GetClientAsync();
                 await client.From<Payment>().Update(payment);
+                await MoveBookingToPendingReviewAsync(client, payment.BookingId);
                 await LoadDataAsync();
             }
             catch (Exception ex)
@@ -110,18 +121,33 @@ namespace VietTravel.UI.ViewModels
             if (payment == null) return;
             try
             {
-                payment.Status = "Đã thanh toán";
+                payment.Status = "Đã thanh toán đủ";
                 payment.PaidAmount = payment.TotalAmount;
                 payment.PaymentDate = DateTime.Now;
                 payment.Booking = null;
                 var client = await SupabaseClientFactory.GetClientAsync();
                 await client.From<Payment>().Update(payment);
+                await MoveBookingToPendingReviewAsync(client, payment.BookingId);
                 await LoadDataAsync();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private static async Task MoveBookingToPendingReviewAsync(Supabase.Client client, int bookingId)
+        {
+            var bookingResp = await client.From<Booking>().Get();
+            var booking = bookingResp.Models.FirstOrDefault(b => b.Id == bookingId);
+            if (booking == null) return;
+            if (booking.Status == "Đã xác nhận" || booking.Status == "Đã hủy" || booking.Status == "Hủy") return;
+
+            booking.Status = "Chờ xử lý";
+            booking.Customer = null;
+            booking.Departure = null;
+            booking.User = null;
+            await client.From<Booking>().Update(booking);
         }
     }
 }

@@ -46,7 +46,9 @@ namespace VietTravel.UI.ViewModels
 
                 // Payments → Revenue
                 var payments = (await client.From<Payment>().Get()).Models;
-                var totalAmount = payments.Where(p => p.Status == "Đã thanh toán").Sum(p => p.PaidAmount);
+                var totalAmount = payments
+                    .Where(p => p.Status == "Đã thanh toán đủ" || p.Status == "Đã thanh toán")
+                    .Sum(p => p.PaidAmount);
                 TotalRevenue = $"{totalAmount:N0} ₫";
 
                 // Departures
@@ -59,7 +61,10 @@ namespace VietTravel.UI.ViewModels
                     {
                         DepartureId = g.Key,
                         Count = g.Count(),
-                        Revenue = payments.Where(p => g.Select(b => b.Id).Contains(p.BookingId) && p.Status == "Đã thanh toán").Sum(p => p.PaidAmount)
+                        Revenue = payments
+                            .Where(p => g.Select(b => b.Id).Contains(p.BookingId)
+                                        && (p.Status == "Đã thanh toán đủ" || p.Status == "Đã thanh toán"))
+                            .Sum(p => p.PaidAmount)
                     })
                     .ToList();
 
