@@ -19,6 +19,9 @@ namespace VietTravel.Core.Models
         [Column("full_name")]
         public string FullName { get; set; } = string.Empty;
 
+        [Column("avatar_url")]
+        public string AvatarUrl { get; set; } = string.Empty;
+
         [Column("role")]
         public string Role { get; set; } = string.Empty; // "Admin", "Employee"
 

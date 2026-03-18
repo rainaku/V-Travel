@@ -67,8 +67,34 @@
                                     </LinearGradientBrush>
                                 </Ellipse.Fill>
                             </Ellipse>
+                            <Image Source="{Binding AvatarUrl}" Width="56" Height="56" Stretch="UniformToFill">
+                                <Image.Style>
+                                    <Style TargetType="Image">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasAvatar}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Image.Style>
+                                <Image.Clip>
+                                    <EllipseGeometry Center="28,28" RadiusX="28" RadiusY="28"/>
+                                </Image.Clip>
+                            </Image>
                             <TextBlock Text="{Binding UserInitials}" FontFamily="{StaticResource AppFont}" FontSize="20" FontWeight="Bold"
-                                       Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                       Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasAvatar}" Value="True">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </Grid>
                         <TextBlock Text="{Binding FullName}" FontFamily="{StaticResource AppFont}" FontSize="16" FontWeight="SemiBold"
                                    Foreground="{StaticResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
@@ -762,13 +788,45 @@
                                             </LinearGradientBrush>
                                         </Ellipse.Fill>
                                     </Ellipse>
+                                    <Image Source="{Binding AvatarUrl}" Width="80" Height="80" Stretch="UniformToFill">
+                                        <Image.Style>
+                                            <Style TargetType="Image">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasAvatar}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                        <Image.Clip>
+                                            <EllipseGeometry Center="40,40" RadiusX="40" RadiusY="40"/>
+                                        </Image.Clip>
+                                    </Image>
                                     <TextBlock Text="{Binding UserInitials}" FontFamily="{StaticResource AppFont}" FontSize="28" FontWeight="Bold"
-                                               Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                               Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding HasAvatar}" Value="True">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                 </Grid>
                                 <TextBlock Text="{Binding FullName}" FontFamily="{StaticResource AppFont}" FontSize="16" FontWeight="SemiBold"
                                            Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                 <TextBlock Text="Khách hàng V-Travel" FontFamily="{StaticResource AppFont}" FontSize="12"
                                            Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,20"/>
+                                <Button Style="{StaticResource AppleGhostButton}" Command="{Binding ChangeAvatarCommand}" Margin="0,0,0,20">
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="CameraOutline" Width="16" Height="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding ChangeAvatarButtonText}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
 
                                 <!-- Quick Stats -->
                                 <Border Height="1" Background="{StaticResource DividerBrush}" Margin="-12,0,-12,16"/>

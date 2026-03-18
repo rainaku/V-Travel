@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,15 +11,18 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using VietTravel.Core.Models;
 using VietTravel.Data;
+using VietTravel.Data.Services;
 
 namespace VietTravel.UI.ViewModels
 {
     public partial class CustomerViewModel : ObservableObject
     {
         private readonly MainViewModel _mainViewModel;
+        private readonly CloudinaryImageService _cloudinaryImageService = new();
 
         public string FullName => _mainViewModel.CurrentUser?.FullName ?? "Khách Hàng";
         public string UserInitials => GetInitials(FullName);
+        [ObservableProperty] private string _avatarUrl = string.Empty;
 
         // Navigation
         [ObservableProperty] private string _selectedPage = "Explore";
@@ -63,6 +67,7 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private string _infoEmail = string.Empty;
         [ObservableProperty] private string _infoAddress = string.Empty;
         [ObservableProperty] private bool _isSavingProfile = false;
+        [ObservableProperty] private bool _isUploadingAvatar = false;
 
         // Stats
         [ObservableProperty] private int _totalBookingsCount = 0;
@@ -83,19 +88,24 @@ namespace VietTravel.UI.ViewModels
         private static readonly Regex FullNamePattern = new(@"^[\p{L}\p{M}]+(?:[ '\-][\p{L}\p{M}]+)*$", RegexOptions.Compiled);
         private static readonly Regex EmailPattern = new(@"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         private static readonly Regex VietnamMobilePattern = new(@"^0(?:3|5|7|8|9)\d{8}$", RegexOptions.Compiled);
+        private static readonly Regex AddressPattern = new(@"^[\p{L}\p{M}\d\s,./\-#]+$", RegexOptions.Compiled);
 
         public bool HasMoreToursToLoad => _loadedTourCount < _filteredTourCache.Count;
         public bool IsBookingModalOverlayVisible => IsBookingFormVisible && !IsPaymentModalVisible && !IsAppDialogVisible;
         public bool IsPaymentModalOverlayVisible => IsPaymentModalVisible && !IsAppDialogVisible;
         public bool IsBookDestinationFilterActive => !string.IsNullOrWhiteSpace(BookDestinationFilter);
+        public bool HasAvatar => !string.IsNullOrWhiteSpace(AvatarUrl);
+        public string ChangeAvatarButtonText => IsUploadingAvatar ? "Đang tải ảnh..." : "Đổi ảnh đại diện";
 
         public CustomerViewModel(MainViewModel mainViewModel)
         {
             _mainViewModel = mainViewModel;
+            AvatarUrl = _mainViewModel.CurrentUser?.AvatarUrl ?? string.Empty;
             _ = LoadDataAsync();
         }
 
         partial void OnTourSearchTextChanged(string value) => ApplyTourFilter();
+        partial void OnAvatarUrlChanged(string value) => OnPropertyChanged(nameof(HasAvatar));
         partial void OnBookDestinationFilterChanged(string value)
         {
             ApplyDepartureFilter();
@@ -104,6 +114,11 @@ namespace VietTravel.UI.ViewModels
         partial void OnIsBookingFormVisibleChanged(bool value) => NotifyOverlayVisibilityStateChanged();
         partial void OnIsPaymentModalVisibleChanged(bool value) => NotifyOverlayVisibilityStateChanged();
         partial void OnIsAppDialogVisibleChanged(bool value) => NotifyOverlayVisibilityStateChanged();
+        partial void OnIsUploadingAvatarChanged(bool value)
+        {
+            OnPropertyChanged(nameof(ChangeAvatarButtonText));
+            ChangeAvatarCommand.NotifyCanExecuteChanged();
+        }
 
         private void ApplyTourFilter()
         {
@@ -292,6 +307,7 @@ namespace VietTravel.UI.ViewModels
                 // Load customer profile linked to current user.
                 var custs = (await client.From<Customer>().Get()).Models;
                 _customerProfile = await ResolveCustomerProfileAsync(client, custs);
+                AvatarUrl = _mainViewModel.CurrentUser?.AvatarUrl ?? string.Empty;
 
                 if (_customerProfile != null)
                 {
@@ -487,55 +503,8 @@ namespace VietTravel.UI.ViewModels
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(InfoFullName)
-                || string.IsNullOrWhiteSpace(InfoPhone)
-                || string.IsNullOrWhiteSpace(InfoEmail)
-                || string.IsNullOrWhiteSpace(InfoAddress))
+            if (!TryValidateProfileInput())
             {
-                ShowAppDialogInfo("Thiếu thông tin", "Vui lòng nhập đầy đủ họ tên, số điện thoại, email và địa chỉ.");
-                return false;
-            }
-
-            if (InfoFullName.Length < 4 || InfoFullName.Length > 80)
-            {
-                ShowAppDialogInfo("Họ tên chưa hợp lệ", "Họ tên phải từ 4 đến 80 ký tự.");
-                return false;
-            }
-
-            var fullNameParts = InfoFullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (fullNameParts.Length < 2)
-            {
-                ShowAppDialogInfo("Họ tên chưa hợp lệ", "Vui lòng nhập đầy đủ họ và tên.");
-                return false;
-            }
-
-            if (!FullNamePattern.IsMatch(InfoFullName))
-            {
-                ShowAppDialogInfo("Họ tên chưa hợp lệ", "Họ tên chỉ được chứa chữ cái và khoảng trắng.");
-                return false;
-            }
-
-            if (!VietnamMobilePattern.IsMatch(InfoPhone))
-            {
-                ShowAppDialogInfo("Số điện thoại chưa hợp lệ", "Số điện thoại phải là số di động Việt Nam hợp lệ (vd: 09xxxxxxxx).");
-                return false;
-            }
-
-            if (InfoEmail.Length > 120 || !EmailPattern.IsMatch(InfoEmail))
-            {
-                ShowAppDialogInfo("Email chưa hợp lệ", "Vui lòng nhập đúng định dạng email (vd: ten@email.com).");
-                return false;
-            }
-
-            if (InfoAddress.Length < 10 || InfoAddress.Length > 200)
-            {
-                ShowAppDialogInfo("Địa chỉ chưa hợp lệ", "Địa chỉ phải từ 10 đến 200 ký tự.");
-                return false;
-            }
-
-            if (!InfoAddress.Any(ch => char.IsLetter(ch)))
-            {
-                ShowAppDialogInfo("Địa chỉ chưa hợp lệ", "Địa chỉ cần có thông tin cụ thể hơn.");
                 return false;
             }
 
@@ -554,6 +523,71 @@ namespace VietTravel.UI.ViewModels
             if (guests > SelectedDepartureInfo.AvailableSlots)
             {
                 ShowAppDialogInfo("Thông báo", $"Chỉ còn {SelectedDepartureInfo.AvailableSlots} chỗ trống.");
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TryValidateProfileInput()
+        {
+            if (string.IsNullOrWhiteSpace(InfoFullName)
+                || string.IsNullOrWhiteSpace(InfoPhone)
+                || string.IsNullOrWhiteSpace(InfoEmail)
+                || string.IsNullOrWhiteSpace(InfoAddress))
+            {
+                ShowAppDialogInfo("Thiếu thông tin", "Vui lòng nhập đầy đủ họ tên, số điện thoại, email và địa chỉ.");
+                return false;
+            }
+
+            if (InfoFullName.Length < 4 || InfoFullName.Length > 80)
+            {
+                ShowAppDialogInfo("Họ tên chưa hợp lệ", "Họ tên phải từ 4 đến 80 ký tự.");
+                return false;
+            }
+
+            var fullNameParts = InfoFullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (fullNameParts.Length < 2 || fullNameParts.Any(p => p.Length < 2))
+            {
+                ShowAppDialogInfo("Họ tên chưa hợp lệ", "Vui lòng nhập họ tên đầy đủ (ít nhất 2 từ, mỗi từ tối thiểu 2 ký tự).");
+                return false;
+            }
+
+            if (!FullNamePattern.IsMatch(InfoFullName))
+            {
+                ShowAppDialogInfo("Họ tên chưa hợp lệ", "Họ tên chỉ được chứa chữ cái, khoảng trắng, dấu nháy hoặc gạch nối.");
+                return false;
+            }
+
+            if (!VietnamMobilePattern.IsMatch(InfoPhone))
+            {
+                ShowAppDialogInfo("Số điện thoại chưa hợp lệ", "Số điện thoại phải là số di động Việt Nam hợp lệ (vd: 09xxxxxxxx).");
+                return false;
+            }
+
+            if (InfoEmail.Length > 120 ||
+                !EmailPattern.IsMatch(InfoEmail) ||
+                InfoEmail.Contains("..", StringComparison.Ordinal))
+            {
+                ShowAppDialogInfo("Email chưa hợp lệ", "Vui lòng nhập đúng định dạng email (vd: ten@email.com).");
+                return false;
+            }
+
+            if (InfoAddress.Length < 12 || InfoAddress.Length > 200)
+            {
+                ShowAppDialogInfo("Địa chỉ chưa hợp lệ", "Địa chỉ phải từ 12 đến 200 ký tự.");
+                return false;
+            }
+
+            if (!InfoAddress.Any(char.IsLetter) || !InfoAddress.Any(char.IsDigit))
+            {
+                ShowAppDialogInfo("Địa chỉ chưa hợp lệ", "Địa chỉ cần có cả chữ và số (ví dụ số nhà/tên đường).");
+                return false;
+            }
+
+            if (!AddressPattern.IsMatch(InfoAddress))
+            {
+                ShowAppDialogInfo("Địa chỉ chưa hợp lệ", "Địa chỉ chứa ký tự không hợp lệ.");
                 return false;
             }
 
@@ -931,17 +965,20 @@ namespace VietTravel.UI.ViewModels
             }
 
             currentUser.FullName = InfoFullName;
+            currentUser.AvatarUrl = AvatarUrl;
             await client.From<User>().Update(currentUser);
             OnPropertyChanged(nameof(FullName));
             OnPropertyChanged(nameof(UserInitials));
+            OnPropertyChanged(nameof(AvatarUrl));
+            OnPropertyChanged(nameof(HasAvatar));
         }
 
         [RelayCommand]
         private async Task SaveProfileAsync()
         {
-            if (string.IsNullOrWhiteSpace(InfoFullName))
+            NormalizeBookingInputValues();
+            if (!TryValidateProfileInput())
             {
-                ShowAppDialogInfo("Thông báo", "Vui lòng nhập họ tên.");
                 return;
             }
 
@@ -981,6 +1018,55 @@ namespace VietTravel.UI.ViewModels
             {
                 IsSavingProfile = false;
             }
+        }
+
+        [RelayCommand(CanExecute = nameof(CanChangeAvatar))]
+        private async Task ChangeAvatarAsync()
+        {
+            var currentUser = _mainViewModel.CurrentUser;
+            if (currentUser == null)
+            {
+                ShowAppDialogInfo("Thông báo", "Không tìm thấy thông tin người dùng hiện tại.");
+                return;
+            }
+
+            var fileDialog = new OpenFileDialog
+            {
+                Title = "Chọn ảnh đại diện",
+                Filter = "Image Files|*.jpg;*.jpeg;*.png;*.webp",
+                CheckFileExists = true,
+                Multiselect = false
+            };
+
+            if (fileDialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            IsUploadingAvatar = true;
+            try
+            {
+                var avatarUrl = await _cloudinaryImageService.UploadAvatarAsync(fileDialog.FileName, currentUser.Id);
+                currentUser.AvatarUrl = avatarUrl;
+                AvatarUrl = avatarUrl;
+
+                var client = await SupabaseClientFactory.GetClientAsync();
+                await client.From<User>().Update(currentUser);
+                ShowAppDialogInfo("Thành công", "Đã cập nhật ảnh đại diện.");
+            }
+            catch (Exception ex)
+            {
+                ShowAppDialogInfo("Lỗi", $"Không thể đổi ảnh đại diện: {ex.Message}");
+            }
+            finally
+            {
+                IsUploadingAvatar = false;
+            }
+        }
+
+        private bool CanChangeAvatar()
+        {
+            return !IsUploadingAvatar;
         }
 
         [RelayCommand]

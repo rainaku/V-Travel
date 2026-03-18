@@ -29,8 +29,8 @@
 
 ## Giai đoạn 5: Module Khách Hàng & Đặt Tour (Booking)
 - [ ] Quản lý Khách hàng (Lưu thông tin, Lịch sử)
-- [ ] Flow Đặt Tour: Chọn Tour → Chọn Lịch Trình → Tạo Booking, giảm số chỗ còn lại
+- [ ] Flow Đặt Tour: Nhập thông tin khách → Chọn lịch → Tạo booking (Chờ thanh toán) → Tạm giữ chỗ
 
 ## Giai đoạn 6: Module Thanh Toán & Báo Cáo
-- [ ] Quản lý Thanh toán mô phỏng (Chưa thanh toán, Đã cọc, Đã thanh toán)
+- [ ] Quản lý Thanh toán mô phỏng (Chưa thanh toán, Đã cọc, Đã thanh toán đủ)
 - [ ] Màn hình Báo cáo (Tổng số tour, booking, doanh thu tạm tính, tour hot nhất)
