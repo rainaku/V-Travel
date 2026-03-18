@@ -1,0 +1,143 @@
+<UserControl x:Class="VietTravel.UI.Views.BookingListView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             Background="{StaticResource BackgroundBrush}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="32,28,32,32">
+
+            <!-- Header -->
+            <Grid Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="Quản lý Booking" Style="{StaticResource HeadingLargeStyle}"/>
+                    <TextBlock Text="Theo dõi và quản lý đặt chỗ khách hàng" Style="{StaticResource CaptionStyle}" Margin="0,4,0,0"/>
+                </StackPanel>
+                <Button Style="{StaticResource ApplePrimaryButton}" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Plus" Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Tạo Booking" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- Stat Cards -->
+            <UniformGrid Columns="4" Margin="0,0,0,20">
+                <Border Style="{StaticResource StatCard}" Margin="0,0,10,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Grid Width="40" Height="40" Margin="0,0,12,0">
+                            <Ellipse Width="40" Height="40" Fill="#1A007AFF"/>
+                            <materialDesign:PackIcon Kind="TicketOutline" Width="20" Height="20" Foreground="{StaticResource PrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="0" FontFamily="{StaticResource AppFont}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <TextBlock Text="Tổng Booking" FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}" Margin="5,0,5,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Grid Width="40" Height="40" Margin="0,0,12,0">
+                            <Ellipse Width="40" Height="40" Fill="#1AFF9500"/>
+                            <materialDesign:PackIcon Kind="ClockOutline" Width="20" Height="20" Foreground="{StaticResource WarningBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="0" FontFamily="{StaticResource AppFont}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <TextBlock Text="Chờ xử lý" FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}" Margin="5,0,5,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Grid Width="40" Height="40" Margin="0,0,12,0">
+                            <Ellipse Width="40" Height="40" Fill="#1A34C759"/>
+                            <materialDesign:PackIcon Kind="CheckCircleOutline" Width="20" Height="20" Foreground="{StaticResource SuccessBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="0" FontFamily="{StaticResource AppFont}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <TextBlock Text="Đã xác nhận" FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}" Margin="10,0,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Grid Width="40" Height="40" Margin="0,0,12,0">
+                            <Ellipse Width="40" Height="40" Fill="#1AFF3B30"/>
+                            <materialDesign:PackIcon Kind="CloseCircleOutline" Width="20" Height="20" Foreground="{StaticResource ErrorBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="0" FontFamily="{StaticResource AppFont}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <TextBlock Text="Đã hủy" FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- Search & Filter -->
+            <Border Style="{StaticResource AppleCard}" Padding="16" Margin="0,0,0,20">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid>
+                        <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" 
+                                 Style="{StaticResource AppleSearchBox}"
+                                 materialDesign:HintAssist.Hint="Tìm kiếm booking theo khách hàng, tour..."/>
+                        <materialDesign:PackIcon Kind="Magnify" Width="18" Height="18" Foreground="{StaticResource TextTertiaryBrush}"
+                                                 VerticalAlignment="Center" Margin="12,0,0,0" IsHitTestVisible="False"/>
+                    </Grid>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0">
+                        <Button Style="{StaticResource AppleGhostButton}" Margin="0,0,4,0">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FilterOutline" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Trạng thái" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Data Table -->
+            <Border Style="{StaticResource AppleCard}" Padding="0">
+                <StackPanel>
+                    <Grid Background="#FAFAFA">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="0.4*"/>
+                            <ColumnDefinition Width="1.2*"/>
+                            <ColumnDefinition Width="1.2*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="0.6*"/>
+                            <ColumnDefinition Width="0.8*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="0.8*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border CornerRadius="16,16,0,0" Background="#FAFAFA" Grid.ColumnSpan="8"/>
+                        <TextBlock Text="ID" Grid.Column="0" Padding="20,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                        <TextBlock Text="Khách hàng" Grid.Column="1" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                        <TextBlock Text="Tour" Grid.Column="2" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                        <TextBlock Text="Ngày đặt" Grid.Column="3" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                        <TextBlock Text="Số khách" Grid.Column="4" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                        <TextBlock Text="Trạng thái" Grid.Column="5" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                        <TextBlock Text="Tổng tiền" Grid.Column="6" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                        <TextBlock Text="Hành động" Grid.Column="7" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}" HorizontalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Empty State -->
+                    <StackPanel HorizontalAlignment="Center" Margin="0,48,0,56">
+                        <Grid Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16">
+                            <Ellipse Width="64" Height="64" Fill="#0AFF9500"/>
+                            <materialDesign:PackIcon Kind="TicketConfirmationOutline" Width="32" Height="32" Foreground="{StaticResource WarningBrush}"
+                                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <TextBlock Text="Chưa có booking nào" HorizontalAlignment="Center"
+                                   FontFamily="{StaticResource AppFont}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                        <TextBlock Text="Các booking sẽ hiển thị khi khách hàng đặt tour" HorizontalAlignment="Center"
+                                   FontFamily="{StaticResource AppFont}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

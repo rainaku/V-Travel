@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="VietTravel.Core/VietTravel.Core.csproj" />
+  <Project Path="VietTravel.Data/VietTravel.Data.csproj" />
+  <Project Path="VietTravel.UI/VietTravel.UI.csproj" />
+</Solution>

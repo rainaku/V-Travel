@@ -1,0 +1,47 @@
+# .NET
+[Bb]in/
+[Oo]bj/
+[Tt]est[Rr]esults/
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.opensdf
+*.sdf
+*.cache
+*.pcb
+*.pcc
+*.opendb
+*.db
+
+# Secrets
+.env
+*.usersettings
+
+# WPF
+*.g.cs
+*.g.i.cs
+*.l.cs
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

@@ -1,0 +1,97 @@
+<UserControl x:Class="VietTravel.UI.Views.ReportView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             Background="{StaticResource BackgroundBrush}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="32,28,32,32">
+
+            <!-- Header -->
+            <Grid Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="Báo Cáo &amp; Thống Kê" Style="{StaticResource HeadingLargeStyle}"/>
+                    <TextBlock Text="Tổng hợp dữ liệu kinh doanh" Style="{StaticResource CaptionStyle}" Margin="0,4,0,0"/>
+                </StackPanel>
+                <Button Style="{StaticResource AppleSecondaryButton}" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="DownloadOutline" Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Xuất báo cáo" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- Overview Stats -->
+            <UniformGrid Columns="4" Margin="0,0,0,24">
+                <Border Style="{StaticResource StatCard}" Margin="0,0,10,0">
+                    <StackPanel>
+                        <TextBlock Text="Tổng Tour" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                        <TextBlock Text="0" Style="{StaticResource StatNumberStyle}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}" Margin="5,0,5,0">
+                    <StackPanel>
+                        <TextBlock Text="Tổng Booking" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                        <TextBlock Text="0" Style="{StaticResource StatNumberStyle}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}" Margin="5,0,5,0">
+                    <StackPanel>
+                        <TextBlock Text="Doanh thu" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                        <TextBlock Text="0 ₫" FontFamily="{StaticResource AppFont}" FontSize="26" FontWeight="Bold" Foreground="{StaticResource SuccessBrush}"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}" Margin="10,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Tour nổi bật" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                        <TextBlock Text="—" Style="{StaticResource StatNumberStyle}" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- Chart Placeholder -->
+            <TextBlock Text="Biểu đồ doanh thu" Style="{StaticResource SubheadingStyle}" Margin="0,0,0,16"/>
+            <Border Style="{StaticResource AppleCard}" Height="300" Margin="0,0,0,24">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Grid Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16">
+                        <Ellipse Width="64" Height="64" Fill="#0A007AFF"/>
+                        <materialDesign:PackIcon Kind="ChartAreaspline" Width="32" Height="32" Foreground="{StaticResource PrimaryBrush}"
+                                                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                    <TextBlock Text="Biểu đồ sẽ hiển thị khi có dữ liệu" HorizontalAlignment="Center"
+                               FontFamily="{StaticResource AppFont}" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    <TextBlock Text="Kết nối dữ liệu từ Supabase để xem thống kê" HorizontalAlignment="Center"
+                               FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Top Tours Placeholder -->
+            <TextBlock Text="Tour phổ biến nhất" Style="{StaticResource SubheadingStyle}" Margin="0,0,0,16"/>
+            <Border Style="{StaticResource AppleCard}" Padding="0">
+                <StackPanel>
+                    <Grid Background="#FAFAFA">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="0.3*"/>
+                            <ColumnDefinition Width="1.5*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="0.8*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border CornerRadius="16,16,0,0" Background="#FAFAFA" Grid.ColumnSpan="5"/>
+                        <TextBlock Text="#" Grid.Column="0" Padding="20,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                        <TextBlock Text="Tên Tour" Grid.Column="1" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                        <TextBlock Text="Điểm đến" Grid.Column="2" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                        <TextBlock Text="Số booking" Grid.Column="3" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                        <TextBlock Text="Doanh thu" Grid.Column="4" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                    </Grid>
+
+                    <StackPanel HorizontalAlignment="Center" Margin="0,32,0,40">
+                        <TextBlock Text="Chưa có dữ liệu thống kê" HorizontalAlignment="Center"
+                                   FontFamily="{StaticResource AppFont}" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

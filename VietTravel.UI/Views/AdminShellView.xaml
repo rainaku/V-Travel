@@ -1,0 +1,200 @@
+<UserControl x:Class="VietTravel.UI.Views.AdminShellView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:viewmodels="clr-namespace:VietTravel.UI.ViewModels"
+             xmlns:views="clr-namespace:VietTravel.UI.Views"
+             Background="{StaticResource BackgroundBrush}">
+
+    <UserControl.Resources>
+        <DataTemplate DataType="{x:Type viewmodels:DashboardViewModel}">
+            <views:DashboardView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:TourListViewModel}">
+            <views:TourListView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:DepartureListViewModel}">
+            <views:DepartureListView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:BookingListViewModel}">
+            <views:BookingListView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:CustomerListViewModel}">
+            <views:CustomerListView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:PaymentListViewModel}">
+            <views:PaymentListView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:ReportViewModel}">
+            <views:ReportView/>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Border CornerRadius="16" ClipToBounds="True">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="240"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ═══ SIDEBAR ═══ -->
+            <Border Grid.Column="0" Background="{StaticResource SidebarBrush}"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Logo Area -->
+                    <StackPanel Grid.Row="0" Margin="20,20,20,24">
+                        <StackPanel Orientation="Horizontal">
+                            <Grid Width="40" Height="40" Margin="0,0,12,0">
+                                <Ellipse Width="40" Height="40">
+                                    <Ellipse.Fill>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                            <GradientStop Color="#007AFF" Offset="0"/>
+                                            <GradientStop Color="#5AC8FA" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Ellipse.Fill>
+                                </Ellipse>
+                                <materialDesign:PackIcon Kind="AirplaneTakeoff" Width="20" Height="20"
+                                                         Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Viet Travel" FontFamily="{StaticResource AppFont}" 
+                                           FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Management" FontFamily="{StaticResource AppFont}" 
+                                           FontSize="11" Foreground="{StaticResource TextTertiaryBrush}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Navigation Items -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="4,0">
+                            <!-- Section: Tổng quan -->
+                            <TextBlock Text="TỔNG QUAN" FontFamily="{StaticResource AppFont}" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextTertiaryBrush}" Margin="20,4,0,8"/>
+
+                            <RadioButton Style="{StaticResource SidebarButton}" 
+                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Dashboard, Mode=OneWay}"
+                                         Command="{Binding NavigateToPageCommand}" CommandParameter="Dashboard">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="ViewDashboardOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Dashboard" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <!-- Section: Quản lý -->
+                            <TextBlock Text="QUẢN LÝ" FontFamily="{StaticResource AppFont}" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextTertiaryBrush}" Margin="20,20,0,8"/>
+
+                            <RadioButton Style="{StaticResource SidebarButton}"
+                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Tours, Mode=OneWay}"
+                                         Command="{Binding NavigateToPageCommand}" CommandParameter="Tours">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="MapMarkerOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Quản lý Tour" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton Style="{StaticResource SidebarButton}"
+                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Departures, Mode=OneWay}"
+                                         Command="{Binding NavigateToPageCommand}" CommandParameter="Departures">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="CalendarMonthOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Lịch Khởi Hành" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton Style="{StaticResource SidebarButton}"
+                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Bookings, Mode=OneWay}"
+                                         Command="{Binding NavigateToPageCommand}" CommandParameter="Bookings">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="TicketConfirmationOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Quản lý Booking" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton Style="{StaticResource SidebarButton}"
+                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Customers, Mode=OneWay}"
+                                         Command="{Binding NavigateToPageCommand}" CommandParameter="Customers">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="AccountGroupOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Khách Hàng" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton Style="{StaticResource SidebarButton}"
+                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Payments, Mode=OneWay}"
+                                         Command="{Binding NavigateToPageCommand}" CommandParameter="Payments">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="CreditCardOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Thanh Toán" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <!-- Section: Thống kê -->
+                            <TextBlock Text="THỐNG KÊ" FontFamily="{StaticResource AppFont}" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextTertiaryBrush}" Margin="20,20,0,8"/>
+
+                            <RadioButton Style="{StaticResource SidebarButton}"
+                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Reports, Mode=OneWay}"
+                                         Command="{Binding NavigateToPageCommand}" CommandParameter="Reports">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="ChartBoxOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Báo Cáo" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- User Profile -->
+                    <Border Grid.Row="2" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0"
+                            Padding="16,16" Margin="0,0,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Avatar -->
+                            <Grid Width="38" Height="38" Margin="0,0,12,0">
+                                <Ellipse Width="38" Height="38">
+                                    <Ellipse.Fill>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                            <GradientStop Color="#007AFF" Offset="0"/>
+                                            <GradientStop Color="#AF52DE" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Ellipse.Fill>
+                                </Ellipse>
+                                <TextBlock Text="{Binding UserInitials}" Foreground="White" FontWeight="SemiBold" FontSize="14"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="{StaticResource AppFont}"/>
+                            </Grid>
+
+                            <!-- Name & Role -->
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding FullName}" FontFamily="{StaticResource AppFont}" FontSize="13" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding UserRole}" FontFamily="{StaticResource AppFont}" FontSize="11"
+                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                            </StackPanel>
+
+                            <!-- Logout -->
+                            <Button Grid.Column="2" Style="{StaticResource AppleIconButton}" Command="{Binding LogoutCommand}"
+                                    ToolTip="Đăng xuất" VerticalAlignment="Center">
+                                <materialDesign:PackIcon Kind="Logout" Width="18" Height="18" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- ═══ MAIN CONTENT ═══ -->
+            <ContentControl Grid.Column="1" Content="{Binding CurrentPageViewModel}"/>
+        </Grid>
+    </Border>
+</UserControl>
