@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
@@ -37,6 +38,13 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private DepartureDisplayInfo? _selectedDepartureInfo;
         [ObservableProperty] private string _bookingGuestCount = "1";
         [ObservableProperty] private bool _isBookingFormVisible = false;
+        [ObservableProperty] private bool _isPaymentModalVisible = false;
+        [ObservableProperty] private string _paymentQrImageUrl = string.Empty;
+        [ObservableProperty] private string _paymentTotalFormatted = "0 đ";
+        [ObservableProperty] private string _paymentTourName = string.Empty;
+        [ObservableProperty] private string _paymentScheduleText = string.Empty;
+        [ObservableProperty] private string _paymentGuestText = string.Empty;
+        [ObservableProperty] private bool _isProcessingPayment = false;
 
         // My Bookings
         [ObservableProperty] private ObservableCollection<BookingDisplayInfo> _myBookings = new();
@@ -57,6 +65,13 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private bool _isLoading = false;
 
         private Customer? _customerProfile;
+        private const int InitialTourBatchSize = 6;
+        private const int TourBatchSize = 6;
+        private readonly List<TourDisplayInfo> _filteredTourCache = new();
+        private int _loadedTourCount;
+        private bool _isLoadingMoreTours;
+
+        public bool HasMoreToursToLoad => _loadedTourCount < _filteredTourCache.Count;
 
         public CustomerViewModel(MainViewModel mainViewModel)
         {
@@ -68,20 +83,24 @@ namespace VietTravel.UI.ViewModels
 
         private void ApplyTourFilter()
         {
+            IEnumerable<TourDisplayInfo> filteredQuery;
+
             if (string.IsNullOrWhiteSpace(TourSearchText))
             {
-                FilteredTours = new ObservableCollection<TourDisplayInfo>(AllTours);
+                filteredQuery = AllTours;
             }
             else
             {
                 var lower = TourSearchText.ToLower();
-                FilteredTours = new ObservableCollection<TourDisplayInfo>(
-                    AllTours.Where(t =>
+                filteredQuery = AllTours.Where(t =>
                         t.Name.ToLower().Contains(lower) ||
                         t.Destination.ToLower().Contains(lower) ||
-                        t.Description.ToLower().Contains(lower))
-                );
+                        t.Description.ToLower().Contains(lower));
             }
+
+            _filteredTourCache.Clear();
+            _filteredTourCache.AddRange(filteredQuery);
+            ResetVisibleTours();
         }
 
         [RelayCommand]
@@ -108,7 +127,7 @@ namespace VietTravel.UI.ViewModels
                 }).ToList();
 
                 AllTours = new ObservableCollection<TourDisplayInfo>(displayTours);
-                FilteredTours = new ObservableCollection<TourDisplayInfo>(displayTours);
+                ApplyTourFilter();
                 TotalToursAvailable = tours.Count;
 
                 // Load departures with tour info
@@ -126,6 +145,9 @@ namespace VietTravel.UI.ViewModels
                         TourName = d.Tour?.Name ?? "N/A",
                         Destination = d.Tour?.Destination ?? "",
                         StartDateFormatted = d.StartDate.ToString("dd/MM/yyyy"),
+                        EndDateFormatted = d.StartDate
+                            .AddDays(Math.Max((d.Tour?.DurationDays ?? 1) - 1, 0))
+                            .ToString("dd/MM/yyyy"),
                         AvailableSlots = d.AvailableSlots,
                         Price = d.Tour?.BasePrice ?? 0,
                         PriceFormatted = $"{(d.Tour?.BasePrice ?? 0):N0} đ",
@@ -201,6 +223,7 @@ namespace VietTravel.UI.ViewModels
             SelectedDepartureInfo = info;
             BookingGuestCount = "1";
             IsBookingFormVisible = true;
+            IsPaymentModalVisible = false;
             SelectedPage = "Book";
         }
 
@@ -222,35 +245,162 @@ namespace VietTravel.UI.ViewModels
         private void CancelBookingForm()
         {
             IsBookingFormVisible = false;
+            IsPaymentModalVisible = false;
         }
 
         [RelayCommand]
         private async Task BookTourAsync()
         {
+            await ProceedToPaymentAsync();
+        }
+
+        [RelayCommand(CanExecute = nameof(CanLoadMoreTours))]
+        private void LoadMoreTours()
+        {
+            LoadMoreToursInternal(TourBatchSize);
+        }
+
+        [RelayCommand]
+        private async Task ProceedToPaymentAsync()
+        {
+            if (!TryValidateBookingInput(out var guests) || SelectedDepartureInfo == null)
+            {
+                return;
+            }
+
+            var total = SelectedDepartureInfo.Price * guests;
+            PaymentTourName = SelectedDepartureInfo.TourName;
+            PaymentScheduleText = $"{SelectedDepartureInfo.StartDateFormatted} - {SelectedDepartureInfo.EndDateFormatted}";
+            PaymentGuestText = $"{guests} khách";
+            PaymentTotalFormatted = $"{total:N0} đ";
+
+            var qrPayload = $"VIETTRAVEL|DEP:{SelectedDepartureInfo.Departure.Id}|GUEST:{guests}|AMT:{total:0}|{DateTime.Now:yyyyMMddHHmmss}";
+            PaymentQrImageUrl = $"https://quickchart.io/qr?size=280&text={Uri.EscapeDataString(qrPayload)}";
+            IsPaymentModalVisible = true;
+            await Task.CompletedTask;
+        }
+
+        [RelayCommand]
+        private void CancelPayment()
+        {
+            IsPaymentModalVisible = false;
+        }
+
+        [RelayCommand]
+        private async Task ConfirmPaymentAsync()
+        {
+            if (IsProcessingPayment) return;
+            if (!TryValidateBookingInput(out var guests)) return;
+
+            IsProcessingPayment = true;
+            try
+            {
+                var success = await CreateBookingAndPaymentAsync(guests, markAsPaid: true);
+                if (!success) return;
+
+                IsPaymentModalVisible = false;
+                IsBookingFormVisible = false;
+
+                MessageBox.Show(
+                    $"🎉 Thanh toán thành công!\n\n" +
+                    $"Tour: {PaymentTourName}\n" +
+                    $"Lịch đi: {PaymentScheduleText}\n" +
+                    $"Số khách: {PaymentGuestText}\n" +
+                    $"Tổng thanh toán: {PaymentTotalFormatted}\n\n" +
+                    "Booking đã hoàn tất.",
+                    "Thanh toán thành công",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+
+                await LoadDataAsync();
+                SelectedPage = "MyBookings";
+            }
+            finally
+            {
+                IsProcessingPayment = false;
+            }
+        }
+
+        private bool TryValidateBookingInput(out int guests)
+        {
+            guests = 0;
+
             if (SelectedDepartureInfo == null)
             {
                 MessageBox.Show("Vui lòng chọn lịch khởi hành.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                return false;
             }
             if (string.IsNullOrWhiteSpace(InfoFullName)
                 || string.IsNullOrWhiteSpace(InfoPhone)
                 || string.IsNullOrWhiteSpace(InfoEmail)
                 || string.IsNullOrWhiteSpace(InfoAddress))
             {
-                MessageBox.Show("Vui lòng nhập đầy đủ họ tên, số điện thoại, email và địa chỉ trước khi đặt tour.",
+                MessageBox.Show("Vui lòng nhập đầy đủ họ tên, số điện thoại, email và địa chỉ.",
                     "Thiếu thông tin", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                return false;
             }
-            if (!int.TryParse(BookingGuestCount, out int guests) || guests <= 0)
+            if (!int.TryParse(BookingGuestCount, out guests) || guests <= 0)
             {
                 MessageBox.Show("Số khách phải là số nguyên dương.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                return false;
             }
             if (guests > SelectedDepartureInfo.AvailableSlots)
             {
                 MessageBox.Show($"Chỉ còn {SelectedDepartureInfo.AvailableSlots} chỗ trống.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                return false;
             }
+
+            return true;
+        }
+
+        private bool CanLoadMoreTours()
+        {
+            return HasMoreToursToLoad && !_isLoadingMoreTours;
+        }
+
+        private void ResetVisibleTours()
+        {
+            _loadedTourCount = 0;
+            FilteredTours = new ObservableCollection<TourDisplayInfo>();
+            OnPropertyChanged(nameof(HasMoreToursToLoad));
+            LoadMoreToursCommand.NotifyCanExecuteChanged();
+            LoadMoreToursInternal(InitialTourBatchSize);
+        }
+
+        private bool LoadMoreToursInternal(int batchSize)
+        {
+            if (_isLoadingMoreTours || !HasMoreToursToLoad)
+            {
+                return false;
+            }
+
+            _isLoadingMoreTours = true;
+            LoadMoreToursCommand.NotifyCanExecuteChanged();
+
+            try
+            {
+                var remaining = _filteredTourCache.Count - _loadedTourCount;
+                var take = Math.Min(batchSize, remaining);
+
+                for (var i = 0; i < take; i++)
+                {
+                    FilteredTours.Add(_filteredTourCache[_loadedTourCount + i]);
+                }
+
+                _loadedTourCount += take;
+                OnPropertyChanged(nameof(HasMoreToursToLoad));
+                return take > 0;
+            }
+            finally
+            {
+                _isLoadingMoreTours = false;
+                LoadMoreToursCommand.NotifyCanExecuteChanged();
+            }
+        }
+
+        private async Task<bool> CreateBookingAndPaymentAsync(int guests, bool markAsPaid)
+        {
+            if (SelectedDepartureInfo == null) return false;
 
             Departure? latestDeparture = null;
             int originalAvailableSlots = 0;
@@ -262,12 +412,11 @@ namespace VietTravel.UI.ViewModels
             {
                 var client = await SupabaseClientFactory.GetClientAsync();
 
-                // Ensure customer profile exists
                 if (_customerProfile == null)
                 {
                     var newCust = new Customer
                     {
-                        FullName = _mainViewModel.CurrentUser?.FullName ?? "Khách hàng",
+                        FullName = InfoFullName,
                         Email = InfoEmail,
                         PhoneNumber = InfoPhone,
                         Address = InfoAddress
@@ -284,27 +433,24 @@ namespace VietTravel.UI.ViewModels
                     await client.From<Customer>().Update(_customerProfile);
                 }
 
-                if (_customerProfile == null) return;
+                if (_customerProfile == null) return false;
 
-                // Always re-check from database to avoid overbooking due to stale UI data.
                 var depResp = await client.From<Departure>().Get();
                 latestDeparture = depResp.Models.FirstOrDefault(d => d.Id == SelectedDepartureInfo.Departure.Id);
                 if (latestDeparture == null)
                 {
                     MessageBox.Show("Không tìm thấy lịch khởi hành.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
+                    return false;
                 }
-
                 if (latestDeparture.Status != "Mở bán")
                 {
                     MessageBox.Show("Lịch khởi hành hiện không mở bán.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
+                    return false;
                 }
-
                 if (guests > latestDeparture.AvailableSlots)
                 {
                     MessageBox.Show($"Chỉ còn {latestDeparture.AvailableSlots} chỗ trống.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
+                    return false;
                 }
 
                 var tourResp = await client.From<Tour>().Get();
@@ -312,7 +458,26 @@ namespace VietTravel.UI.ViewModels
                 if (tour == null)
                 {
                     MessageBox.Show("Không tìm thấy thông tin tour.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
+                    return false;
+                }
+
+                var existingBookingsResp = await client.From<Booking>().Get();
+                var hasScheduleConflict = HasOverlappingBooking(
+                    existingBookingsResp.Models,
+                    depResp.Models,
+                    tourResp.Models,
+                    _customerProfile.Id,
+                    latestDeparture,
+                    tour);
+
+                if (hasScheduleConflict)
+                {
+                    MessageBox.Show(
+                        "Bạn đang có 1 tour có thời gian trùng. Vui lòng chọn lịch trình khác.",
+                        "Trùng lịch trình",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return false;
                 }
 
                 originalAvailableSlots = latestDeparture.AvailableSlots;
@@ -336,7 +501,7 @@ namespace VietTravel.UI.ViewModels
                     UserId = _mainViewModel.CurrentUser?.Id ?? 1,
                     BookingDate = DateTime.Now,
                     GuestCount = guests,
-                    Status = "Chờ thanh toán"
+                    Status = markAsPaid ? "Đã xác nhận" : "Chờ thanh toán"
                 };
 
                 var bookingResp = await client.From<Booking>().Insert(booking);
@@ -345,29 +510,19 @@ namespace VietTravel.UI.ViewModels
                     throw new InvalidOperationException("Không lấy được dữ liệu booking sau khi tạo.");
 
                 createdBookingId = createdBooking.Id;
+                var totalAmount = tour.BasePrice * guests;
                 var payment = new Payment
                 {
                     BookingId = createdBooking.Id,
-                    TotalAmount = tour.BasePrice * guests,
-                    PaidAmount = 0,
-                    Status = "Chưa thanh toán",
-                    PaymentMethod = "Tiền mặt"
+                    TotalAmount = totalAmount,
+                    PaidAmount = markAsPaid ? totalAmount : 0,
+                    Status = markAsPaid ? "Đã thanh toán đủ" : "Chưa thanh toán",
+                    PaymentDate = markAsPaid ? DateTime.Now : null,
+                    PaymentMethod = "Chuyển khoản QR (Mock)"
                 };
                 await client.From<Payment>().Insert(payment);
 
-                IsBookingFormVisible = false;
-                MessageBox.Show(
-                    $"🎉 Đặt tour \"{SelectedDepartureInfo.TourName}\" thành công!\n\n" +
-                    $"📅 Ngày khởi hành: {SelectedDepartureInfo.StartDateFormatted}\n" +
-                    $"👥 Số khách: {guests}\n" +
-                    $"💰 Tổng: {(tour.BasePrice * guests):N0} đ\n\n" +
-                    "Booking đã tạo và đang chờ thanh toán/xử lý.",
-                    "Đặt tour thành công",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-
-                await LoadDataAsync();
-                SelectedPage = "MyBookings";
+                return true;
             }
             catch (Exception ex)
             {
@@ -393,7 +548,55 @@ namespace VietTravel.UI.ViewModels
                 }
 
                 MessageBox.Show($"Lỗi đặt tour: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
             }
+        }
+
+        private static bool HasOverlappingBooking(
+            System.Collections.Generic.IEnumerable<Booking> bookings,
+            System.Collections.Generic.IEnumerable<Departure> departures,
+            System.Collections.Generic.IEnumerable<Tour> tours,
+            int customerId,
+            Departure candidateDeparture,
+            Tour candidateTour)
+        {
+            var activeBookings = bookings.Where(b =>
+                b.CustomerId == customerId &&
+                b.Status != "Đã hủy" &&
+                b.Status != "Hủy");
+
+            var departureById = departures.ToDictionary(d => d.Id);
+            var tourById = tours.ToDictionary(t => t.Id);
+
+            var candidateStart = candidateDeparture.StartDate.Date;
+            var candidateDuration = Math.Max(candidateTour.DurationDays, 1);
+            var candidateEndExclusive = candidateStart.AddDays(candidateDuration);
+
+            foreach (var booking in activeBookings)
+            {
+                if (!departureById.TryGetValue(booking.DepartureId, out var existingDeparture))
+                {
+                    continue;
+                }
+
+                if (!tourById.TryGetValue(existingDeparture.TourId, out var existingTour))
+                {
+                    continue;
+                }
+
+                var existingStart = existingDeparture.StartDate.Date;
+                var existingDuration = Math.Max(existingTour.DurationDays, 1);
+                var existingEndExclusive = existingStart.AddDays(existingDuration);
+
+                var isOverlapping = candidateStart < existingEndExclusive &&
+                                    existingStart < candidateEndExclusive;
+                if (isOverlapping)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         [RelayCommand]
@@ -529,6 +732,7 @@ namespace VietTravel.UI.ViewModels
         public string TourName { get; set; } = string.Empty;
         public string Destination { get; set; } = string.Empty;
         public string StartDateFormatted { get; set; } = string.Empty;
+        public string EndDateFormatted { get; set; } = string.Empty;
         public int AvailableSlots { get; set; }
         public decimal Price { get; set; }
         public string PriceFormatted { get; set; } = "0 đ";
