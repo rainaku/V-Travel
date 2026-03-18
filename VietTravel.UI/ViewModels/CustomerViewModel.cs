@@ -843,14 +843,19 @@ namespace VietTravel.UI.ViewModels
             }
 
             var customerList = customers.ToList();
+            var currentFullName = (currentUser.FullName ?? string.Empty).Trim();
+            var currentUsername = (currentUser.Username ?? string.Empty).Trim();
+
             var profile = customerList.FirstOrDefault(c =>
-                c.FullName.Equals(currentUser.FullName, StringComparison.OrdinalIgnoreCase));
+                string.Equals((c.FullName ?? string.Empty).Trim(), currentFullName, StringComparison.OrdinalIgnoreCase));
 
             // Fallback for older accounts: match username as email when possible.
-            if (profile == null && currentUser.Username.Contains("@", StringComparison.Ordinal))
+            if (profile == null &&
+                !string.IsNullOrWhiteSpace(currentUsername) &&
+                currentUsername.Contains("@", StringComparison.Ordinal))
             {
                 profile = customerList.FirstOrDefault(c =>
-                    c.Email.Equals(currentUser.Username, StringComparison.OrdinalIgnoreCase));
+                    string.Equals((c.Email ?? string.Empty).Trim(), currentUsername, StringComparison.OrdinalIgnoreCase));
             }
 
             // Fallback from booking history linked by user_id.
