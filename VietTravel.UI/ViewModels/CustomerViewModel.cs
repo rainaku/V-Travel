@@ -6,8 +6,8 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Windows;
 using VietTravel.Core.Models;
 using VietTravel.Data;
 
@@ -28,6 +28,8 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private ObservableCollection<TourDisplayInfo> _filteredTours = new();
         [ObservableProperty] private ObservableCollection<Departure> _allDepartures = new();
         [ObservableProperty] private ObservableCollection<DepartureDisplayInfo> _availableDepartures = new();
+        [ObservableProperty] private ObservableCollection<DepartureDisplayInfo> _filteredAvailableDepartures = new();
+        [ObservableProperty] private string _bookDestinationFilter = string.Empty;
         [ObservableProperty] private string _tourSearchText = string.Empty;
 
         // Tour Details
@@ -45,6 +47,12 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private string _paymentScheduleText = string.Empty;
         [ObservableProperty] private string _paymentGuestText = string.Empty;
         [ObservableProperty] private bool _isProcessingPayment = false;
+        [ObservableProperty] private bool _isAppDialogVisible = false;
+        [ObservableProperty] private string _appDialogTitle = string.Empty;
+        [ObservableProperty] private string _appDialogMessage = string.Empty;
+        [ObservableProperty] private string _appDialogPrimaryButtonText = "Đồng ý";
+        [ObservableProperty] private string _appDialogSecondaryButtonText = "Hủy";
+        [ObservableProperty] private bool _isAppDialogSecondaryVisible = false;
 
         // My Bookings
         [ObservableProperty] private ObservableCollection<BookingDisplayInfo> _myBookings = new();
@@ -70,8 +78,16 @@ namespace VietTravel.UI.ViewModels
         private readonly List<TourDisplayInfo> _filteredTourCache = new();
         private int _loadedTourCount;
         private bool _isLoadingMoreTours;
+        private TaskCompletionSource<bool>? _appDialogDecisionTcs;
+        private bool _isAppDialogDecisionPending;
+        private static readonly Regex FullNamePattern = new(@"^[\p{L}\p{M}]+(?:[ '\-][\p{L}\p{M}]+)*$", RegexOptions.Compiled);
+        private static readonly Regex EmailPattern = new(@"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex VietnamMobilePattern = new(@"^0(?:3|5|7|8|9)\d{8}$", RegexOptions.Compiled);
 
         public bool HasMoreToursToLoad => _loadedTourCount < _filteredTourCache.Count;
+        public bool IsBookingModalOverlayVisible => IsBookingFormVisible && !IsPaymentModalVisible && !IsAppDialogVisible;
+        public bool IsPaymentModalOverlayVisible => IsPaymentModalVisible && !IsAppDialogVisible;
+        public bool IsBookDestinationFilterActive => !string.IsNullOrWhiteSpace(BookDestinationFilter);
 
         public CustomerViewModel(MainViewModel mainViewModel)
         {
@@ -80,6 +96,14 @@ namespace VietTravel.UI.ViewModels
         }
 
         partial void OnTourSearchTextChanged(string value) => ApplyTourFilter();
+        partial void OnBookDestinationFilterChanged(string value)
+        {
+            ApplyDepartureFilter();
+            OnPropertyChanged(nameof(IsBookDestinationFilterActive));
+        }
+        partial void OnIsBookingFormVisibleChanged(bool value) => NotifyOverlayVisibilityStateChanged();
+        partial void OnIsPaymentModalVisibleChanged(bool value) => NotifyOverlayVisibilityStateChanged();
+        partial void OnIsAppDialogVisibleChanged(bool value) => NotifyOverlayVisibilityStateChanged();
 
         private void ApplyTourFilter()
         {
@@ -103,10 +127,118 @@ namespace VietTravel.UI.ViewModels
             ResetVisibleTours();
         }
 
+        private void ApplyDepartureFilter()
+        {
+            IEnumerable<DepartureDisplayInfo> query = AvailableDepartures;
+
+            if (!string.IsNullOrWhiteSpace(BookDestinationFilter))
+            {
+                query = query.Where(d => IsSameDestination(d.Destination, BookDestinationFilter));
+            }
+
+            FilteredAvailableDepartures = new ObservableCollection<DepartureDisplayInfo>(query);
+        }
+
         [RelayCommand]
         private void NavigateTo(string page)
         {
             SelectedPage = page;
+        }
+
+        [RelayCommand]
+        private void ClearBookDestinationFilter()
+        {
+            BookDestinationFilter = string.Empty;
+        }
+
+        [RelayCommand]
+        private void ConfirmAppDialog()
+        {
+            if (_isAppDialogDecisionPending)
+            {
+                _appDialogDecisionTcs?.TrySetResult(true);
+            }
+
+            CloseAppDialog();
+        }
+
+        [RelayCommand]
+        private void CancelAppDialog()
+        {
+            if (_isAppDialogDecisionPending)
+            {
+                _appDialogDecisionTcs?.TrySetResult(false);
+            }
+
+            CloseAppDialog();
+        }
+
+        private void NotifyOverlayVisibilityStateChanged()
+        {
+            OnPropertyChanged(nameof(IsBookingModalOverlayVisible));
+            OnPropertyChanged(nameof(IsPaymentModalOverlayVisible));
+        }
+
+        private void ShowAppDialogInfo(string title, string message)
+        {
+            PrepareAppDialog(
+                title,
+                message,
+                primaryButtonText: "Đóng",
+                secondaryButtonText: "Hủy",
+                showSecondaryButton: false,
+                isDecisionDialog: false);
+        }
+
+        private Task<bool> ShowAppDialogConfirmationAsync(
+            string title,
+            string message,
+            string confirmText = "Xác nhận",
+            string cancelText = "Hủy")
+        {
+            PrepareAppDialog(
+                title,
+                message,
+                primaryButtonText: confirmText,
+                secondaryButtonText: cancelText,
+                showSecondaryButton: true,
+                isDecisionDialog: true);
+
+            return _appDialogDecisionTcs?.Task ?? Task.FromResult(false);
+        }
+
+        private void PrepareAppDialog(
+            string title,
+            string message,
+            string primaryButtonText,
+            string secondaryButtonText,
+            bool showSecondaryButton,
+            bool isDecisionDialog)
+        {
+            if (_isAppDialogDecisionPending)
+            {
+                _appDialogDecisionTcs?.TrySetResult(false);
+            }
+
+            _isAppDialogDecisionPending = isDecisionDialog;
+            _appDialogDecisionTcs = isDecisionDialog
+                ? new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously)
+                : null;
+
+            AppDialogTitle = title;
+            AppDialogMessage = message;
+            AppDialogPrimaryButtonText = primaryButtonText;
+            AppDialogSecondaryButtonText = secondaryButtonText;
+            IsAppDialogSecondaryVisible = showSecondaryButton;
+            IsAppDialogVisible = true;
+        }
+
+        private void CloseAppDialog()
+        {
+            IsAppDialogVisible = false;
+            IsAppDialogSecondaryVisible = false;
+            _isAppDialogDecisionPending = false;
+            _appDialogDecisionTcs = null;
         }
 
         private async Task LoadDataAsync()
@@ -155,11 +287,11 @@ namespace VietTravel.UI.ViewModels
                     })
                     .ToList();
                 AvailableDepartures = new ObservableCollection<DepartureDisplayInfo>(displayDeps);
+                ApplyDepartureFilter();
 
-                // Load customer profile
+                // Load customer profile linked to current user.
                 var custs = (await client.From<Customer>().Get()).Models;
-                _customerProfile = custs.FirstOrDefault(c =>
-                    c.FullName.Equals(_mainViewModel.CurrentUser?.FullName ?? "", StringComparison.OrdinalIgnoreCase));
+                _customerProfile = await ResolveCustomerProfileAsync(client, custs);
 
                 if (_customerProfile != null)
                 {
@@ -209,7 +341,7 @@ namespace VietTravel.UI.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi tải dữ liệu: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowAppDialogInfo("Lỗi", $"Lỗi tải dữ liệu: {ex.Message}");
             }
             finally
             {
@@ -239,6 +371,31 @@ namespace VietTravel.UI.ViewModels
         private void CloseTourDetails()
         {
             IsTourDetailsVisible = false;
+        }
+
+        [RelayCommand]
+        private void GoToBookingFromSelectedTour()
+        {
+            if (SelectedTour == null)
+            {
+                return;
+            }
+
+            var destinationMatches = AvailableDepartures
+                .Where(d => IsSameDestination(d.Destination, SelectedTour.Destination))
+                .ToList();
+
+            if (destinationMatches.Count == 0)
+            {
+                ShowAppDialogInfo("Thông báo", $"Hiện chưa có lịch mở bán tại {SelectedTour.Destination}.");
+                return;
+            }
+
+            BookDestinationFilter = SelectedTour.Destination;
+            SelectedPage = "Book";
+            IsTourDetailsVisible = false;
+            IsBookingFormVisible = false;
+            IsPaymentModalVisible = false;
         }
 
         [RelayCommand]
@@ -301,16 +458,14 @@ namespace VietTravel.UI.ViewModels
                 IsPaymentModalVisible = false;
                 IsBookingFormVisible = false;
 
-                MessageBox.Show(
+                ShowAppDialogInfo(
+                    "Thanh toán thành công",
                     $"🎉 Thanh toán thành công!\n\n" +
                     $"Tour: {PaymentTourName}\n" +
                     $"Lịch đi: {PaymentScheduleText}\n" +
                     $"Số khách: {PaymentGuestText}\n" +
                     $"Tổng thanh toán: {PaymentTotalFormatted}\n\n" +
-                    "Booking đã hoàn tất.",
-                    "Thanh toán thành công",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                    "Booking đã hoàn tất.");
 
                 await LoadDataAsync();
                 SelectedPage = "MyBookings";
@@ -324,33 +479,124 @@ namespace VietTravel.UI.ViewModels
         private bool TryValidateBookingInput(out int guests)
         {
             guests = 0;
+            NormalizeBookingInputValues();
 
             if (SelectedDepartureInfo == null)
             {
-                MessageBox.Show("Vui lòng chọn lịch khởi hành.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowAppDialogInfo("Thông báo", "Vui lòng chọn lịch khởi hành.");
                 return false;
             }
+
             if (string.IsNullOrWhiteSpace(InfoFullName)
                 || string.IsNullOrWhiteSpace(InfoPhone)
                 || string.IsNullOrWhiteSpace(InfoEmail)
                 || string.IsNullOrWhiteSpace(InfoAddress))
             {
-                MessageBox.Show("Vui lòng nhập đầy đủ họ tên, số điện thoại, email và địa chỉ.",
-                    "Thiếu thông tin", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowAppDialogInfo("Thiếu thông tin", "Vui lòng nhập đầy đủ họ tên, số điện thoại, email và địa chỉ.");
                 return false;
             }
+
+            if (InfoFullName.Length < 4 || InfoFullName.Length > 80)
+            {
+                ShowAppDialogInfo("Họ tên chưa hợp lệ", "Họ tên phải từ 4 đến 80 ký tự.");
+                return false;
+            }
+
+            var fullNameParts = InfoFullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (fullNameParts.Length < 2)
+            {
+                ShowAppDialogInfo("Họ tên chưa hợp lệ", "Vui lòng nhập đầy đủ họ và tên.");
+                return false;
+            }
+
+            if (!FullNamePattern.IsMatch(InfoFullName))
+            {
+                ShowAppDialogInfo("Họ tên chưa hợp lệ", "Họ tên chỉ được chứa chữ cái và khoảng trắng.");
+                return false;
+            }
+
+            if (!VietnamMobilePattern.IsMatch(InfoPhone))
+            {
+                ShowAppDialogInfo("Số điện thoại chưa hợp lệ", "Số điện thoại phải là số di động Việt Nam hợp lệ (vd: 09xxxxxxxx).");
+                return false;
+            }
+
+            if (InfoEmail.Length > 120 || !EmailPattern.IsMatch(InfoEmail))
+            {
+                ShowAppDialogInfo("Email chưa hợp lệ", "Vui lòng nhập đúng định dạng email (vd: ten@email.com).");
+                return false;
+            }
+
+            if (InfoAddress.Length < 10 || InfoAddress.Length > 200)
+            {
+                ShowAppDialogInfo("Địa chỉ chưa hợp lệ", "Địa chỉ phải từ 10 đến 200 ký tự.");
+                return false;
+            }
+
+            if (!InfoAddress.Any(ch => char.IsLetter(ch)))
+            {
+                ShowAppDialogInfo("Địa chỉ chưa hợp lệ", "Địa chỉ cần có thông tin cụ thể hơn.");
+                return false;
+            }
+
             if (!int.TryParse(BookingGuestCount, out guests) || guests <= 0)
             {
-                MessageBox.Show("Số khách phải là số nguyên dương.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowAppDialogInfo("Thông báo", "Số khách phải là số nguyên dương.");
                 return false;
             }
+
+            if (guests > 20)
+            {
+                ShowAppDialogInfo("Thông báo", "Một booking chỉ được đặt tối đa 20 khách.");
+                return false;
+            }
+
             if (guests > SelectedDepartureInfo.AvailableSlots)
             {
-                MessageBox.Show($"Chỉ còn {SelectedDepartureInfo.AvailableSlots} chỗ trống.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowAppDialogInfo("Thông báo", $"Chỉ còn {SelectedDepartureInfo.AvailableSlots} chỗ trống.");
                 return false;
             }
 
             return true;
+        }
+
+        private void NormalizeBookingInputValues()
+        {
+            InfoFullName = NormalizeWhitespace(InfoFullName);
+            InfoEmail = (InfoEmail ?? string.Empty).Trim();
+            InfoAddress = NormalizeWhitespace(InfoAddress);
+            InfoPhone = NormalizeVietnamPhone(InfoPhone);
+        }
+
+        private static string NormalizeWhitespace(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            return Regex.Replace(value.Trim(), @"\s+", " ");
+        }
+
+        private static string NormalizeVietnamPhone(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var digitsOnly = Regex.Replace(value, @"[^\d+]", string.Empty);
+
+            if (digitsOnly.StartsWith("+84"))
+            {
+                digitsOnly = "0" + digitsOnly[3..];
+            }
+            else if (digitsOnly.StartsWith("84") && digitsOnly.Length == 11)
+            {
+                digitsOnly = "0" + digitsOnly[2..];
+            }
+
+            return digitsOnly;
         }
 
         private bool CanLoadMoreTours()
@@ -433,23 +679,25 @@ namespace VietTravel.UI.ViewModels
                     await client.From<Customer>().Update(_customerProfile);
                 }
 
+                await SyncCurrentUserProfileAsync(client);
+
                 if (_customerProfile == null) return false;
 
                 var depResp = await client.From<Departure>().Get();
                 latestDeparture = depResp.Models.FirstOrDefault(d => d.Id == SelectedDepartureInfo.Departure.Id);
                 if (latestDeparture == null)
                 {
-                    MessageBox.Show("Không tìm thấy lịch khởi hành.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ShowAppDialogInfo("Lỗi", "Không tìm thấy lịch khởi hành.");
                     return false;
                 }
                 if (latestDeparture.Status != "Mở bán")
                 {
-                    MessageBox.Show("Lịch khởi hành hiện không mở bán.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ShowAppDialogInfo("Thông báo", "Lịch khởi hành hiện không mở bán.");
                     return false;
                 }
                 if (guests > latestDeparture.AvailableSlots)
                 {
-                    MessageBox.Show($"Chỉ còn {latestDeparture.AvailableSlots} chỗ trống.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ShowAppDialogInfo("Thông báo", $"Chỉ còn {latestDeparture.AvailableSlots} chỗ trống.");
                     return false;
                 }
 
@@ -457,29 +705,26 @@ namespace VietTravel.UI.ViewModels
                 var tour = tourResp.Models.FirstOrDefault(t => t.Id == latestDeparture.TourId);
                 if (tour == null)
                 {
-                    MessageBox.Show("Không tìm thấy thông tin tour.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ShowAppDialogInfo("Lỗi", "Không tìm thấy thông tin tour.");
                     return false;
                 }
 
                 var existingBookingsResp = await client.From<Booking>().Get();
-                var hasScheduleConflict = HasOverlappingBooking(
+                var hasScheduleConflict = HasSameDepartureDateBooking(
                     existingBookingsResp.Models,
                     depResp.Models,
-                    tourResp.Models,
                     _customerProfile.Id,
-                    latestDeparture,
-                    tour);
+                    latestDeparture);
 
                 if (hasScheduleConflict)
                 {
-                    var confirmConflict = MessageBox.Show(
-                        "Bạn đang có 1 tour có thời gian trùng với lịch đang đặt.\nBạn có muốn đặt tiếp không?",
+                    var confirmConflict = await ShowAppDialogConfirmationAsync(
                         "Cảnh báo trùng lịch",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Warning,
-                        MessageBoxResult.No);
+                        "Bạn đang có 1 tour có ngày khởi hành trùng với lịch đang đặt.\nBạn có muốn đặt tiếp không?",
+                        confirmText: "Vẫn đặt",
+                        cancelText: "Không");
 
-                    if (confirmConflict != MessageBoxResult.Yes)
+                    if (!confirmConflict)
                     {
                         return false;
                     }
@@ -552,18 +797,16 @@ namespace VietTravel.UI.ViewModels
                     // Ignore rollback errors and show original failure to user.
                 }
 
-                MessageBox.Show($"Lỗi đặt tour: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowAppDialogInfo("Lỗi", $"Lỗi đặt tour: {ex.Message}");
                 return false;
             }
         }
 
-        private static bool HasOverlappingBooking(
+        private static bool HasSameDepartureDateBooking(
             System.Collections.Generic.IEnumerable<Booking> bookings,
             System.Collections.Generic.IEnumerable<Departure> departures,
-            System.Collections.Generic.IEnumerable<Tour> tours,
             int customerId,
-            Departure candidateDeparture,
-            Tour candidateTour)
+            Departure candidateDeparture)
         {
             var activeBookings = bookings.Where(b =>
                 b.CustomerId == customerId &&
@@ -571,11 +814,7 @@ namespace VietTravel.UI.ViewModels
                 b.Status != "Hủy");
 
             var departureById = departures.ToDictionary(d => d.Id);
-            var tourById = tours.ToDictionary(t => t.Id);
-
             var candidateStart = candidateDeparture.StartDate.Date;
-            var candidateDuration = Math.Max(candidateTour.DurationDays, 1);
-            var candidateEndExclusive = candidateStart.AddDays(candidateDuration);
 
             foreach (var booking in activeBookings)
             {
@@ -584,18 +823,7 @@ namespace VietTravel.UI.ViewModels
                     continue;
                 }
 
-                if (!tourById.TryGetValue(existingDeparture.TourId, out var existingTour))
-                {
-                    continue;
-                }
-
-                var existingStart = existingDeparture.StartDate.Date;
-                var existingDuration = Math.Max(existingTour.DurationDays, 1);
-                var existingEndExclusive = existingStart.AddDays(existingDuration);
-
-                var isOverlapping = candidateStart < existingEndExclusive &&
-                                    existingStart < candidateEndExclusive;
-                if (isOverlapping)
+                if (existingDeparture.StartDate.Date == candidateStart)
                 {
                     return true;
                 }
@@ -604,12 +832,71 @@ namespace VietTravel.UI.ViewModels
             return false;
         }
 
+        private async Task<Customer?> ResolveCustomerProfileAsync(
+            Supabase.Client client,
+            System.Collections.Generic.IEnumerable<Customer> customers)
+        {
+            var currentUser = _mainViewModel.CurrentUser;
+            if (currentUser == null)
+            {
+                return null;
+            }
+
+            var customerList = customers.ToList();
+            var profile = customerList.FirstOrDefault(c =>
+                c.FullName.Equals(currentUser.FullName, StringComparison.OrdinalIgnoreCase));
+
+            // Fallback for older accounts: match username as email when possible.
+            if (profile == null && currentUser.Username.Contains("@", StringComparison.Ordinal))
+            {
+                profile = customerList.FirstOrDefault(c =>
+                    c.Email.Equals(currentUser.Username, StringComparison.OrdinalIgnoreCase));
+            }
+
+            // Fallback from booking history linked by user_id.
+            if (profile == null)
+            {
+                var bookings = (await client.From<Booking>().Get()).Models
+                    .Where(b => b.UserId == currentUser.Id)
+                    .OrderByDescending(b => b.BookingDate)
+                    .ToList();
+
+                var customerId = bookings.Select(b => b.CustomerId).FirstOrDefault();
+                if (customerId > 0)
+                {
+                    profile = customerList.FirstOrDefault(c => c.Id == customerId);
+                    if (profile == null)
+                    {
+                        profile = (await client.From<Customer>().Where(c => c.Id == customerId).Get())
+                            .Models
+                            .FirstOrDefault();
+                    }
+                }
+            }
+
+            return profile;
+        }
+
+        private async Task SyncCurrentUserProfileAsync(Supabase.Client client)
+        {
+            var currentUser = _mainViewModel.CurrentUser;
+            if (currentUser == null)
+            {
+                return;
+            }
+
+            currentUser.FullName = InfoFullName;
+            await client.From<User>().Update(currentUser);
+            OnPropertyChanged(nameof(FullName));
+            OnPropertyChanged(nameof(UserInitials));
+        }
+
         [RelayCommand]
         private async Task SaveProfileAsync()
         {
             if (string.IsNullOrWhiteSpace(InfoFullName))
             {
-                MessageBox.Show("Vui lòng nhập họ tên.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowAppDialogInfo("Thông báo", "Vui lòng nhập họ tên.");
                 return;
             }
 
@@ -637,11 +924,13 @@ namespace VietTravel.UI.ViewModels
                     var resp = await client.From<Customer>().Insert(c);
                     _customerProfile = resp.Models.FirstOrDefault();
                 }
-                MessageBox.Show("✅ Cập nhật thông tin thành công!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                await SyncCurrentUserProfileAsync(client);
+                ShowAppDialogInfo("Thành công", "✅ Cập nhật thông tin thành công!");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowAppDialogInfo("Lỗi", $"Lỗi: {ex.Message}");
             }
             finally
             {
@@ -705,6 +994,11 @@ namespace VietTravel.UI.ViewModels
             }
 
             return sb.ToString().Normalize(NormalizationForm.FormC);
+        }
+
+        private static bool IsSameDestination(string left, string right)
+        {
+            return NormalizeText(left) == NormalizeText(right);
         }
 
         private static readonly (string[] Keywords, string Url)[] TourImageRules =
