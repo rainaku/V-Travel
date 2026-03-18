@@ -6,14 +6,15 @@
 
     <Border CornerRadius="16" ClipToBounds="True">
         <Grid>
-            <!-- Background Gradient Overlay -->
-            <Grid.Background>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                    <GradientStop Color="#F5F5F7" Offset="0"/>
-                    <GradientStop Color="#EBF0FF" Offset="0.5"/>
-                    <GradientStop Color="#F5F5F7" Offset="1"/>
-                </LinearGradientBrush>
-            </Grid.Background>
+            <!-- Background Image -->
+            <Border CornerRadius="0,0,16,16">
+                <Border.Background>
+                    <ImageBrush ImageSource="pack://application:,,,/UI/travel.png" Stretch="UniformToFill" />
+                </Border.Background>
+            </Border>
+
+            <!-- Blue Overlay -->
+            <Border CornerRadius="0,0,16,16" Background="#4D007AFF"/>
 
             <!-- Decorative Circles -->
             <Ellipse Width="400" Height="400" Opacity="0.08" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-100,-100,0,0">

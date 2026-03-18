@@ -74,18 +74,60 @@
                         <TextBlock Text="Hành động" Grid.Column="5" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}" HorizontalAlignment="Center"/>
                     </Grid>
 
-                    <!-- Empty State -->
-                    <StackPanel HorizontalAlignment="Center" Margin="0,48,0,56">
-                        <Grid Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16">
-                            <Ellipse Width="64" Height="64" Fill="#0A007AFF"/>
-                            <materialDesign:PackIcon Kind="MapMarkerPlusOutline" Width="32" Height="32" Foreground="{StaticResource PrimaryBrush}"
-                                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Grid>
-                        <TextBlock Text="Chưa có tour nào" HorizontalAlignment="Center"
-                                   FontFamily="{StaticResource AppFont}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
-                        <TextBlock Text="Nhấn 'Thêm Tour' để tạo tour du lịch đầu tiên" HorizontalAlignment="Center"
-                                   FontFamily="{StaticResource AppFont}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,0"/>
-                    </StackPanel>
+                    <Grid>
+                        <!-- Biểu tượng loading -->
+                        <ProgressBar IsIndeterminate="True" Height="4" Margin="0,16,0,0" VerticalAlignment="Top"
+                                     Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                        <!-- Danh sách -->
+                        <ItemsControl ItemsSource="{Binding Tours}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="Transparent" BorderBrush="#EEEEEE" BorderThickness="0,0,0,1">
+                                        <Grid Margin="0,12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="0.4*"/>
+                                                <ColumnDefinition Width="1.5*"/>
+                                                <ColumnDefinition Width="1.2*"/>
+                                                <ColumnDefinition Width="0.8*"/>
+                                                <ColumnDefinition Width="1*"/>
+                                                <ColumnDefinition Width="0.8*"/>
+                                            </Grid.ColumnDefinitions>
+                                            
+                                            <TextBlock Text="{Binding Id}" Grid.Column="0" Padding="20,0,12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" FontFamily="{StaticResource AppFont}"/>
+                                            <TextBlock Text="{Binding Name}" Grid.Column="1" Padding="12,0" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Destination}" Grid.Column="2" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding DurationDays, StringFormat={}{0} ngày}" Grid.Column="3" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding BasePrice, StringFormat={}{0:N0} đ}" Grid.Column="4" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                            
+                                            <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <Button Style="{StaticResource AppleGhostButton}" Width="32" Height="32" Padding="0" Cursor="Hand" ToolTip="Chỉnh sửa">
+                                                    <materialDesign:PackIcon Kind="PencilOutline" Width="16" Height="16" Foreground="{StaticResource PrimaryBrush}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource AppleGhostButton}" Width="32" Height="32" Padding="0" Margin="4,0,0,0" Cursor="Hand" ToolTip="Xóa">
+                                                    <materialDesign:PackIcon Kind="DeleteOutline" Width="16" Height="16" Foreground="{StaticResource ErrorBrush}"/>
+                                                </Button>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Empty State -->
+                        <StackPanel HorizontalAlignment="Center" Margin="0,48,0,56" 
+                                    Visibility="{Binding HasNoData, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Grid Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16">
+                                <Ellipse Width="64" Height="64" Fill="#0A007AFF"/>
+                                <materialDesign:PackIcon Kind="MapMarkerPlusOutline" Width="32" Height="32" Foreground="{StaticResource PrimaryBrush}"
+                                                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                            <TextBlock Text="Chưa có tour nào" HorizontalAlignment="Center"
+                                       FontFamily="{StaticResource AppFont}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <TextBlock Text="Nhấn 'Thêm Tour' để tạo tour du lịch đầu tiên" HorizontalAlignment="Center"
+                                       FontFamily="{StaticResource AppFont}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,0"/>
+                        </StackPanel>
+                    </Grid>
                 </StackPanel>
             </Border>
 

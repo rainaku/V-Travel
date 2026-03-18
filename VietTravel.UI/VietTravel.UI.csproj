@@ -20,4 +20,9 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Resource Include="UI\**\*.png" />
+    <Resource Include="UI\**\*.jpg" />
+  </ItemGroup>
+
 </Project>
