@@ -472,12 +472,17 @@ namespace VietTravel.UI.ViewModels
 
                 if (hasScheduleConflict)
                 {
-                    MessageBox.Show(
-                        "Bạn đang có 1 tour có thời gian trùng. Vui lòng chọn lịch trình khác.",
-                        "Trùng lịch trình",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                    return false;
+                    var confirmConflict = MessageBox.Show(
+                        "Bạn đang có 1 tour có thời gian trùng với lịch đang đặt.\nBạn có muốn đặt tiếp không?",
+                        "Cảnh báo trùng lịch",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning,
+                        MessageBoxResult.No);
+
+                    if (confirmConflict != MessageBoxResult.Yes)
+                    {
+                        return false;
+                    }
                 }
 
                 originalAvailableSlots = latestDeparture.AvailableSlots;
