@@ -20,8 +20,7 @@ namespace VietTravel.UI.ViewModels
         public AdminShellViewModel(MainViewModel mainViewModel)
         {
             _mainViewModel = mainViewModel;
-            // Start with Dashboard
-            _currentPageViewModel = new DashboardViewModel(_mainViewModel);
+            _currentPageViewModel = new DashboardViewModel(_mainViewModel, this);
         }
 
         [RelayCommand]
@@ -32,14 +31,14 @@ namespace VietTravel.UI.ViewModels
 
             CurrentPageViewModel = pageName switch
             {
-                "Dashboard" => new DashboardViewModel(_mainViewModel),
+                "Dashboard" => new DashboardViewModel(_mainViewModel, this),
                 "Tours" => new TourListViewModel(_mainViewModel),
                 "Departures" => new DepartureListViewModel(_mainViewModel),
                 "Bookings" => new BookingListViewModel(_mainViewModel),
                 "Customers" => new CustomerListViewModel(_mainViewModel),
                 "Payments" => new PaymentListViewModel(_mainViewModel),
                 "Reports" => new ReportViewModel(_mainViewModel),
-                _ => new DashboardViewModel(_mainViewModel)
+                _ => new DashboardViewModel(_mainViewModel, this)
             };
         }
 

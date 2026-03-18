@@ -13,13 +13,71 @@
                     <TextBlock Text="Quản lý Tour" Style="{StaticResource HeadingLargeStyle}"/>
                     <TextBlock Text="Quản lý danh sách các tour du lịch" Style="{StaticResource CaptionStyle}" Margin="0,4,0,0"/>
                 </StackPanel>
-                <Button Style="{StaticResource ApplePrimaryButton}" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Button Style="{StaticResource ApplePrimaryButton}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Command="{Binding ShowAddFormCommand}">
                     <StackPanel Orientation="Horizontal">
                         <materialDesign:PackIcon Kind="Plus" Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center"/>
                         <TextBlock Text="Thêm Tour" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
             </Grid>
+
+            <!-- Inline Form -->
+            <Border Style="{StaticResource AppleCard}" Padding="24" Margin="0,0,0,20"
+                    Visibility="{Binding IsFormVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding FormTitle}" FontFamily="{StaticResource AppFont}" FontSize="18" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,12">
+                            <TextBlock Text="Tên Tour *" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding FormName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
+                                     materialDesign:HintAssist.Hint="Nhập tên tour"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,12">
+                            <TextBlock Text="Điểm đến *" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding FormDestination, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
+                                     materialDesign:HintAssist.Hint="Nhập điểm đến"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,12">
+                            <TextBlock Text="Giá cơ bản (VNĐ) *" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding FormBasePrice, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
+                                     materialDesign:HintAssist.Hint="VD: 5000000"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,12">
+                            <TextBlock Text="Số ngày *" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding FormDurationDays, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
+                                     materialDesign:HintAssist.Hint="VD: 3"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,0,0,12">
+                            <TextBlock Text="Mô tả" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding FormDescription, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
+                                     materialDesign:HintAssist.Hint="Mô tả ngắn về tour"
+                                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                        <Button Style="{StaticResource AppleGhostButton}" Content="Hủy" Command="{Binding CancelFormCommand}" Margin="0,0,8,0"/>
+                        <Button Style="{StaticResource ApplePrimaryButton}" Content="Lưu Tour" Command="{Binding SaveTourCommand}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
 
             <!-- Search & Filter Bar -->
             <Border Style="{StaticResource AppleCard}" Padding="16" Margin="0,0,0,20">
@@ -36,16 +94,10 @@
                                                  VerticalAlignment="Center" Margin="12,0,0,0" IsHitTestVisible="False"/>
                     </Grid>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0">
-                        <Button Style="{StaticResource AppleGhostButton}" Margin="0,0,4,0">
+                        <Button Style="{StaticResource AppleGhostButton}" Command="{Binding LoadToursCommand}">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="FilterOutline" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="Bộ lọc" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource AppleGhostButton}">
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="SortAscending" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="Sắp xếp" VerticalAlignment="Center"/>
+                                <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Làm mới" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -75,12 +127,12 @@
                     </Grid>
 
                     <Grid>
-                        <!-- Biểu tượng loading -->
+                        <!-- Loading indicator -->
                         <ProgressBar IsIndeterminate="True" Height="4" Margin="0,16,0,0" VerticalAlignment="Top"
                                      Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
-                        <!-- Danh sách -->
-                        <ItemsControl ItemsSource="{Binding Tours}">
+                        <!-- Data list -->
+                        <ItemsControl ItemsSource="{Binding FilteredTours}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Border Background="Transparent" BorderBrush="#EEEEEE" BorderThickness="0,0,0,1">
@@ -101,10 +153,14 @@
                                             <TextBlock Text="{Binding BasePrice, StringFormat={}{0:N0} đ}" Grid.Column="4" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                                             
                                             <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                <Button Style="{StaticResource AppleGhostButton}" Width="32" Height="32" Padding="0" Cursor="Hand" ToolTip="Chỉnh sửa">
+                                                <Button Style="{StaticResource AppleGhostButton}" Width="32" Height="32" Padding="0" Cursor="Hand" ToolTip="Chỉnh sửa"
+                                                        Command="{Binding DataContext.ShowEditFormCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}">
                                                     <materialDesign:PackIcon Kind="PencilOutline" Width="16" Height="16" Foreground="{StaticResource PrimaryBrush}"/>
                                                 </Button>
-                                                <Button Style="{StaticResource AppleGhostButton}" Width="32" Height="32" Padding="0" Margin="4,0,0,0" Cursor="Hand" ToolTip="Xóa">
+                                                <Button Style="{StaticResource AppleGhostButton}" Width="32" Height="32" Padding="0" Margin="4,0,0,0" Cursor="Hand" ToolTip="Xóa"
+                                                        Command="{Binding DataContext.DeleteTourCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}">
                                                     <materialDesign:PackIcon Kind="DeleteOutline" Width="16" Height="16" Foreground="{StaticResource ErrorBrush}"/>
                                                 </Button>
                                             </StackPanel>

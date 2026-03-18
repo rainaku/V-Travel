@@ -13,7 +13,8 @@
                     <TextBlock Text="Quản lý Khách Hàng" Style="{StaticResource HeadingLargeStyle}"/>
                     <TextBlock Text="Quản lý thông tin và lịch sử khách hàng" Style="{StaticResource CaptionStyle}" Margin="0,4,0,0"/>
                 </StackPanel>
-                <Button Style="{StaticResource ApplePrimaryButton}" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Button Style="{StaticResource ApplePrimaryButton}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Command="{Binding ShowAddFormCommand}">
                     <StackPanel Orientation="Horizontal">
                         <materialDesign:PackIcon Kind="Plus" Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center"/>
                         <TextBlock Text="Thêm Khách Hàng" VerticalAlignment="Center"/>
@@ -22,7 +23,7 @@
             </Grid>
 
             <!-- Stats -->
-            <UniformGrid Columns="3" Margin="0,0,0,20">
+            <UniformGrid Columns="2" Margin="0,0,0,20">
                 <Border Style="{StaticResource StatCard}" Margin="0,0,10,0">
                     <StackPanel Orientation="Horizontal">
                         <Grid Width="40" Height="40" Margin="0,0,12,0">
@@ -30,45 +31,94 @@
                             <materialDesign:PackIcon Kind="AccountGroupOutline" Width="20" Height="20" Foreground="{StaticResource PrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="0" FontFamily="{StaticResource AppFont}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <TextBlock Text="{Binding TotalCustomers}" FontFamily="{StaticResource AppFont}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
                             <TextBlock Text="Tổng khách hàng" FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
-                <Border Style="{StaticResource StatCard}" Margin="5,0,5,0">
-                    <StackPanel Orientation="Horizontal">
-                        <Grid Width="40" Height="40" Margin="0,0,12,0">
-                            <Ellipse Width="40" Height="40" Fill="#1A34C759"/>
-                            <materialDesign:PackIcon Kind="AccountPlusOutline" Width="20" Height="20" Foreground="{StaticResource SuccessBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Grid>
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="0" FontFamily="{StaticResource AppFont}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
-                            <TextBlock Text="Khách mới tháng này" FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource StatCard}" Margin="10,0,0,0">
                     <StackPanel Orientation="Horizontal">
                         <Grid Width="40" Height="40" Margin="0,0,12,0">
-                            <Ellipse Width="40" Height="40" Fill="#1AAF52DE"/>
-                            <materialDesign:PackIcon Kind="StarOutline" Width="20" Height="20" Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Ellipse Width="40" Height="40" Fill="#1A34C759"/>
+                            <materialDesign:PackIcon Kind="AccountPlusOutline" Width="20" Height="20" Foreground="{StaticResource SuccessBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="0" FontFamily="{StaticResource AppFont}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
-                            <TextBlock Text="Khách VIP" FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Text="{Binding NewThisMonth}" FontFamily="{StaticResource AppFont}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <TextBlock Text="Khách mới tháng này" FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
             </UniformGrid>
 
+            <!-- Inline Form -->
+            <Border Style="{StaticResource AppleCard}" Padding="24" Margin="0,0,0,20"
+                    Visibility="{Binding IsFormVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding FormTitle}" FontFamily="{StaticResource AppFont}" FontSize="18" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,12">
+                            <TextBlock Text="Họ và tên *" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding FormFullName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
+                                     materialDesign:HintAssist.Hint="Nhập họ tên"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,12">
+                            <TextBlock Text="Số điện thoại" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding FormPhone, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
+                                     materialDesign:HintAssist.Hint="Nhập SĐT"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,12">
+                            <TextBlock Text="Email" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding FormEmail, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
+                                     materialDesign:HintAssist.Hint="Nhập email"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,12">
+                            <TextBlock Text="Địa chỉ" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding FormAddress, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
+                                     materialDesign:HintAssist.Hint="Nhập địa chỉ"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                        <Button Style="{StaticResource AppleGhostButton}" Content="Hủy" Command="{Binding CancelFormCommand}" Margin="0,0,8,0"/>
+                        <Button Style="{StaticResource ApplePrimaryButton}" Content="Lưu" Command="{Binding SaveCustomerCommand}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <!-- Search -->
             <Border Style="{StaticResource AppleCard}" Padding="16" Margin="0,0,0,20">
                 <Grid>
-                    <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" 
-                             Style="{StaticResource AppleSearchBox}"
-                             materialDesign:HintAssist.Hint="Tìm kiếm theo tên, SĐT, email..."/>
-                    <materialDesign:PackIcon Kind="Magnify" Width="18" Height="18" Foreground="{StaticResource TextTertiaryBrush}"
-                                             VerticalAlignment="Center" Margin="12,0,0,0" IsHitTestVisible="False"/>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid>
+                        <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" 
+                                 Style="{StaticResource AppleSearchBox}"
+                                 materialDesign:HintAssist.Hint="Tìm kiếm theo tên, SĐT, email..."/>
+                        <materialDesign:PackIcon Kind="Magnify" Width="18" Height="18" Foreground="{StaticResource TextTertiaryBrush}"
+                                                 VerticalAlignment="Center" Margin="12,0,0,0" IsHitTestVisible="False"/>
+                    </Grid>
+                    <Button Grid.Column="1" Style="{StaticResource AppleGhostButton}" Command="{Binding LoadDataCommand}" Margin="12,0,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Làm mới" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </Grid>
             </Border>
 
@@ -93,18 +143,60 @@
                         <TextBlock Text="Hành động" Grid.Column="5" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}" HorizontalAlignment="Center"/>
                     </Grid>
 
-                    <!-- Empty State -->
-                    <StackPanel HorizontalAlignment="Center" Margin="0,48,0,56">
-                        <Grid Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16">
-                            <Ellipse Width="64" Height="64" Fill="#0AAF52DE"/>
-                            <materialDesign:PackIcon Kind="AccountGroupOutline" Width="32" Height="32" Foreground="{StaticResource AccentBrush}"
-                                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Grid>
-                        <TextBlock Text="Chưa có khách hàng nào" HorizontalAlignment="Center"
-                                   FontFamily="{StaticResource AppFont}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
-                        <TextBlock Text="Thêm khách hàng để bắt đầu quản lý" HorizontalAlignment="Center"
-                                   FontFamily="{StaticResource AppFont}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,0"/>
-                    </StackPanel>
+                    <Grid>
+                        <ProgressBar IsIndeterminate="True" Height="4" Margin="0,16,0,0" VerticalAlignment="Top"
+                                     Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                        <ItemsControl ItemsSource="{Binding FilteredCustomers}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="Transparent" BorderBrush="#EEEEEE" BorderThickness="0,0,0,1">
+                                        <Grid Margin="0,12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="0.4*"/>
+                                                <ColumnDefinition Width="1.5*"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="1.3*"/>
+                                                <ColumnDefinition Width="1.5*"/>
+                                                <ColumnDefinition Width="0.8*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Id}" Grid.Column="0" Padding="20,0,12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" FontFamily="{StaticResource AppFont}"/>
+                                            <TextBlock Text="{Binding FullName}" Grid.Column="1" Padding="12,0" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding PhoneNumber}" Grid.Column="2" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Email}" Grid.Column="3" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Address}" Grid.Column="4" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <Button Style="{StaticResource AppleGhostButton}" Width="32" Height="32" Padding="0" Cursor="Hand" ToolTip="Chỉnh sửa"
+                                                        Command="{Binding DataContext.ShowEditFormCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}">
+                                                    <materialDesign:PackIcon Kind="PencilOutline" Width="16" Height="16" Foreground="{StaticResource PrimaryBrush}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource AppleGhostButton}" Width="32" Height="32" Padding="0" Margin="4,0,0,0" Cursor="Hand" ToolTip="Xóa"
+                                                        Command="{Binding DataContext.DeleteCustomerCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}">
+                                                    <materialDesign:PackIcon Kind="DeleteOutline" Width="16" Height="16" Foreground="{StaticResource ErrorBrush}"/>
+                                                </Button>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Empty State -->
+                        <StackPanel HorizontalAlignment="Center" Margin="0,48,0,56"
+                                    Visibility="{Binding HasNoData, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Grid Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16">
+                                <Ellipse Width="64" Height="64" Fill="#0AAF52DE"/>
+                                <materialDesign:PackIcon Kind="AccountGroupOutline" Width="32" Height="32" Foreground="{StaticResource AccentBrush}"
+                                                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                            <TextBlock Text="Chưa có khách hàng nào" HorizontalAlignment="Center"
+                                       FontFamily="{StaticResource AppFont}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <TextBlock Text="Thêm khách hàng để bắt đầu quản lý" HorizontalAlignment="Center"
+                                       FontFamily="{StaticResource AppFont}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,0"/>
+                        </StackPanel>
+                    </Grid>
                 </StackPanel>
             </Border>
 

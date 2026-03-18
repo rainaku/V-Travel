@@ -13,10 +13,11 @@
                     <TextBlock Text="Báo Cáo &amp; Thống Kê" Style="{StaticResource HeadingLargeStyle}"/>
                     <TextBlock Text="Tổng hợp dữ liệu kinh doanh" Style="{StaticResource CaptionStyle}" Margin="0,4,0,0"/>
                 </StackPanel>
-                <Button Style="{StaticResource AppleSecondaryButton}" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Button Style="{StaticResource AppleSecondaryButton}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Command="{Binding LoadReportCommand}">
                     <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="DownloadOutline" Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="Xuất báo cáo" VerticalAlignment="Center"/>
+                        <materialDesign:PackIcon Kind="Refresh" Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Làm mới" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
             </Grid>
@@ -26,46 +27,30 @@
                 <Border Style="{StaticResource StatCard}" Margin="0,0,10,0">
                     <StackPanel>
                         <TextBlock Text="Tổng Tour" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                        <TextBlock Text="0" Style="{StaticResource StatNumberStyle}"/>
+                        <TextBlock Text="{Binding TotalTours}" Style="{StaticResource StatNumberStyle}"/>
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource StatCard}" Margin="5,0,5,0">
                     <StackPanel>
                         <TextBlock Text="Tổng Booking" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                        <TextBlock Text="0" Style="{StaticResource StatNumberStyle}"/>
+                        <TextBlock Text="{Binding TotalBookings}" Style="{StaticResource StatNumberStyle}"/>
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource StatCard}" Margin="5,0,5,0">
                     <StackPanel>
                         <TextBlock Text="Doanh thu" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                        <TextBlock Text="0 ₫" FontFamily="{StaticResource AppFont}" FontSize="26" FontWeight="Bold" Foreground="{StaticResource SuccessBrush}"/>
+                        <TextBlock Text="{Binding TotalRevenue}" FontFamily="{StaticResource AppFont}" FontSize="26" FontWeight="Bold" Foreground="{StaticResource SuccessBrush}"/>
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource StatCard}" Margin="10,0,0,0">
                     <StackPanel>
                         <TextBlock Text="Tour nổi bật" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                        <TextBlock Text="—" Style="{StaticResource StatNumberStyle}" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        <TextBlock Text="{Binding TopTourName}" FontFamily="{StaticResource AppFont}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
                 </Border>
             </UniformGrid>
 
-            <!-- Chart Placeholder -->
-            <TextBlock Text="Biểu đồ doanh thu" Style="{StaticResource SubheadingStyle}" Margin="0,0,0,16"/>
-            <Border Style="{StaticResource AppleCard}" Height="300" Margin="0,0,0,24">
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Grid Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16">
-                        <Ellipse Width="64" Height="64" Fill="#0A007AFF"/>
-                        <materialDesign:PackIcon Kind="ChartAreaspline" Width="32" Height="32" Foreground="{StaticResource PrimaryBrush}"
-                                                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Grid>
-                    <TextBlock Text="Biểu đồ sẽ hiển thị khi có dữ liệu" HorizontalAlignment="Center"
-                               FontFamily="{StaticResource AppFont}" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}"/>
-                    <TextBlock Text="Kết nối dữ liệu từ Supabase để xem thống kê" HorizontalAlignment="Center"
-                               FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" Margin="0,4,0,0"/>
-                </StackPanel>
-            </Border>
-
-            <!-- Top Tours Placeholder -->
+            <!-- Top Tours Table -->
             <TextBlock Text="Tour phổ biến nhất" Style="{StaticResource SubheadingStyle}" Margin="0,0,0,16"/>
             <Border Style="{StaticResource AppleCard}" Padding="0">
                 <StackPanel>
@@ -85,10 +70,48 @@
                         <TextBlock Text="Doanh thu" Grid.Column="4" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
                     </Grid>
 
-                    <StackPanel HorizontalAlignment="Center" Margin="0,32,0,40">
-                        <TextBlock Text="Chưa có dữ liệu thống kê" HorizontalAlignment="Center"
-                                   FontFamily="{StaticResource AppFont}" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}"/>
-                    </StackPanel>
+                    <Grid>
+                        <ProgressBar IsIndeterminate="True" Height="4" Margin="0,16,0,0" VerticalAlignment="Top"
+                                     Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                        <ItemsControl ItemsSource="{Binding TopTours}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="Transparent" BorderBrush="#EEEEEE" BorderThickness="0,0,0,1">
+                                        <Grid Margin="0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="0.3*"/>
+                                                <ColumnDefinition Width="1.5*"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="0.8*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Rank}" Grid.Column="0" Padding="20,0,12,0" FontSize="13" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" VerticalAlignment="Center" FontFamily="{StaticResource AppFont}"/>
+                                            <TextBlock Text="{Binding TourName}" Grid.Column="1" Padding="12,0" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Destination}" Grid.Column="2" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding BookingCount}" Grid.Column="3" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Revenue}" Grid.Column="4" Padding="12,0" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource SuccessBrush}" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <StackPanel HorizontalAlignment="Center" Margin="0,32,0,40">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding TopTours.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Text="Chưa có dữ liệu thống kê" HorizontalAlignment="Center"
+                                       FontFamily="{StaticResource AppFont}" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
                 </StackPanel>
             </Border>
 

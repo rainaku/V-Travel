@@ -17,7 +17,6 @@
                     Padding="28,16">
                 <Grid>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <!-- Avatar -->
                         <Grid Width="40" Height="40" Margin="0,0,14,0">
                             <Ellipse Width="40" Height="40">
                                 <Ellipse.Fill>
@@ -83,70 +82,226 @@
 
                 <!-- Đặt Tour -->
                 <TabItem Header="🗺️  Đặt Tour">
-                    <Border Style="{StaticResource AppleCard}" Margin="0,16,0,0">
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Grid Width="72" Height="72" HorizontalAlignment="Center" Margin="0,0,0,16">
-                                <Ellipse Width="72" Height="72" Fill="#0A007AFF"/>
-                                <materialDesign:PackIcon Kind="MapSearchOutline" Width="36" Height="36" Foreground="{StaticResource PrimaryBrush}"
-                                                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Grid>
-                            <TextBlock Text="Đặt Tour Du Lịch" FontFamily="{StaticResource AppFont}" FontSize="18" FontWeight="SemiBold"
-                                       Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Chọn tour yêu thích và đặt chỗ ngay" FontFamily="{StaticResource AppFont}" FontSize="13"
-                                       Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,16,0,0">
+                        <StackPanel>
+                            <Border Style="{StaticResource AppleCard}" Padding="24">
+                                <StackPanel>
+                                    <TextBlock Text="Đặt Tour Du Lịch" FontFamily="{StaticResource AppFont}" FontSize="18" FontWeight="SemiBold"
+                                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16"/>
+
+                                    <StackPanel Margin="0,0,0,12">
+                                        <TextBlock Text="Chọn lịch khởi hành *" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                        <ComboBox ItemsSource="{Binding AvailableDepartures}" SelectedItem="{Binding SelectedDeparture}"
+                                                  FontFamily="{StaticResource AppFont}" FontSize="13"
+                                                  materialDesign:HintAssist.Hint="Chọn tour và ngày khởi hành">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock>
+                                                        <Run Text="{Binding Tour.Name, Mode=OneWay}"/>
+                                                        <Run Text=" | "/>
+                                                        <Run Text="{Binding StartDate, StringFormat={}{0:dd/MM/yyyy}, Mode=OneWay}"/>
+                                                        <Run Text=" | Còn "/>
+                                                        <Run Text="{Binding AvailableSlots, Mode=OneWay}"/>
+                                                        <Run Text=" chỗ"/>
+                                                    </TextBlock>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                    </StackPanel>
+
+                                    <StackPanel Margin="0,0,0,16">
+                                        <TextBlock Text="Số khách *" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                        <TextBox Text="{Binding BookingGuestCount, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
+                                                 materialDesign:HintAssist.Hint="Nhập số khách" Width="200" HorizontalAlignment="Left"/>
+                                    </StackPanel>
+
+                                    <Button Style="{StaticResource ApplePrimaryButton}" Content="Đặt Tour Ngay" Command="{Binding BookTourCommand}"
+                                            HorizontalAlignment="Left"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Tour Info Cards -->
+                            <TextBlock Text="Các tour đang mở" FontFamily="{StaticResource AppFont}" FontSize="16" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}" Margin="0,20,0,12"/>
+                            <ItemsControl ItemsSource="{Binding AvailableTours}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Style="{StaticResource AppleCard}" Padding="20" Margin="0,0,0,8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Name}" FontFamily="{StaticResource AppFont}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                                    <TextBlock FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0">
+                                                        <Run Text="{Binding Destination, Mode=OneWay}"/>
+                                                        <Run Text=" • "/>
+                                                        <Run Text="{Binding DurationDays, Mode=OneWay}"/>
+                                                        <Run Text=" ngày"/>
+                                                    </TextBlock>
+                                                    <TextBlock Text="{Binding Description}" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="1" Text="{Binding BasePrice, StringFormat={}{0:N0} đ}" FontFamily="{StaticResource AppFont}" FontSize="16"
+                                                           FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
-                    </Border>
+                    </ScrollViewer>
                 </TabItem>
 
                 <!-- Tour Của Tôi -->
                 <TabItem Header="✈️  Tour Của Tôi">
-                    <Border Style="{StaticResource AppleCard}" Margin="0,16,0,0">
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Grid Width="72" Height="72" HorizontalAlignment="Center" Margin="0,0,0,16">
-                                <Ellipse Width="72" Height="72" Fill="#0A34C759"/>
-                                <materialDesign:PackIcon Kind="TicketConfirmationOutline" Width="36" Height="36" Foreground="{StaticResource SuccessBrush}"
-                                                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Grid>
-                            <TextBlock Text="Tour Đã Đặt" FontFamily="{StaticResource AppFont}" FontSize="18" FontWeight="SemiBold"
-                                       Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Xem lại các tour đã đặt của bạn" FontFamily="{StaticResource AppFont}" FontSize="13"
-                                       Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,16,0,0">
+                        <StackPanel>
+                            <Border Style="{StaticResource AppleCard}" Padding="0">
+                                <StackPanel>
+                                    <Grid Background="#FAFAFA">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="0.4*"/>
+                                            <ColumnDefinition Width="1.5*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="0.6*"/>
+                                            <ColumnDefinition Width="0.8*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Border CornerRadius="16,16,0,0" Background="#FAFAFA" Grid.ColumnSpan="5"/>
+                                        <TextBlock Text="ID" Grid.Column="0" Padding="20,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                                        <TextBlock Text="Tour" Grid.Column="1" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                                        <TextBlock Text="Ngày đặt" Grid.Column="2" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                                        <TextBlock Text="Số khách" Grid.Column="3" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                                        <TextBlock Text="Trạng thái" Grid.Column="4" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                                    </Grid>
+
+                                    <ItemsControl ItemsSource="{Binding MyBookings}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="Transparent" BorderBrush="#EEEEEE" BorderThickness="0,0,0,1">
+                                                    <Grid Margin="0,12">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="0.4*"/>
+                                                            <ColumnDefinition Width="1.5*"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="0.6*"/>
+                                                            <ColumnDefinition Width="0.8*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="{Binding Id}" Grid.Column="0" Padding="20,0,12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" FontFamily="{StaticResource AppFont}"/>
+                                                        <TextBlock Text="{Binding Departure.Tour.Name}" Grid.Column="1" Padding="12,0" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="{Binding BookingDate, StringFormat={}{0:dd/MM/yyyy}}" Grid.Column="2" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding GuestCount}" Grid.Column="3" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding Status}" Grid.Column="4" Padding="12,0" FontSize="13" Foreground="{StaticResource WarningBrush}" VerticalAlignment="Center"/>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <!-- Empty state -->
+                                    <StackPanel HorizontalAlignment="Center" Margin="0,40,0,48">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding MyBookings.Count}" Value="0">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <Grid Width="72" Height="72" HorizontalAlignment="Center" Margin="0,0,0,16">
+                                            <Ellipse Width="72" Height="72" Fill="#0A34C759"/>
+                                            <materialDesign:PackIcon Kind="TicketConfirmationOutline" Width="36" Height="36" Foreground="{StaticResource SuccessBrush}"
+                                                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Grid>
+                                        <TextBlock Text="Chưa có tour nào" HorizontalAlignment="Center"
+                                                   FontFamily="{StaticResource AppFont}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                        <TextBlock Text="Đặt tour ở tab đầu tiên để bắt đầu" HorizontalAlignment="Center"
+                                                   FontFamily="{StaticResource AppFont}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,0"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
-                    </Border>
+                    </ScrollViewer>
                 </TabItem>
 
                 <!-- Các Tour V-Travel -->
                 <TabItem Header="🌏  Các Tour V-Travel">
-                    <Border Style="{StaticResource AppleCard}" Margin="0,16,0,0">
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Grid Width="72" Height="72" HorizontalAlignment="Center" Margin="0,0,0,16">
-                                <Ellipse Width="72" Height="72" Fill="#0AFF9500"/>
-                                <materialDesign:PackIcon Kind="CompassOutline" Width="36" Height="36" Foreground="{StaticResource WarningBrush}"
-                                                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Grid>
-                            <TextBlock Text="Khám Phá Tour" FontFamily="{StaticResource AppFont}" FontSize="18" FontWeight="SemiBold"
-                                       Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Duyệt các tour hấp dẫn từ Viet Travel" FontFamily="{StaticResource AppFont}" FontSize="13"
-                                       Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
-                        </StackPanel>
-                    </Border>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,16,0,0">
+                        <ItemsControl ItemsSource="{Binding AvailableTours}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource AppleCard}" Padding="24" Margin="0,0,0,12">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Name}" FontFamily="{StaticResource AppFont}" FontSize="17" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                                    <materialDesign:PackIcon Kind="MapMarkerOutline" Width="14" Height="14" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding Destination}" FontFamily="{StaticResource AppFont}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                    <TextBlock Text=" • " FontFamily="{StaticResource AppFont}" FontSize="13" Foreground="{StaticResource TextTertiaryBrush}"/>
+                                                    <materialDesign:PackIcon Kind="ClockOutline" Width="14" Height="14" Foreground="{StaticResource WarningBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                    <TextBlock FontFamily="{StaticResource AppFont}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}">
+                                                        <Run Text="{Binding DurationDays, Mode=OneWay}"/><Run Text=" ngày"/>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding Description}" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" Margin="0,8,0,0"
+                                                           TextWrapping="Wrap" MaxWidth="500" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                                <TextBlock Text="{Binding BasePrice, StringFormat={}{0:N0} đ}" FontFamily="{StaticResource AppFont}" FontSize="20"
+                                                           FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" HorizontalAlignment="Right"/>
+                                                <TextBlock Text="/người" FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="{StaticResource TextTertiaryBrush}" HorizontalAlignment="Right"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                 </TabItem>
 
                 <!-- Thông Tin Cá Nhân -->
                 <TabItem Header="👤  Thông Tin">
-                    <Border Style="{StaticResource AppleCard}" Margin="0,16,0,0">
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <Grid Width="72" Height="72" HorizontalAlignment="Center" Margin="0,0,0,16">
-                                <Ellipse Width="72" Height="72" Fill="#0AAF52DE"/>
-                                <materialDesign:PackIcon Kind="AccountEditOutline" Width="36" Height="36" Foreground="{StaticResource AccentBrush}"
-                                                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Grid>
-                            <TextBlock Text="Thông Tin Cá Nhân" FontFamily="{StaticResource AppFont}" FontSize="18" FontWeight="SemiBold"
-                                       Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Quản lý hồ sơ và thông tin cá nhân" FontFamily="{StaticResource AppFont}" FontSize="13"
-                                       Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
-                        </StackPanel>
-                    </Border>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,16,0,0">
+                        <Border Style="{StaticResource AppleCard}" Padding="28">
+                            <StackPanel MaxWidth="500" HorizontalAlignment="Left">
+                                <TextBlock Text="Thông Tin Cá Nhân" FontFamily="{StaticResource AppFont}" FontSize="18" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,20"/>
+
+                                <StackPanel Margin="0,0,0,16">
+                                    <TextBlock Text="Họ và tên" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                    <TextBox Text="{Binding InfoFullName, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
+                                             materialDesign:HintAssist.Hint="Nhập họ tên"/>
+                                </StackPanel>
+
+                                <StackPanel Margin="0,0,0,16">
+                                    <TextBlock Text="Số điện thoại" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                    <TextBox Text="{Binding InfoPhone, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
+                                             materialDesign:HintAssist.Hint="Nhập SĐT"/>
+                                </StackPanel>
+
+                                <StackPanel Margin="0,0,0,16">
+                                    <TextBlock Text="Email" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                    <TextBox Text="{Binding InfoEmail, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
+                                             materialDesign:HintAssist.Hint="Nhập email"/>
+                                </StackPanel>
+
+                                <StackPanel Margin="0,0,0,20">
+                                    <TextBlock Text="Địa chỉ" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                    <TextBox Text="{Binding InfoAddress, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
+                                             materialDesign:HintAssist.Hint="Nhập địa chỉ"/>
+                                </StackPanel>
+
+                                <Button Style="{StaticResource ApplePrimaryButton}" Content="Lưu thông tin" Command="{Binding SaveProfileCommand}"
+                                        HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Border>
+                    </ScrollViewer>
                 </TabItem>
             </TabControl>
         </Grid>
