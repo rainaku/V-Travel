@@ -87,7 +87,7 @@ namespace VietTravel.Data.Services
             }
 
             var fullNameParts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (fullNameParts.Length < 2 || fullNameParts.Any(p => p.Length < 2) || !FullNamePattern.IsMatch(fullName))
+            if (fullNameParts.Length < 2 || !FullNamePattern.IsMatch(fullName))
             {
                 message = "Họ tên chưa đúng định dạng.";
                 return false;
@@ -116,10 +116,9 @@ namespace VietTravel.Data.Services
 
             if (!password.Any(char.IsUpper) ||
                 !password.Any(char.IsLower) ||
-                !password.Any(char.IsDigit) ||
-                !password.Any(ch => !char.IsLetterOrDigit(ch)))
+                !password.Any(char.IsDigit))
             {
-                message = "Mật khẩu cần có chữ hoa, chữ thường, số và ký tự đặc biệt.";
+                message = "Mật khẩu cần có ít nhất chữ hoa, chữ thường và số.";
                 return false;
             }
 

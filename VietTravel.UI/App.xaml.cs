@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Windows;
+using VietTravel.UI.Helpers;
 
 namespace VietTravel.UI
 {
@@ -10,6 +11,12 @@ namespace VietTravel.UI
         {
             this.DispatcherUnhandledException += App_DispatcherUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+        }
+
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            SmoothScrollViewerHelper.EnableGlobalSmoothScroll();
+            base.OnStartup(e);
         }
 
         private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)

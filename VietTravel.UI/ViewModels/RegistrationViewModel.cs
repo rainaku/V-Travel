@@ -26,6 +26,9 @@ namespace VietTravel.UI.ViewModels
         public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
         public bool IsNotLoading => !IsLoading;
 
+        partial void OnErrorMessageChanged(string value) => OnPropertyChanged(nameof(HasError));
+        partial void OnIsLoadingChanged(bool value) => OnPropertyChanged(nameof(IsNotLoading));
+
         public RegistrationViewModel(MainViewModel mainViewModel)
         {
             _mainViewModel = mainViewModel;
@@ -99,9 +102,9 @@ namespace VietTravel.UI.ViewModels
             }
 
             var fullNameParts = FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (fullNameParts.Length < 2 || fullNameParts.Any(p => p.Length < 2))
+            if (fullNameParts.Length < 2)
             {
-                message = "Vui lòng nhập họ tên đầy đủ (ít nhất 2 từ, mỗi từ tối thiểu 2 ký tự).";
+                message = "Vui lòng nhập họ tên đầy đủ (ít nhất 2 từ).";
                 return false;
             }
 
@@ -140,10 +143,9 @@ namespace VietTravel.UI.ViewModels
 
             if (!Password.Any(char.IsUpper) ||
                 !Password.Any(char.IsLower) ||
-                !Password.Any(char.IsDigit) ||
-                !Password.Any(ch => !char.IsLetterOrDigit(ch)))
+                !Password.Any(char.IsDigit))
             {
-                message = "Mật khẩu cần có chữ hoa, chữ thường, số và ký tự đặc biệt.";
+                message = "Mật khẩu cần có ít nhất chữ hoa, chữ thường và số.";
                 return false;
             }
 
