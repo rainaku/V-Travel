@@ -17,7 +17,7 @@
                 <DropShadowEffect Color="#000000" BlurRadius="24" ShadowDepth="2" Opacity="0.12" Direction="270"/>
             </Border.Effect>
             
-            <Grid>
+            <Grid x:Name="MainContentClipHost" SizeChanged="MainContentClipHost_SizeChanged">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="44"/>
                     <RowDefinition Height="*"/>

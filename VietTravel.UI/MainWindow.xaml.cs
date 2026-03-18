@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 using VietTravel.UI.ViewModels;
 
 namespace VietTravel.UI
@@ -11,6 +12,15 @@ namespace VietTravel.UI
         {
             InitializeComponent();
             this.DataContext = new MainViewModel();
+        }
+
+        private void MainContentClipHost_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            const double cornerRadius = 16d;
+            MainContentClipHost.Clip = new RectangleGeometry(
+                new Rect(0, 0, MainContentClipHost.ActualWidth, MainContentClipHost.ActualHeight),
+                cornerRadius,
+                cornerRadius);
         }
 
         private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -47,3 +57,4 @@ namespace VietTravel.UI
         }
     }
 }
+

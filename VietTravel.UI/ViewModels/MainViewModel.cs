@@ -9,6 +9,7 @@ namespace VietTravel.UI.ViewModels
         private ObservableObject _currentViewModel;
 
         public User? CurrentUser { get; set; }
+        public bool IsLoginViewActive => CurrentViewModel is LoginViewModel;
 
         public MainViewModel()
         {
@@ -19,6 +20,11 @@ namespace VietTravel.UI.ViewModels
         public void NavigateTo(ObservableObject viewModel)
         {
             CurrentViewModel = viewModel;
+        }
+
+        partial void OnCurrentViewModelChanged(ObservableObject value)
+        {
+            OnPropertyChanged(nameof(IsLoginViewActive));
         }
     }
 }

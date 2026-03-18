@@ -710,17 +710,27 @@ namespace VietTravel.UI.ViewModels
                 }
 
                 var existingBookingsResp = await client.From<Booking>().Get();
-                var hasScheduleConflict = HasSameDepartureDateBooking(
+                var scheduleConflictType = GetDepartureDateConflictType(
                     existingBookingsResp.Models,
                     depResp.Models,
+                    tourResp.Models,
                     _customerProfile.Id,
-                    latestDeparture);
+                    latestDeparture,
+                    tour);
 
-                if (hasScheduleConflict)
+                if (scheduleConflictType == DepartureDateConflictType.DifferentDestination)
+                {
+                    ShowAppDialogInfo(
+                        "Không thể đặt tour",
+                        "Bạn đã có tour khác địa điểm trong cùng ngày khởi hành.\nVui lòng chọn lịch khác để tránh trùng lịch di chuyển.");
+                    return false;
+                }
+
+                if (scheduleConflictType == DepartureDateConflictType.SameDestination)
                 {
                     var confirmConflict = await ShowAppDialogConfirmationAsync(
                         "Cảnh báo trùng lịch",
-                        "Bạn đang có 1 tour có ngày khởi hành trùng với lịch đang đặt.\nBạn có muốn đặt tiếp không?",
+                        "Bạn đang có 1 tour cùng ngày khởi hành tại địa điểm này.\nBạn có muốn đặt tiếp không?",
                         confirmText: "Vẫn đặt",
                         cancelText: "Không");
 
@@ -802,11 +812,13 @@ namespace VietTravel.UI.ViewModels
             }
         }
 
-        private static bool HasSameDepartureDateBooking(
+        private static DepartureDateConflictType GetDepartureDateConflictType(
             System.Collections.Generic.IEnumerable<Booking> bookings,
             System.Collections.Generic.IEnumerable<Departure> departures,
+            System.Collections.Generic.IEnumerable<Tour> tours,
             int customerId,
-            Departure candidateDeparture)
+            Departure candidateDeparture,
+            Tour candidateTour)
         {
             var activeBookings = bookings.Where(b =>
                 b.CustomerId == customerId &&
@@ -814,7 +826,10 @@ namespace VietTravel.UI.ViewModels
                 b.Status != "Hủy");
 
             var departureById = departures.ToDictionary(d => d.Id);
+            var tourById = tours.ToDictionary(t => t.Id);
             var candidateStart = candidateDeparture.StartDate.Date;
+            var candidateDestination = candidateTour.Destination ?? string.Empty;
+            var hasSameDestinationConflict = false;
 
             foreach (var booking in activeBookings)
             {
@@ -823,13 +838,38 @@ namespace VietTravel.UI.ViewModels
                     continue;
                 }
 
-                if (existingDeparture.StartDate.Date == candidateStart)
+                if (existingDeparture.StartDate.Date != candidateStart)
                 {
-                    return true;
+                    continue;
                 }
+
+                if (!tourById.TryGetValue(existingDeparture.TourId, out var existingTour))
+                {
+                    continue;
+                }
+
+                if (IsSameDestination(existingTour.Destination, candidateDestination))
+                {
+                    hasSameDestinationConflict = true;
+                    continue;
+                }
+
+                return DepartureDateConflictType.DifferentDestination;
             }
 
-            return false;
+            if (hasSameDestinationConflict)
+            {
+                return DepartureDateConflictType.SameDestination;
+            }
+
+            return DepartureDateConflictType.None;
+        }
+
+        private enum DepartureDateConflictType
+        {
+            None = 0,
+            SameDestination = 1,
+            DifferentDestination = 2
         }
 
         private async Task<Customer?> ResolveCustomerProfileAsync(
