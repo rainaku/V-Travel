@@ -9,16 +9,22 @@
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         WindowStartupLocation="CenterScreen" MinHeight="860" MinWidth="1200"
         ResizeMode="CanResizeWithGrip"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Ideal"
+        TextOptions.TextRenderingMode="Auto"
         PreviewKeyDown="Window_OnPreviewKeyDown">
     
     <Grid Margin="10">
-        <!-- Main Container with shadow -->
-        <Border Background="{StaticResource BackgroundBrush}" CornerRadius="16">
+        <!-- Shadow layer kept separate to avoid blurring all window content -->
+        <Border Background="White" CornerRadius="16" IsHitTestVisible="False">
             <Border.Effect>
                 <DropShadowEffect Color="#000000" BlurRadius="24" ShadowDepth="2" Opacity="0.12" Direction="270"/>
             </Border.Effect>
-            
-            <Grid x:Name="MainContentClipHost" SizeChanged="MainContentClipHost_SizeChanged">
+        </Border>
+
+        <Border Background="{StaticResource BackgroundBrush}" CornerRadius="16" SnapsToDevicePixels="True">
+            <Grid x:Name="MainContentClipHost" SizeChanged="MainContentClipHost_SizeChanged" SnapsToDevicePixels="True">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="44"/>
                     <RowDefinition Height="*"/>
@@ -82,7 +88,7 @@
                 </Border>
                 
                 <!-- Content Area -->
-                <ContentControl Grid.Row="1" x:Name="MainContent" Content="{Binding CurrentViewModel}"/>
+                <ContentControl Grid.Row="1" x:Name="MainContent" Content="{Binding CurrentViewModel}" SnapsToDevicePixels="True"/>
 
                 <materialDesign:Snackbar Grid.RowSpan="2"
                                          MessageQueue="{Binding SnackbarMessageQueue}"

@@ -371,26 +371,7 @@ namespace VietTravel.UI.ViewModels
                 // Load tours
                 var tours = (await client.From<Tour>().Get()).Models ?? new List<Tour>();
 
-                var allTransports = (await client.From<Transport>().Get()).Models ?? new List<Transport>();
-                var allHotels = (await client.From<Hotel>().Get()).Models ?? new List<Hotel>();
-                var allAttractions = (await client.From<Attraction>().Get()).Models ?? new List<Attraction>();
-                var allTourTransports = (await client.From<TourTransport>().Get()).Models ?? new List<TourTransport>();
-                var allTourHotels = (await client.From<TourHotel>().Get()).Models ?? new List<TourHotel>();
-                var allTourAttractions = (await client.From<TourAttraction>().Get()).Models ?? new List<TourAttraction>();
-
-                foreach (var tour in tours)
-                {
-                    tour.TourTransports = allTourTransports.Where(x => x.TourId == tour.Id).ToList();
-                    foreach (var tx in tour.TourTransports) tx.Transport = allTransports.FirstOrDefault(t => t.Id == tx.TransportId)!;
-
-                    tour.TourHotels = allTourHotels.Where(x => x.TourId == tour.Id).ToList();
-                    foreach (var hx in tour.TourHotels) hx.Hotel = allHotels.FirstOrDefault(t => t.Id == hx.HotelId)!;
-
-                    tour.TourAttractions = allTourAttractions.Where(x => x.TourId == tour.Id).OrderBy(x => x.OrderIndex).ToList();
-                    foreach (var ax in tour.TourAttractions) ax.Attraction = allAttractions.FirstOrDefault(t => t.Id == ax.AttractionId)!;
-                }
-
-                // Chỉ đọc mapping từ database, không inject ngẫu nhiên trong ứng dụng.
+                // (Đã loại bỏ API fetch Transport/Hotel/Attraction để tối ưu hiệu suất, do View không hiển thị các thông tin này)
                 
                 // Stable and destination-aware tour thumbnails (direct JPEG URLs).
                 var displayTours = tours.Select((t, i) => new TourDisplayInfo
@@ -450,9 +431,10 @@ namespace VietTravel.UI.ViewModels
                     InfoEmail = _customerProfile.Email;
                     InfoAddress = _customerProfile.Address;
 
-                    // Load my bookings
-                    var bookings = (await client.From<Booking>().Get()).Models
+                    // Load my bookings (server-side filter for performance)
+                    var bookings = (await client.From<Booking>()
                         .Where(b => b.CustomerId == _customerProfile.Id)
+                        .Get()).Models
                         .OrderByDescending(b => b.BookingDate)
                         .ToList();
 
@@ -612,8 +594,8 @@ namespace VietTravel.UI.ViewModels
             {
                 var client = await SupabaseClientFactory.GetClientAsync();
 
-                var bookingResp = await client.From<Booking>().Get();
-                var booking = bookingResp.Models.FirstOrDefault(b => b.Id == bookingInfo.Booking.Id);
+                var bookingResp = await client.From<Booking>().Where(b => b.Id == bookingInfo.Booking.Id).Get();
+                var booking = bookingResp.Models.FirstOrDefault();
                 if (booking == null)
                 {
                     ShowAppDialogInfo("Lỗi", "Không tìm thấy booking.");
@@ -627,8 +609,8 @@ namespace VietTravel.UI.ViewModels
                     return;
                 }
 
-                var depResp = await client.From<Departure>().Get();
-                var departure = depResp.Models.FirstOrDefault(d => d.Id == booking.DepartureId);
+                var depResp = await client.From<Departure>().Where(d => d.Id == booking.DepartureId).Get();
+                var departure = depResp.Models.FirstOrDefault();
                 var cancelDisabledReason = GetCancelDisabledReason(booking, departure);
                 if (!string.IsNullOrWhiteSpace(cancelDisabledReason))
                 {
@@ -655,8 +637,8 @@ namespace VietTravel.UI.ViewModels
                 booking.User = null;
                 await client.From<Booking>().Update(booking);
 
-                var paymentResp = await client.From<Payment>().Get();
-                var payment = paymentResp.Models.FirstOrDefault(p => p.BookingId == booking.Id);
+                var paymentResp = await client.From<Payment>().Where(p => p.BookingId == booking.Id).Get();
+                var payment = paymentResp.Models.FirstOrDefault();
                 if (payment != null)
                 {
                     var previousStatus = payment.Status ?? string.Empty;
@@ -1014,8 +996,8 @@ namespace VietTravel.UI.ViewModels
 
                 if (_customerProfile == null) return false;
 
-                var depResp = await client.From<Departure>().Get();
-                latestDeparture = depResp.Models.FirstOrDefault(d => d.Id == SelectedDepartureInfo.Departure.Id);
+                var depResp = await client.From<Departure>().Where(d => d.Id == SelectedDepartureInfo.Departure.Id).Get();
+                latestDeparture = depResp.Models.FirstOrDefault();
                 if (latestDeparture == null)
                 {
                     ShowAppDialogInfo("Lỗi", "Không tìm thấy lịch khởi hành.");
@@ -1032,22 +1014,30 @@ namespace VietTravel.UI.ViewModels
                     return false;
                 }
 
-                var tourResp = await client.From<Tour>().Get();
-                var tour = tourResp.Models.FirstOrDefault(t => t.Id == latestDeparture.TourId);
+                var tourResp = await client.From<Tour>().Where(t => t.Id == latestDeparture.TourId).Get();
+                var tour = tourResp.Models.FirstOrDefault();
                 if (tour == null)
                 {
                     ShowAppDialogInfo("Lỗi", "Không tìm thấy thông tin tour.");
                     return false;
                 }
 
-                var existingBookingsResp = await client.From<Booking>().Get();
-                var scheduleConflictType = GetDepartureDateConflictType(
-                    existingBookingsResp.Models,
-                    depResp.Models,
-                    tourResp.Models,
-                    _customerProfile.Id,
-                    latestDeparture,
-                    tour);
+                var scheduleConflictType = DepartureDateConflictType.None;
+                foreach (var b in MyBookings)
+                {
+                    if (b.Status != "Đã hủy" && b.Status != "Hủy" && b.DepartureStartDate?.Date == latestDeparture.StartDate.Date)
+                    {
+                        if (IsSameDestination(b.Destination, tour.Destination))
+                        {
+                            scheduleConflictType = DepartureDateConflictType.SameDestination;
+                        }
+                        else
+                        {
+                            scheduleConflictType = DepartureDateConflictType.DifferentDestination;
+                            break;
+                        }
+                    }
+                }
 
                 if (scheduleConflictType == DepartureDateConflictType.DifferentDestination)
                 {
@@ -1143,65 +1133,7 @@ namespace VietTravel.UI.ViewModels
             }
         }
 
-        private static DepartureDateConflictType GetDepartureDateConflictType(
-            System.Collections.Generic.IEnumerable<Booking> bookings,
-            System.Collections.Generic.IEnumerable<Departure> departures,
-            System.Collections.Generic.IEnumerable<Tour> tours,
-            int customerId,
-            Departure candidateDeparture,
-            Tour candidateTour)
-        {
-            var activeBookings = bookings.Where(b =>
-                b.CustomerId == customerId &&
-                b.Status != "Đã hủy" &&
-                b.Status != "Hủy");
 
-            var departureById = departures.ToDictionary(d => d.Id);
-            var tourById = tours.ToDictionary(t => t.Id);
-            var candidateStart = candidateDeparture.StartDate.Date;
-            var candidateDestination = candidateTour.Destination ?? string.Empty;
-            var hasSameDestinationConflict = false;
-
-            foreach (var booking in activeBookings)
-            {
-                if (!departureById.TryGetValue(booking.DepartureId, out var existingDeparture))
-                {
-                    continue;
-                }
-
-                if (existingDeparture.StartDate.Date != candidateStart)
-                {
-                    continue;
-                }
-
-                if (!tourById.TryGetValue(existingDeparture.TourId, out var existingTour))
-                {
-                    continue;
-                }
-
-                if (IsSameDestination(existingTour.Destination, candidateDestination))
-                {
-                    hasSameDestinationConflict = true;
-                    continue;
-                }
-
-                return DepartureDateConflictType.DifferentDestination;
-            }
-
-            if (hasSameDestinationConflict)
-            {
-                return DepartureDateConflictType.SameDestination;
-            }
-
-            return DepartureDateConflictType.None;
-        }
-
-        private enum DepartureDateConflictType
-        {
-            None = 0,
-            SameDestination = 1,
-            DifferentDestination = 2
-        }
 
         private async Task<Customer?> ResolveCustomerProfileAsync(
             Supabase.Client client,
@@ -1460,6 +1392,12 @@ namespace VietTravel.UI.ViewModels
             "https://images.pexels.com/photos/2161467/pexels-photo-2161467.jpeg?auto=compress&cs=tinysrgb&w=1200"
         };
 
+        private enum DepartureDateConflictType
+        {
+            None = 0,
+            SameDestination = 1,
+            DifferentDestination = 2
+        }
     }
 
     // Display models for rich UI binding

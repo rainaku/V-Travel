@@ -24,6 +24,23 @@
             <SolidColorBrush x:Key="AppPrimaryAccent" Color="#007AFF"/>
             <Color x:Key="BlurShadowColor">#007AFF</Color>
 
+            <Style TargetType="Window">
+                <Setter Property="UseLayoutRounding" Value="True"/>
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="TextOptions.TextFormattingMode" Value="Ideal"/>
+                <Setter Property="TextOptions.TextRenderingMode" Value="Auto"/>
+            </Style>
+
+            <Style TargetType="FrameworkElement">
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="UseLayoutRounding" Value="True"/>
+            </Style>
+
+            <Style TargetType="TextBlock">
+                <Setter Property="TextOptions.TextFormattingMode" Value="Ideal"/>
+                <Setter Property="TextOptions.TextRenderingMode" Value="Auto"/>
+            </Style>
+
             <!-- DataTemplates: ViewModel => View mapping -->
             <DataTemplate DataType="{x:Type viewmodels:LoginViewModel}">
                 <views:LoginView />

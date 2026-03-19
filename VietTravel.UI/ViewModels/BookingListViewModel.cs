@@ -165,8 +165,8 @@ namespace VietTravel.UI.ViewModels
                 var client = await SupabaseClientFactory.GetClientAsync();
 
                 // Always re-check from database to avoid overbooking due to stale UI data.
-                var depResp = await client.From<Departure>().Get();
-                latestDeparture = depResp.Models.FirstOrDefault(d => d.Id == FormDeparture.Id);
+                var depResp = await client.From<Departure>().Where(d => d.Id == FormDeparture.Id).Get();
+                latestDeparture = depResp.Models.FirstOrDefault();
                 if (latestDeparture == null)
                 {
                     MessageBox.Show("Không tìm thấy lịch khởi hành.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -185,8 +185,8 @@ namespace VietTravel.UI.ViewModels
                     return;
                 }
 
-                var tourResp = await client.From<Tour>().Get();
-                var tour = tourResp.Models.FirstOrDefault(t => t.Id == latestDeparture.TourId);
+                var tourResp = await client.From<Tour>().Where(t => t.Id == latestDeparture.TourId).Get();
+                var tour = tourResp.Models.FirstOrDefault();
                 if (tour == null)
                 {
                     MessageBox.Show("Không tìm thấy thông tin tour của lịch khởi hành.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -277,8 +277,8 @@ namespace VietTravel.UI.ViewModels
             try
             {
                 var client = await SupabaseClientFactory.GetClientAsync();
-                var payResp = await client.From<Payment>().Get();
-                var payment = payResp.Models.FirstOrDefault(p => p.BookingId == booking.Id);
+                var payResp = await client.From<Payment>().Where(p => p.BookingId == booking.Id).Get();
+                var payment = payResp.Models.FirstOrDefault();
                 if (payment == null)
                 {
                     MessageBox.Show("Booking chưa có phiếu thanh toán.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -333,8 +333,8 @@ namespace VietTravel.UI.ViewModels
             {
                 var client = await SupabaseClientFactory.GetClientAsync();
 
-                var depResp = await client.From<Departure>().Get();
-                var departure = depResp.Models.FirstOrDefault(d => d.Id == booking.DepartureId);
+                var depResp = await client.From<Departure>().Where(d => d.Id == booking.DepartureId).Get();
+                var departure = depResp.Models.FirstOrDefault();
                 if (departure != null)
                 {
                     departure.AvailableSlots = Math.Min(departure.MaxSlots, departure.AvailableSlots + booking.GuestCount);
