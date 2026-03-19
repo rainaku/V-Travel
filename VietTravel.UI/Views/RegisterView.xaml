@@ -91,6 +91,45 @@
                                                  IsHitTestVisible="False"/>
                     </Grid>
 
+                    <!-- Phone Field -->
+                    <TextBlock Text="Số điện thoại" Margin="4,0,0,6"
+                               FontFamily="{StaticResource AppFont}" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                    <Grid Margin="0,0,0,14">
+                        <TextBox Text="{Binding PhoneNumber, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource AppleTextBox}" Padding="40,10,14,10"/>
+                        <materialDesign:PackIcon Kind="PhoneOutline" Width="18" Height="18"
+                                                 Foreground="{StaticResource TextTertiaryBrush}"
+                                                 VerticalAlignment="Center" Margin="14,0,0,0"
+                                                 IsHitTestVisible="False"/>
+                    </Grid>
+
+                    <!-- Email Field -->
+                    <TextBlock Text="Gmail" Margin="4,0,0,6"
+                               FontFamily="{StaticResource AppFont}" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                    <Grid Margin="0,0,0,14">
+                        <TextBox Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource AppleTextBox}" Padding="40,10,14,10"/>
+                        <materialDesign:PackIcon Kind="EmailOutline" Width="18" Height="18"
+                                                 Foreground="{StaticResource TextTertiaryBrush}"
+                                                 VerticalAlignment="Center" Margin="14,0,0,0"
+                                                 IsHitTestVisible="False"/>
+                    </Grid>
+
+                    <!-- Address Field -->
+                    <TextBlock Text="Địa chỉ" Margin="4,0,0,6"
+                               FontFamily="{StaticResource AppFont}" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                    <Grid Margin="0,0,0,14">
+                        <TextBox Text="{Binding Address, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource AppleTextBox}" Padding="40,10,14,10"/>
+                        <materialDesign:PackIcon Kind="MapMarkerOutline" Width="18" Height="18"
+                                                 Foreground="{StaticResource TextTertiaryBrush}"
+                                                 VerticalAlignment="Center" Margin="14,0,0,0"
+                                                 IsHitTestVisible="False"/>
+                    </Grid>
+
                     <!-- Password Field -->
                     <TextBlock Text="Mật khẩu" Margin="4,0,0,6"
                                FontFamily="{StaticResource AppFont}" FontSize="12" FontWeight="SemiBold"

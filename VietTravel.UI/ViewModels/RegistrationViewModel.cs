@@ -15,6 +15,9 @@ namespace VietTravel.UI.ViewModels
 
         [ObservableProperty] private string _fullName = "";
         [ObservableProperty] private string _username = "";
+        [ObservableProperty] private string _phoneNumber = "";
+        [ObservableProperty] private string _email = "";
+        [ObservableProperty] private string _address = "";
         [ObservableProperty] private string _password = "";
         [ObservableProperty] private string _confirmPassword = "";
         [ObservableProperty] private string _errorMessage = "";
@@ -22,6 +25,8 @@ namespace VietTravel.UI.ViewModels
         private static readonly Regex FullNamePattern = new(@"^[\p{L}\p{M}]+(?:[ '\-][\p{L}\p{M}]+)*$", RegexOptions.Compiled);
         private static readonly Regex EmailPattern = new(@"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         private static readonly Regex UsernamePattern = new(@"^[a-zA-Z0-9._-]{4,50}$", RegexOptions.Compiled);
+        private static readonly Regex VietnamMobilePattern = new(@"^0(?:3|5|7|8|9)\d{8}$", RegexOptions.Compiled);
+        private static readonly Regex AddressPattern = new(@"^[\p{L}\p{M}\d\s,./\-#]+$", RegexOptions.Compiled);
 
         public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
         public bool IsNotLoading => !IsLoading;
@@ -40,6 +45,9 @@ namespace VietTravel.UI.ViewModels
         {
             FullName = NormalizeWhitespace(FullName);
             Username = (Username ?? string.Empty).Trim();
+            Email = (Email ?? string.Empty).Trim();
+            Address = NormalizeWhitespace(Address);
+            PhoneNumber = NormalizeVietnamPhone(PhoneNumber);
 
             if (!TryValidateRegistrationInput(out var validationMessage))
             {
@@ -51,7 +59,7 @@ namespace VietTravel.UI.ViewModels
             ErrorMessage = "";
             try
             {
-                var newUser = await _authService.RegisterCustomerAsync(Username, Password, FullName);
+                var newUser = await _authService.RegisterCustomerAsync(Username, Password, FullName, PhoneNumber, Email, Address);
                 if (newUser != null)
                 {
                     MessageBox.Show("Đăng ký thành công! Vui lòng đăng nhập.", "Viet Travel", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -88,10 +96,13 @@ namespace VietTravel.UI.ViewModels
 
             if (string.IsNullOrWhiteSpace(FullName) ||
                 string.IsNullOrWhiteSpace(Username) ||
+                string.IsNullOrWhiteSpace(PhoneNumber) ||
+                string.IsNullOrWhiteSpace(Email) ||
+                string.IsNullOrWhiteSpace(Address) ||
                 string.IsNullOrWhiteSpace(Password) ||
                 string.IsNullOrWhiteSpace(ConfirmPassword))
             {
-                message = "Vui lòng nhập đầy đủ họ tên, tên đăng nhập và mật khẩu.";
+                message = "Vui lòng nhập đầy đủ họ tên, tên đăng nhập, số điện thoại, email, địa chỉ và mật khẩu.";
                 return false;
             }
 
@@ -126,6 +137,30 @@ namespace VietTravel.UI.ViewModels
             else if (!UsernamePattern.IsMatch(Username))
             {
                 message = "Tên đăng nhập phải 4-50 ký tự, chỉ gồm chữ, số, dấu chấm, gạch dưới hoặc gạch ngang.";
+                return false;
+            }
+
+            if (!VietnamMobilePattern.IsMatch(PhoneNumber))
+            {
+                message = "Số điện thoại chưa hợp lệ (định dạng VN: 03/05/07/08/09 + 8 số).";
+                return false;
+            }
+
+            if (Email.Length > 120 || !EmailPattern.IsMatch(Email) || Email.Contains("..", System.StringComparison.Ordinal))
+            {
+                message = "Email chưa hợp lệ (ví dụ: ten@email.com).";
+                return false;
+            }
+
+            if (Address.Length < 6 || Address.Length > 200)
+            {
+                message = "Địa chỉ phải từ 6 đến 200 ký tự.";
+                return false;
+            }
+
+            if (!AddressPattern.IsMatch(Address))
+            {
+                message = "Địa chỉ chứa ký tự không hợp lệ.";
                 return false;
             }
 
@@ -166,6 +201,22 @@ namespace VietTravel.UI.ViewModels
             }
 
             return Regex.Replace(value.Trim(), @"\s+", " ");
+        }
+
+        private static string NormalizeVietnamPhone(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var digits = new string(value.Where(char.IsDigit).ToArray());
+            if (digits.StartsWith("84", System.StringComparison.Ordinal))
+            {
+                digits = "0" + digits.Substring(2);
+            }
+
+            return digits;
         }
     }
 }

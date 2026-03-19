@@ -12,6 +12,8 @@ namespace VietTravel.Data.Services
         private static readonly Regex FullNamePattern = new(@"^[\p{L}\p{M}]+(?:[ '\-][\p{L}\p{M}]+)*$", RegexOptions.Compiled);
         private static readonly Regex UsernamePattern = new(@"^[a-zA-Z0-9._-]{4,50}$", RegexOptions.Compiled);
         private static readonly Regex EmailPattern = new(@"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        private static readonly Regex VietnamMobilePattern = new(@"^0(?:3|5|7|8|9)\d{8}$", RegexOptions.Compiled);
+        private static readonly Regex AddressPattern = new(@"^[\p{L}\p{M}\d\s,./\-#]+$", RegexOptions.Compiled);
 
         public static string HashPassword(string password)
         {
@@ -47,12 +49,21 @@ namespace VietTravel.Data.Services
             return null;
         }
 
-        public async Task<User?> RegisterCustomerAsync(string username, string password, string fullName)
+        public async Task<User?> RegisterCustomerAsync(
+            string username,
+            string password,
+            string fullName,
+            string phoneNumber,
+            string email,
+            string address)
         {
             fullName = NormalizeWhitespace(fullName);
             username = (username ?? string.Empty).Trim();
+            phoneNumber = NormalizeVietnamPhone(phoneNumber);
+            email = (email ?? string.Empty).Trim();
+            address = NormalizeWhitespace(address);
 
-            if (!IsValidRegistrationInfo(username, password, fullName, out var validationMessage))
+            if (!IsValidRegistrationInfo(username, password, fullName, phoneNumber, email, address, out var validationMessage))
             {
                 throw new InvalidOperationException(validationMessage);
             }
@@ -67,14 +78,49 @@ namespace VietTravel.Data.Services
                 IsActive = true
             };
             var response = await client.From<User>().Insert(user);
-            return response.Models.FirstOrDefault();
+            var createdUser = response.Models.FirstOrDefault();
+            if (createdUser == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                var customer = new Customer
+                {
+                    FullName = fullName,
+                    PhoneNumber = phoneNumber,
+                    Email = email,
+                    Address = address
+                };
+                await client.From<Customer>().Insert(customer);
+                return createdUser;
+            }
+            catch
+            {
+                // Keep user/customer creation as an all-or-nothing registration flow.
+                await client.From<User>().Where(u => u.Id == createdUser.Id).Delete();
+                throw;
+            }
         }
 
-        private static bool IsValidRegistrationInfo(string username, string password, string fullName, out string message)
+        private static bool IsValidRegistrationInfo(
+            string username,
+            string password,
+            string fullName,
+            string phoneNumber,
+            string email,
+            string address,
+            out string message)
         {
             message = string.Empty;
 
-            if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            if (string.IsNullOrWhiteSpace(fullName) ||
+                string.IsNullOrWhiteSpace(username) ||
+                string.IsNullOrWhiteSpace(phoneNumber) ||
+                string.IsNullOrWhiteSpace(email) ||
+                string.IsNullOrWhiteSpace(address) ||
+                string.IsNullOrWhiteSpace(password))
             {
                 message = "Thiếu thông tin đăng ký.";
                 return false;
@@ -108,6 +154,24 @@ namespace VietTravel.Data.Services
                 return false;
             }
 
+            if (!VietnamMobilePattern.IsMatch(phoneNumber))
+            {
+                message = "Số điện thoại chưa đúng định dạng.";
+                return false;
+            }
+
+            if (email.Length > 120 || !EmailPattern.IsMatch(email) || email.Contains("..", StringComparison.Ordinal))
+            {
+                message = "Email chưa đúng định dạng.";
+                return false;
+            }
+
+            if (address.Length < 6 || address.Length > 200 || !AddressPattern.IsMatch(address))
+            {
+                message = "Địa chỉ chưa đúng định dạng.";
+                return false;
+            }
+
             if (password.Length < 8 || password.Length > 64 || password.Any(char.IsWhiteSpace))
             {
                 message = "Mật khẩu phải từ 8-64 ký tự và không có khoảng trắng.";
@@ -133,6 +197,22 @@ namespace VietTravel.Data.Services
             }
 
             return Regex.Replace(value.Trim(), @"\s+", " ");
+        }
+
+        private static string NormalizeVietnamPhone(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var digits = new string(value.Where(char.IsDigit).ToArray());
+            if (digits.StartsWith("84", StringComparison.Ordinal))
+            {
+                digits = "0" + digits.Substring(2);
+            }
+
+            return digits;
         }
     }
 }

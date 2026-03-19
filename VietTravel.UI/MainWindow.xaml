@@ -5,9 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
-        Title="Viet Travel" Height="750" Width="1280"
+        Title="Viet Travel" Height="920" Width="1360"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
-        WindowStartupLocation="CenterScreen" MinHeight="650" MinWidth="1100"
+        WindowStartupLocation="CenterScreen" MinHeight="860" MinWidth="1200"
         ResizeMode="CanResizeWithGrip"
         PreviewKeyDown="Window_OnPreviewKeyDown">
     
