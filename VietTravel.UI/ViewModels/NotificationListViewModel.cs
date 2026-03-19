@@ -17,13 +17,16 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty]
         private bool _isRefreshing;
 
+        [ObservableProperty]
+        private int _unreadCount;
+
         public ReadOnlyObservableCollection<AppNotification> Notifications => _notificationCenter.Notifications;
-        public int UnreadCount => _notificationCenter.UnreadCount;
         public bool HasNoData => Notifications.Count == 0;
 
         public NotificationListViewModel(MainViewModel mainViewModel)
         {
             _notificationCenter = mainViewModel.NotificationCenter;
+            UnreadCount = _notificationCenter.UnreadCount;
             PropertyChangedEventManager.AddHandler(_notificationCenter, NotificationCenterOnPropertyChanged, string.Empty);
             CollectionChangedEventManager.AddHandler(Notifications, NotificationsOnCollectionChanged);
         }
@@ -63,7 +66,7 @@ namespace VietTravel.UI.ViewModels
         {
             if (e.PropertyName == nameof(NotificationCenterService.UnreadCount))
             {
-                OnPropertyChanged(nameof(UnreadCount));
+                UnreadCount = _notificationCenter.UnreadCount;
             }
         }
 

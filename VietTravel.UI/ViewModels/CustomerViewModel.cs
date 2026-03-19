@@ -93,6 +93,7 @@ namespace VietTravel.UI.ViewModels
         private static readonly Regex EmailPattern = new(@"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         private static readonly Regex VietnamMobilePattern = new(@"^0(?:3|5|7|8|9)\d{8}$", RegexOptions.Compiled);
         private static readonly Regex AddressPattern = new(@"^[\p{L}\p{M}\d\s,./\-#]+$", RegexOptions.Compiled);
+        private static readonly string[] CancelledBookingStatuses = { "Đã hủy", "Hủy" };
 
         public bool HasMoreToursToLoad => _loadedTourCount < _filteredTourCache.Count;
         public bool IsBookingModalOverlayVisible => IsBookingFormVisible && !IsPaymentModalVisible && !IsAppDialogVisible;
@@ -431,27 +432,36 @@ namespace VietTravel.UI.ViewModels
                     {
                         var dep = deps.FirstOrDefault(d => d.Id == b.DepartureId);
                         var tour = dep?.Tour;
+                        var cancelDisabledReason = GetCancelDisabledReason(b, dep);
                         MyBookings.Add(new BookingDisplayInfo
                         {
                             Booking = b,
                             TourName = tour?.Name ?? "N/A",
                             Destination = tour?.Destination ?? "",
                             DepartureDate = dep?.StartDate.ToString("dd/MM/yyyy") ?? "N/A",
+                            DepartureStartDate = dep?.StartDate,
                             BookingDateFormatted = b.BookingDate.ToString("dd/MM/yyyy"),
                             GuestCount = b.GuestCount,
                             Status = b.Status,
                             StatusColor = b.Status switch
                             {
                                 "Đã xác nhận" => "#34C759",
+                                "Đợi xác nhận" => "#5AC8FA",
                                 "Đã hủy" => "#FF3B30",
                                 "Hủy" => "#FF3B30",
                                 _ => "#FF9500"
-                            }
+                            },
+                            ShowCancelButton = !IsCancelledBookingStatus(b.Status),
+                            CanCancel = string.IsNullOrWhiteSpace(cancelDisabledReason),
+                            CancelDisabledReason = cancelDisabledReason
                         });
                     }
 
                     TotalBookingsCount = bookings.Count;
-                    PendingBookingsCount = bookings.Count(b => b.Status == "Chờ xử lý" || b.Status == "Chờ thanh toán");
+                    PendingBookingsCount = bookings.Count(b =>
+                        b.Status == "Chờ xử lý" ||
+                        b.Status == "Chờ thanh toán" ||
+                        b.Status == "Đợi xác nhận");
                     ConfirmedBookingsCount = bookings.Count(b => b.Status == "Đã xác nhận");
                 }
                 else
@@ -526,6 +536,119 @@ namespace VietTravel.UI.ViewModels
         }
 
         [RelayCommand]
+        private async Task CancelMyBookingAsync(BookingDisplayInfo? bookingInfo)
+        {
+            if (bookingInfo?.Booking == null)
+            {
+                return;
+            }
+
+            if (!bookingInfo.CanCancel)
+            {
+                ShowAppDialogInfo(
+                    "Không thể hủy tour",
+                    string.IsNullOrWhiteSpace(bookingInfo.CancelDisabledReason)
+                        ? "Booking hiện không thể hủy."
+                        : bookingInfo.CancelDisabledReason);
+                return;
+            }
+
+            var confirmCancel = await ShowAppDialogConfirmationAsync(
+                "Xác nhận hủy tour",
+                "Bạn có chắc chắn muốn hủy tour này?\nNếu đã thanh toán, hệ thống sẽ hoàn tiền và gửi thông báo cho bạn.",
+                confirmText: "Xác nhận hủy",
+                cancelText: "Giữ booking");
+
+            if (!confirmCancel)
+            {
+                return;
+            }
+
+            try
+            {
+                var client = await SupabaseClientFactory.GetClientAsync();
+
+                var bookingResp = await client.From<Booking>().Get();
+                var booking = bookingResp.Models.FirstOrDefault(b => b.Id == bookingInfo.Booking.Id);
+                if (booking == null)
+                {
+                    ShowAppDialogInfo("Lỗi", "Không tìm thấy booking.");
+                    return;
+                }
+
+                if (IsCancelledBookingStatus(booking.Status))
+                {
+                    ShowAppDialogInfo("Thông báo", "Booking đã được hủy trước đó.");
+                    await LoadDataAsync();
+                    return;
+                }
+
+                var depResp = await client.From<Departure>().Get();
+                var departure = depResp.Models.FirstOrDefault(d => d.Id == booking.DepartureId);
+                var cancelDisabledReason = GetCancelDisabledReason(booking, departure);
+                if (!string.IsNullOrWhiteSpace(cancelDisabledReason))
+                {
+                    ShowAppDialogInfo("Không thể hủy tour", cancelDisabledReason);
+                    await LoadDataAsync();
+                    return;
+                }
+
+                if (departure != null)
+                {
+                    departure.AvailableSlots = Math.Min(departure.MaxSlots, departure.AvailableSlots + booking.GuestCount);
+                    if (departure.Status != "Đóng")
+                    {
+                        departure.Status = departure.AvailableSlots > 0 ? "Mở bán" : "Hết chỗ";
+                    }
+
+                    departure.Tour = null;
+                    await client.From<Departure>().Update(departure);
+                }
+
+                booking.Status = "Đã hủy";
+                booking.Customer = null;
+                booking.Departure = null;
+                booking.User = null;
+                await client.From<Booking>().Update(booking);
+
+                var paymentResp = await client.From<Payment>().Get();
+                var payment = paymentResp.Models.FirstOrDefault(p => p.BookingId == booking.Id);
+                if (payment != null)
+                {
+                    var previousStatus = payment.Status ?? string.Empty;
+                    var shouldIssueRefund =
+                        payment.PaidAmount > 0 ||
+                        string.Equals(previousStatus, "Đợi xác nhận", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(previousStatus, "Đã cọc", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(previousStatus, "Đã thanh toán", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(previousStatus, "Đã thanh toán đủ", StringComparison.OrdinalIgnoreCase);
+
+                    if (shouldIssueRefund)
+                    {
+                        payment.Status = "Đã hoàn tiền";
+                        payment.PaidAmount = 0;
+                        payment.PaymentDate = DateTime.Now;
+                        payment.Booking = null;
+                        await client.From<Payment>().Update(payment);
+                        await _mainViewModel.NotificationCenter.NotifyPaymentStatusChangedAsync(
+                            payment,
+                            previousStatus,
+                            _mainViewModel.CurrentUser?.Id);
+                    }
+                }
+
+                ShowAppDialogInfo(
+                    "Đã hủy tour",
+                    "Booking đã được hủy thành công. Nếu booking đã thanh toán, thông báo hoàn tiền đã được gửi.");
+                await LoadDataAsync();
+            }
+            catch (Exception ex)
+            {
+                ShowAppDialogInfo("Lỗi", $"Không thể hủy booking: {ex.Message}");
+            }
+        }
+
+        [RelayCommand]
         private async Task BookTourAsync()
         {
             await ProceedToPaymentAsync();
@@ -572,20 +695,21 @@ namespace VietTravel.UI.ViewModels
             IsProcessingPayment = true;
             try
             {
-                var success = await CreateBookingAndPaymentAsync(guests, markAsPaid: true);
+                var success = await CreateBookingAndPaymentAsync(guests);
                 if (!success) return;
 
                 IsPaymentModalVisible = false;
                 IsBookingFormVisible = false;
 
                 ShowAppDialogInfo(
-                    "Thanh toán thành công",
-                    $"🎉 Thanh toán thành công!\n\n" +
+                    "Đã gửi thanh toán",
+                    $"🎉 Đã ghi nhận yêu cầu thanh toán.\n\n" +
                     $"Tour: {PaymentTourName}\n" +
                     $"Lịch đi: {PaymentScheduleText}\n" +
                     $"Số khách: {PaymentGuestText}\n" +
                     $"Tổng thanh toán: {PaymentTotalFormatted}\n\n" +
-                    "Booking đã hoàn tất.");
+                    "Trạng thái hiện tại: Đợi xác nhận.\n" +
+                    "Admin sẽ xác nhận và gửi thông báo cho bạn.");
 
                 await LoadDataAsync();
                 SelectedPage = "MyBookings";
@@ -737,6 +861,31 @@ namespace VietTravel.UI.ViewModels
             return digitsOnly;
         }
 
+        private static bool IsCancelledBookingStatus(string status)
+        {
+            return CancelledBookingStatuses.Any(s => string.Equals(s, status, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string GetCancelDisabledReason(Booking booking, Departure? departure)
+        {
+            if (IsCancelledBookingStatus(booking.Status))
+            {
+                return "Booking đã hủy nên không thể thao tác thêm.";
+            }
+
+            if (departure == null)
+            {
+                return "Không thể kiểm tra lịch khởi hành của booking này.";
+            }
+
+            if (departure.StartDate <= DateTime.Now.AddDays(3))
+            {
+                return "Không thể hủy tour trong vòng 3 ngày trước ngày khởi hành.";
+            }
+
+            return string.Empty;
+        }
+
         private bool CanLoadMoreTours()
         {
             return HasMoreToursToLoad && !_isLoadingMoreTours;
@@ -782,7 +931,7 @@ namespace VietTravel.UI.ViewModels
             }
         }
 
-        private async Task<bool> CreateBookingAndPaymentAsync(int guests, bool markAsPaid)
+        private async Task<bool> CreateBookingAndPaymentAsync(int guests)
         {
             if (SelectedDepartureInfo == null) return false;
 
@@ -899,7 +1048,7 @@ namespace VietTravel.UI.ViewModels
                     UserId = _mainViewModel.CurrentUser?.Id ?? 1,
                     BookingDate = DateTime.Now,
                     GuestCount = guests,
-                    Status = markAsPaid ? "Đã xác nhận" : "Chờ thanh toán"
+                    Status = "Đợi xác nhận"
                 };
 
                 var bookingResp = await client.From<Booking>().Insert(booking);
@@ -913,9 +1062,9 @@ namespace VietTravel.UI.ViewModels
                 {
                     BookingId = createdBooking.Id,
                     TotalAmount = totalAmount,
-                    PaidAmount = markAsPaid ? totalAmount : 0,
-                    Status = markAsPaid ? "Đã thanh toán đủ" : "Chưa thanh toán",
-                    PaymentDate = markAsPaid ? DateTime.Now : null,
+                    PaidAmount = totalAmount,
+                    Status = "Đợi xác nhận",
+                    PaymentDate = DateTime.Now,
                     PaymentMethod = "Chuyển khoản QR (Mock)"
                 };
                 await client.From<Payment>().Insert(payment);
@@ -1283,10 +1432,14 @@ namespace VietTravel.UI.ViewModels
         public string TourName { get; set; } = string.Empty;
         public string Destination { get; set; } = string.Empty;
         public string DepartureDate { get; set; } = string.Empty;
+        public DateTime? DepartureStartDate { get; set; }
         public string BookingDateFormatted { get; set; } = string.Empty;
         public int GuestCount { get; set; }
         public string Status { get; set; } = string.Empty;
         public string StatusColor { get; set; } = "#FF9500";
+        public bool ShowCancelButton { get; set; }
+        public bool CanCancel { get; set; }
+        public string CancelDisabledReason { get; set; } = string.Empty;
     }
 
     public class TourDisplayInfo

@@ -56,7 +56,7 @@ namespace VietTravel.UI.ViewModels
 
         private void UpdateStats()
         {
-            UnpaidCount = Payments.Count(p => p.Status == "Chưa thanh toán");
+            UnpaidCount = Payments.Count(p => p.Status == "Chưa thanh toán" || p.Status == "Đợi xác nhận");
             DepositCount = Payments.Count(p => p.Status == "Đã cọc");
             PaidCount = Payments.Count(p => p.Status == "Đã thanh toán đủ" || p.Status == "Đã thanh toán");
         }
@@ -99,6 +99,16 @@ namespace VietTravel.UI.ViewModels
                     return;
                 }
 
+                if (payment.Status == "Đợi xác nhận")
+                {
+                    MessageBox.Show(
+                        "Khoản thanh toán này đang ở trạng thái đợi xác nhận. Vui lòng dùng nút xác nhận thanh toán đủ.",
+                        "Thông báo",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+                }
+
                 payment.Status = "Đã cọc";
                 if (payment.PaidAmount <= 0)
                 {
@@ -109,8 +119,8 @@ namespace VietTravel.UI.ViewModels
 
                 var client = await SupabaseClientFactory.GetClientAsync();
                 await client.From<Payment>().Update(payment);
-                await MoveBookingToPendingReviewAsync(client, payment.BookingId);
-                NotificationCenterService.Instance.NotifyPaymentStatusChanged(payment, previousStatus);
+                var booking = await UpdateBookingStatusAsync(client, payment.BookingId, "Chờ xử lý");
+                await NotificationCenterService.Instance.NotifyPaymentStatusChangedAsync(payment, previousStatus, booking?.UserId);
                 await LoadDataAsync();
             }
             catch (Exception ex)
@@ -125,6 +135,11 @@ namespace VietTravel.UI.ViewModels
             if (payment == null) return;
             try
             {
+                if (payment.Status == "Đã thanh toán đủ" || payment.Status == "Đã thanh toán")
+                {
+                    return;
+                }
+
                 var previousStatus = payment.Status;
                 payment.Status = "Đã thanh toán đủ";
                 payment.PaidAmount = payment.TotalAmount;
@@ -133,8 +148,8 @@ namespace VietTravel.UI.ViewModels
 
                 var client = await SupabaseClientFactory.GetClientAsync();
                 await client.From<Payment>().Update(payment);
-                await MoveBookingToPendingReviewAsync(client, payment.BookingId);
-                NotificationCenterService.Instance.NotifyPaymentStatusChanged(payment, previousStatus);
+                var booking = await UpdateBookingStatusAsync(client, payment.BookingId, "Đã xác nhận");
+                await NotificationCenterService.Instance.NotifyPaymentStatusChangedAsync(payment, previousStatus, booking?.UserId);
                 await LoadDataAsync();
             }
             catch (Exception ex)
@@ -143,18 +158,20 @@ namespace VietTravel.UI.ViewModels
             }
         }
 
-        private static async Task MoveBookingToPendingReviewAsync(Supabase.Client client, int bookingId)
+        private static async Task<Booking?> UpdateBookingStatusAsync(Supabase.Client client, int bookingId, string targetStatus)
         {
             var bookingResp = await client.From<Booking>().Get();
             var booking = bookingResp.Models.FirstOrDefault(b => b.Id == bookingId);
-            if (booking == null) return;
-            if (booking.Status == "Đã xác nhận" || booking.Status == "Đã hủy" || booking.Status == "Hủy") return;
+            if (booking == null) return null;
+            if (booking.Status == "Đã hủy" || booking.Status == "Hủy") return booking;
+            if (booking.Status == targetStatus) return booking;
 
-            booking.Status = "Chờ xử lý";
+            booking.Status = targetStatus;
             booking.Customer = null;
             booking.Departure = null;
             booking.User = null;
             await client.From<Booking>().Update(booking);
+            return booking;
         }
     }
 }

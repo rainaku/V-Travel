@@ -6,6 +6,9 @@ namespace VietTravel.UI.Models
     public partial class AppNotification : ObservableObject
     {
         [ObservableProperty]
+        private int _databaseId;
+
+        [ObservableProperty]
         private Guid _id = Guid.NewGuid();
 
         [ObservableProperty]

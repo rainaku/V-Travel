@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using VietTravel.Core.Models;
 using VietTravel.Data;
+using VietTravel.UI.Services;
 
 namespace VietTravel.UI.ViewModels
 {
@@ -65,7 +66,10 @@ namespace VietTravel.UI.ViewModels
         private void UpdateStats()
         {
             TotalBookings = Bookings.Count;
-            PendingCount = Bookings.Count(b => b.Status == "Chờ xử lý" || b.Status == "Chờ thanh toán");
+            PendingCount = Bookings.Count(b =>
+                b.Status == "Chờ xử lý" ||
+                b.Status == "Chờ thanh toán" ||
+                b.Status == "Đợi xác nhận");
             ConfirmedCount = Bookings.Count(b => b.Status == "Đã xác nhận");
             CancelledCount = Bookings.Count(b => b.Status == "Đã hủy" || b.Status == "Hủy");
         }
@@ -279,12 +283,24 @@ namespace VietTravel.UI.ViewModels
 
                 var hasValidPayment = payment.Status == "Đã cọc"
                                       || payment.Status == "Đã thanh toán đủ"
-                                      || payment.Status == "Đã thanh toán";
+                                      || payment.Status == "Đã thanh toán"
+                                      || payment.Status == "Đợi xác nhận";
                 if (!hasValidPayment)
                 {
                     MessageBox.Show("Cần thanh toán cọc hoặc thanh toán đủ trước khi xác nhận booking.",
                         "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
+                }
+
+                if (payment.Status == "Đợi xác nhận")
+                {
+                    var previousStatus = payment.Status;
+                    payment.Status = "Đã thanh toán đủ";
+                    payment.PaidAmount = payment.TotalAmount;
+                    payment.PaymentDate = DateTime.Now;
+                    payment.Booking = null;
+                    await client.From<Payment>().Update(payment);
+                    await NotificationCenterService.Instance.NotifyPaymentStatusChangedAsync(payment, previousStatus, booking.UserId);
                 }
 
                 booking.Status = "Đã xác nhận";

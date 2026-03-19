@@ -12,7 +12,7 @@
                     <TextBlock Text="Thông báo" Style="{StaticResource HeadingLargeStyle}"/>
                     <TextBlock Style="{StaticResource CaptionStyle}" Margin="0,4,0,0">
                         <Run Text="Bạn có "/>
-                        <Run Text="{Binding UnreadCount}"/>
+                        <Run Text="{Binding UnreadCount, Mode=OneWay}"/>
                         <Run Text=" thông báo chưa đọc"/>
                     </TextBlock>
                 </StackPanel>

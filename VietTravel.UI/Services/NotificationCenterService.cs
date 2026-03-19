@@ -17,6 +17,8 @@ namespace VietTravel.UI.Services
     {
         private static readonly Lazy<NotificationCenterService> _lazy = new(() => new NotificationCenterService());
         private static readonly string[] PaidStatuses = { "Đã cọc", "Đã thanh toán", "Đã thanh toán đủ" };
+        private static readonly string[] RefundedStatuses = { "Đã hoàn tiền" };
+        private static readonly string[] AdminPendingReviewStatuses = { "Đợi xác nhận" };
         private static readonly TimeSpan DuplicateWindow = TimeSpan.FromMinutes(3);
         private const int MaxNotifications = 100;
 
@@ -31,6 +33,10 @@ namespace VietTravel.UI.Services
         private bool _isPolling;
         private int _currentUserId;
         private string _currentRole = string.Empty;
+        private bool IsCustomerRole => string.Equals(_currentRole, "Customer", StringComparison.OrdinalIgnoreCase);
+        private bool IsAdminOrEmployeeRole =>
+            string.Equals(_currentRole, "Admin", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(_currentRole, "Employee", StringComparison.OrdinalIgnoreCase);
 
         [ObservableProperty]
         private int _unreadCount;
@@ -71,6 +77,7 @@ namespace VietTravel.UI.Services
             _currentRole = currentUser.Role ?? string.Empty;
             _isStarted = true;
 
+            await LoadPersistedNotificationsAsync();
             await PollAsync(isInitialSnapshot: true);
             _pollingTimer.Start();
         }
@@ -114,6 +121,7 @@ namespace VietTravel.UI.Services
 
             notification.IsRead = true;
             RecalculateUnreadCount();
+            _ = PersistReadStateAsync(notification);
         }
 
         public void MarkAllAsRead()
@@ -121,6 +129,7 @@ namespace VietTravel.UI.Services
             foreach (var notification in _notifications.Where(n => !n.IsRead))
             {
                 notification.IsRead = true;
+                _ = PersistReadStateAsync(notification);
             }
 
             RecalculateUnreadCount();
@@ -137,11 +146,16 @@ namespace VietTravel.UI.Services
 
         public void ClearAllNotifications()
         {
+            if (_isStarted && _currentUserId > 0)
+            {
+                _ = ClearPersistedNotificationsAsync();
+            }
+
             _notifications.Clear();
             UnreadCount = 0;
         }
 
-        public void NotifyPaymentStatusChanged(Payment payment, string previousStatus)
+        public async Task NotifyPaymentStatusChangedAsync(Payment payment, string previousStatus, int? targetUserId = null)
         {
             if (payment == null)
             {
@@ -154,18 +168,69 @@ namespace VietTravel.UI.Services
                 return;
             }
 
-            if (!PaidStatuses.Any(s => string.Equals(s, payment.Status, StringComparison.OrdinalIgnoreCase)))
+            var status = payment.Status ?? string.Empty;
+            var isPaidLike = PaidStatuses.Any(s => string.Equals(s, status, StringComparison.OrdinalIgnoreCase));
+            var isRefunded = RefundedStatuses.Any(s => string.Equals(s, status, StringComparison.OrdinalIgnoreCase));
+            var isPendingReview = AdminPendingReviewStatuses.Any(s => string.Equals(s, status, StringComparison.OrdinalIgnoreCase));
+
+            if (IsCustomerRole)
+            {
+                if (isPaidLike)
+                {
+                    PushCustomerPaymentNotification(payment, status, isInitialSnapshot: false, isRefund: false);
+                }
+                else if (isRefunded)
+                {
+                    PushCustomerPaymentNotification(payment, status, isInitialSnapshot: false, isRefund: true);
+                }
+
+                return;
+            }
+
+            if (IsAdminOrEmployeeRole && isPendingReview)
+            {
+                PushAdminPaymentReviewNotification(payment, status, isInitialSnapshot: false);
+            }
+
+            if (!IsAdminOrEmployeeRole || (!isPaidLike && !isRefunded))
             {
                 return;
             }
 
-            var title = "Xác nhận thanh toán";
-            var message = $"Booking BK-{payment.BookingId} đã cập nhật trạng thái: {payment.Status}.";
-            PushNotification(
+            var resolvedTargetUserId = targetUserId.GetValueOrDefault();
+            if (resolvedTargetUserId <= 0)
+            {
+                try
+                {
+                    var client = await SupabaseClientFactory.GetClientAsync();
+                    var bookingResponse = await client.From<Booking>().Get();
+                    var booking = bookingResponse.Models.FirstOrDefault(b => b.Id == payment.BookingId);
+                    resolvedTargetUserId = booking?.UserId ?? 0;
+                }
+                catch
+                {
+                    resolvedTargetUserId = 0;
+                }
+            }
+
+            if (resolvedTargetUserId <= 0)
+            {
+                return;
+            }
+
+            var title = isRefunded ? "Hoàn tiền" : "Xác nhận thanh toán";
+            var message = isRefunded
+                ? $"Booking BK-{payment.BookingId} đã xác nhận hủy và hoàn tiền cho bạn."
+                : $"Booking BK-{payment.BookingId} đã cập nhật trạng thái: {status}.";
+            var category = isRefunded ? "Hoàn tiền" : "Thanh toán";
+            var deduplicationKey = $"payment:{payment.Id}:{status}";
+
+            await PushNotificationToUserAsync(
+                resolvedTargetUserId,
                 title,
                 message,
-                category: "Thanh toán",
-                deduplicationKey: $"payment:{payment.Id}:{payment.Status}");
+                category,
+                deduplicationKey);
         }
 
         private async void PollingTimerOnTick(object? sender, EventArgs e)
@@ -237,28 +302,142 @@ namespace VietTravel.UI.Services
             {
                 var currentStatus = payment.Status ?? string.Empty;
                 var isPaidLike = PaidStatuses.Any(s => string.Equals(s, currentStatus, StringComparison.OrdinalIgnoreCase));
+                var isRefunded = RefundedStatuses.Any(s => string.Equals(s, currentStatus, StringComparison.OrdinalIgnoreCase));
+                var isPendingReview = AdminPendingReviewStatuses.Any(s => string.Equals(s, currentStatus, StringComparison.OrdinalIgnoreCase));
 
                 if (_paymentStatusById.TryGetValue(payment.Id, out var oldStatus))
                 {
-                    if (!string.Equals(oldStatus, currentStatus, StringComparison.OrdinalIgnoreCase) && isPaidLike)
+                    if (string.Equals(oldStatus, currentStatus, StringComparison.OrdinalIgnoreCase))
                     {
-                        PushNotification(
-                            "Xác nhận thanh toán",
-                            $"Booking BK-{payment.BookingId} đã cập nhật trạng thái: {currentStatus}.",
-                            category: "Thanh toán",
-                            deduplicationKey: $"payment:{payment.Id}:{currentStatus}");
+                        _paymentStatusById[payment.Id] = currentStatus;
+                        continue;
+                    }
+
+                    if (IsCustomerRole)
+                    {
+                        if (isPaidLike)
+                        {
+                            PushCustomerPaymentNotification(payment, currentStatus, isInitialSnapshot, isRefund: false);
+                        }
+                        else if (isRefunded)
+                        {
+                            PushCustomerPaymentNotification(payment, currentStatus, isInitialSnapshot, isRefund: true);
+                        }
+                    }
+                    else if (IsAdminOrEmployeeRole && isPendingReview)
+                    {
+                        PushAdminPaymentReviewNotification(payment, currentStatus, isInitialSnapshot);
                     }
                 }
-                else if (!isInitialSnapshot && isPaidLike)
+                else
                 {
-                    PushNotification(
-                        "Xác nhận thanh toán",
-                        $"Booking BK-{payment.BookingId} vừa được ghi nhận: {currentStatus}.",
-                        category: "Thanh toán",
-                        deduplicationKey: $"payment:new:{payment.Id}:{currentStatus}");
+                    if (IsCustomerRole)
+                    {
+                        if (isPaidLike)
+                        {
+                            PushCustomerPaymentNotification(payment, currentStatus, isInitialSnapshot, isRefund: false);
+                        }
+                        else if (isRefunded)
+                        {
+                            PushCustomerPaymentNotification(payment, currentStatus, isInitialSnapshot, isRefund: true);
+                        }
+                    }
+                    else if (IsAdminOrEmployeeRole && isPendingReview)
+                    {
+                        PushAdminPaymentReviewNotification(payment, currentStatus, isInitialSnapshot);
+                    }
                 }
 
                 _paymentStatusById[payment.Id] = currentStatus;
+            }
+        }
+
+        private void PushCustomerPaymentNotification(Payment payment, string status, bool isInitialSnapshot, bool isRefund)
+        {
+            if (isInitialSnapshot)
+            {
+                return;
+            }
+
+            if (isRefund)
+            {
+                PushNotification(
+                    "Hoàn tiền",
+                    $"Booking BK-{payment.BookingId} đã xác nhận hủy và hoàn tiền cho bạn.",
+                    category: "Hoàn tiền",
+                    deduplicationKey: $"payment:{payment.Id}:{status}");
+                return;
+            }
+
+            PushNotification(
+                "Xác nhận thanh toán",
+                $"Booking BK-{payment.BookingId} đã cập nhật trạng thái: {status}.",
+                category: "Thanh toán",
+                deduplicationKey: $"payment:{payment.Id}:{status}");
+        }
+
+        private void PushAdminPaymentReviewNotification(Payment payment, string status, bool isInitialSnapshot)
+        {
+            if (isInitialSnapshot)
+            {
+                return;
+            }
+
+            PushNotification(
+                "Yêu cầu xác nhận thanh toán",
+                $"Booking BK-{payment.BookingId} đang ở trạng thái {status}.",
+                category: "Duyệt thanh toán",
+                deduplicationKey: $"payment:review:{payment.Id}:{status}");
+        }
+
+        private async Task PushNotificationToUserAsync(
+            int userId,
+            string title,
+            string message,
+            string category,
+            string deduplicationKey)
+        {
+            if (userId <= 0)
+            {
+                return;
+            }
+
+            if (_isStarted && _currentUserId == userId)
+            {
+                PushNotification(title, message, category, deduplicationKey);
+                return;
+            }
+
+            try
+            {
+                var client = await SupabaseClientFactory.GetClientAsync();
+                var existingResponse = await client
+                    .From<UserNotification>()
+                    .Where(n => n.UserId == userId)
+                    .Where(n => n.DeduplicationKey == deduplicationKey)
+                    .Get();
+
+                if (existingResponse.Models.Any())
+                {
+                    return;
+                }
+
+                var record = new UserNotification
+                {
+                    UserId = userId,
+                    Title = title,
+                    Message = message,
+                    Category = category,
+                    CreatedAt = DateTime.Now,
+                    IsRead = false,
+                    DeduplicationKey = deduplicationKey
+                };
+
+                await client.From<UserNotification>().Insert(record);
+            }
+            catch
+            {
+                // Cross-user notification persistence is best-effort only.
             }
         }
 
@@ -301,6 +480,196 @@ namespace VietTravel.UI.Services
             }
         }
 
+        private async Task LoadPersistedNotificationsAsync()
+        {
+            if (!_isStarted || _currentUserId <= 0)
+            {
+                return;
+            }
+
+            try
+            {
+                var client = await SupabaseClientFactory.GetClientAsync();
+                var response = await client
+                    .From<UserNotification>()
+                    .Where(n => n.UserId == _currentUserId)
+                    .Get();
+
+                var persistedNotifications = response.Models
+                    .OrderByDescending(n => n.CreatedAt)
+                    .Take(MaxNotifications)
+                    .ToList();
+
+                foreach (var item in _notifications)
+                {
+                    item.PropertyChanged -= OnNotificationPropertyChanged;
+                }
+
+                _notifications.Clear();
+                foreach (var persisted in persistedNotifications)
+                {
+                    var appNotification = new AppNotification
+                    {
+                        DatabaseId = persisted.Id,
+                        Title = persisted.Title,
+                        Message = persisted.Message,
+                        Category = persisted.Category,
+                        CreatedAt = persisted.CreatedAt,
+                        IsRead = persisted.IsRead,
+                        DeduplicationKey = persisted.DeduplicationKey
+                    };
+
+                    _notifications.Add(appNotification);
+                    if (!string.IsNullOrWhiteSpace(appNotification.DeduplicationKey))
+                    {
+                        _recentPushByKey[appNotification.DeduplicationKey] = appNotification.CreatedAt;
+                    }
+                }
+
+                RecalculateUnreadCount();
+            }
+            catch
+            {
+                // Persisted notifications are best-effort only.
+            }
+        }
+
+        private async Task PersistNotificationAsync(AppNotification notification)
+        {
+            if (!_isStarted || _currentUserId <= 0 || notification.DatabaseId > 0)
+            {
+                return;
+            }
+
+            var userId = _currentUserId;
+
+            try
+            {
+                var client = await SupabaseClientFactory.GetClientAsync();
+                if (!string.IsNullOrWhiteSpace(notification.DeduplicationKey))
+                {
+                    var existingResponse = await client
+                        .From<UserNotification>()
+                        .Where(n => n.UserId == userId)
+                        .Where(n => n.DeduplicationKey == notification.DeduplicationKey)
+                        .Get();
+
+                    var existing = existingResponse.Models
+                        .OrderByDescending(n => n.CreatedAt)
+                        .FirstOrDefault();
+                    if (existing != null)
+                    {
+                        notification.DatabaseId = existing.Id;
+                        return;
+                    }
+                }
+
+                var record = new UserNotification
+                {
+                    UserId = userId,
+                    Title = notification.Title,
+                    Message = notification.Message,
+                    Category = notification.Category,
+                    CreatedAt = notification.CreatedAt,
+                    IsRead = notification.IsRead,
+                    DeduplicationKey = notification.DeduplicationKey
+                };
+
+                var insertResponse = await client.From<UserNotification>().Insert(record);
+                var created = insertResponse.Models.FirstOrDefault();
+                if (created != null)
+                {
+                    notification.DatabaseId = created.Id;
+                }
+            }
+            catch
+            {
+                // Persisted notifications are best-effort only.
+            }
+        }
+
+        private async Task PersistReadStateAsync(AppNotification notification)
+        {
+            if (!_isStarted || _currentUserId <= 0)
+            {
+                return;
+            }
+
+            var userId = _currentUserId;
+
+            try
+            {
+                var client = await SupabaseClientFactory.GetClientAsync();
+                if (notification.DatabaseId > 0)
+                {
+                    var updateById = new UserNotification
+                    {
+                        Id = notification.DatabaseId,
+                        UserId = userId,
+                        Title = notification.Title,
+                        Message = notification.Message,
+                        Category = notification.Category,
+                        CreatedAt = notification.CreatedAt,
+                        IsRead = notification.IsRead,
+                        DeduplicationKey = notification.DeduplicationKey
+                    };
+
+                    await client.From<UserNotification>().Update(updateById);
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(notification.DeduplicationKey))
+                {
+                    return;
+                }
+
+                var existingResponse = await client
+                    .From<UserNotification>()
+                    .Where(n => n.UserId == userId)
+                    .Where(n => n.DeduplicationKey == notification.DeduplicationKey)
+                    .Get();
+
+                var existing = existingResponse.Models
+                    .OrderByDescending(n => n.CreatedAt)
+                    .FirstOrDefault();
+                if (existing == null)
+                {
+                    return;
+                }
+
+                existing.IsRead = notification.IsRead;
+                await client.From<UserNotification>().Update(existing);
+                notification.DatabaseId = existing.Id;
+            }
+            catch
+            {
+                // Persisted notifications are best-effort only.
+            }
+        }
+
+        private async Task ClearPersistedNotificationsAsync()
+        {
+            if (!_isStarted || _currentUserId <= 0)
+            {
+                return;
+            }
+
+            var userId = _currentUserId;
+
+            try
+            {
+                var client = await SupabaseClientFactory.GetClientAsync();
+                await client
+                    .From<UserNotification>()
+                    .Where(n => n.UserId == userId)
+                    .Delete();
+            }
+            catch
+            {
+                // Persisted notifications are best-effort only.
+            }
+        }
+
         private void PushNotification(string title, string message, string category, string deduplicationKey)
         {
             var now = DateTime.Now;
@@ -317,6 +686,7 @@ namespace VietTravel.UI.Services
 
             var notification = new AppNotification
             {
+                DatabaseId = 0,
                 Title = title,
                 Message = message,
                 Category = category,
@@ -333,6 +703,7 @@ namespace VietTravel.UI.Services
 
             RecalculateUnreadCount();
             NotificationPushed?.Invoke(notification);
+            _ = PersistNotificationAsync(notification);
         }
 
         private void PruneDeduplicationCache(DateTime now)
