@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using Postgrest.Attributes;
 using Postgrest.Models;
 
@@ -25,13 +26,20 @@ namespace VietTravel.Core.Models
         [Column("destination")]
         public string Destination { get; set; } = string.Empty;
 
+        // Optional field. Ignore in payload for backward compatibility with older DB schemas.
+        [JsonIgnore]
+        public string TourType { get; set; } = "Tiêu chuẩn";
+
         [Column("image_url")]
         public string ImageUrl { get; set; } = string.Empty;
 
+        [JsonIgnore]
         public List<TourTransport> TourTransports { get; set; } = new();
 
+        [JsonIgnore]
         public List<TourHotel> TourHotels { get; set; } = new();
 
+        [JsonIgnore]
         public List<TourAttraction> TourAttractions { get; set; } = new();
     }
 }

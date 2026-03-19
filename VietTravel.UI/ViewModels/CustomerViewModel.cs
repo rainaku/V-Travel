@@ -23,6 +23,7 @@ namespace VietTravel.UI.ViewModels
     {
         private readonly MainViewModel _mainViewModel;
         private readonly CloudinaryImageService _cloudinaryImageService = new();
+        private readonly PromoCodeService _promoCodeService = new();
 
         public string FullName => _mainViewModel.CurrentUser?.FullName ?? "Khách Hàng";
         public string UserInitials => GetInitials(FullName);
@@ -54,6 +55,12 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private string _paymentTourName = string.Empty;
         [ObservableProperty] private string _paymentScheduleText = string.Empty;
         [ObservableProperty] private string _paymentGuestText = string.Empty;
+        [ObservableProperty] private string _paymentOriginalAmountFormatted = "0 đ";
+        [ObservableProperty] private string _paymentDiscountAmountFormatted = "0 đ";
+        [ObservableProperty] private string _promoCodeInput = string.Empty;
+        [ObservableProperty] private string _promoCodeStatusMessage = string.Empty;
+        [ObservableProperty] private bool _isPromoCodeStatusSuccess = false;
+        [ObservableProperty] private string _appliedPromoCode = string.Empty;
         [ObservableProperty] private bool _isProcessingPayment = false;
         [ObservableProperty] private bool _isAppDialogVisible = false;
         [ObservableProperty] private string _appDialogTitle = string.Empty;
@@ -123,9 +130,33 @@ namespace VietTravel.UI.ViewModels
             ApplyDepartureFilter();
             OnPropertyChanged(nameof(IsBookDestinationFilterActive));
         }
+        partial void OnBookingGuestCountChanged(string value)
+        {
+            if (!string.IsNullOrWhiteSpace(AppliedPromoCode))
+            {
+                IsPromoCodeStatusSuccess = false;
+                PromoCodeStatusMessage = "Số khách thay đổi, vui lòng kiểm tra lại mã giảm giá.";
+                AppliedPromoCode = string.Empty;
+            }
+        }
         partial void OnIsBookingFormVisibleChanged(bool value) => NotifyOverlayVisibilityStateChanged();
         partial void OnIsPaymentModalVisibleChanged(bool value) => NotifyOverlayVisibilityStateChanged();
         partial void OnIsAppDialogVisibleChanged(bool value) => NotifyOverlayVisibilityStateChanged();
+        partial void OnPromoCodeInputChanged(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                ClearPromoCodeStatus(clearCodeInput: false);
+                return;
+            }
+
+            if (!string.Equals(AppliedPromoCode, PromoCodeService.NormalizeCode(value), StringComparison.Ordinal))
+            {
+                IsPromoCodeStatusSuccess = false;
+                PromoCodeStatusMessage = "Mã đã thay đổi, vui lòng kiểm tra lại.";
+                AppliedPromoCode = string.Empty;
+            }
+        }
         partial void OnIsUploadingAvatarChanged(bool value)
         {
             OnPropertyChanged(nameof(ChangeAvatarButtonText));
@@ -438,6 +469,12 @@ namespace VietTravel.UI.ViewModels
                         .OrderByDescending(b => b.BookingDate)
                         .ToList();
 
+                    var bookingIdSet = bookings.Select(b => b.Id).ToHashSet();
+                    var paymentByBookingId = ((await client.From<Payment>().Get()).Models ?? new List<Payment>())
+                        .Where(p => bookingIdSet.Contains(p.BookingId))
+                        .GroupBy(p => p.BookingId)
+                        .ToDictionary(g => g.Key, g => g.OrderByDescending(p => p.Id).First());
+
                     MyBookings.Clear();
                     foreach (var b in bookings)
                     {
@@ -450,7 +487,11 @@ namespace VietTravel.UI.ViewModels
                             .ToString("dd/MM/yyyy") ?? "N/A";
                         var guideId = dep != null ? assignments.FirstOrDefault(a => a.DepartureId == dep.Id)?.GuideUserId : null;
                         var guideName = guideId != null ? users.FirstOrDefault(u => u.Id == guideId)?.FullName : null;
-                        var price = tour?.BasePrice ?? 0;
+                        paymentByBookingId.TryGetValue(b.Id, out var payment);
+                        var basePricePerGuest = tour?.BasePrice ?? 0;
+                        var fallbackTotalAmount = basePricePerGuest * b.GuestCount;
+                        var paidTotalAmount = payment?.TotalAmount ?? fallbackTotalAmount;
+                        var price = b.GuestCount > 0 ? paidTotalAmount / b.GuestCount : paidTotalAmount;
                         var cancelDisabledReason = GetCancelDisabledReason(b, dep);
                         MyBookings.Add(new BookingDisplayInfo
                         {
@@ -510,6 +551,10 @@ namespace VietTravel.UI.ViewModels
         {
             SelectedDepartureInfo = info;
             BookingGuestCount = "1";
+            PaymentOriginalAmountFormatted = "0 đ";
+            PaymentDiscountAmountFormatted = "0 đ";
+            PaymentTotalFormatted = "0 đ";
+            ClearPromoCodeStatus(clearCodeInput: true);
             IsBookingFormVisible = true;
             IsPaymentModalVisible = false;
             SelectedPage = "Book";
@@ -559,6 +604,7 @@ namespace VietTravel.UI.ViewModels
         {
             IsBookingFormVisible = false;
             IsPaymentModalVisible = false;
+            ClearPromoCodeStatus(clearCodeInput: true);
         }
 
         [RelayCommand]
@@ -687,6 +733,26 @@ namespace VietTravel.UI.ViewModels
         }
 
         [RelayCommand]
+        private async Task CheckPromoCodeAsync()
+        {
+            if (!TryValidateBookingInput(out var guests) || SelectedDepartureInfo == null)
+            {
+                return;
+            }
+
+            var tour = await ResolveSelectedTourAsync(SelectedDepartureInfo.Departure.TourId);
+            if (tour == null)
+            {
+                ShowAppDialogInfo("Lỗi", "Không tìm thấy thông tin tour để kiểm tra mã.");
+                return;
+            }
+
+            var originalAmount = tour.BasePrice * guests;
+            var promoResult = await ValidatePromoCodeForOrderAsync(tour, originalAmount, showDialogOnFailure: true);
+            UpdatePaymentSummary(originalAmount, promoResult, SelectedDepartureInfo.Departure.Id, guests);
+        }
+
+        [RelayCommand]
         private async Task ProceedToPaymentAsync()
         {
             if (!TryValidateBookingInput(out var guests) || SelectedDepartureInfo == null)
@@ -694,16 +760,24 @@ namespace VietTravel.UI.ViewModels
                 return;
             }
 
-            var total = SelectedDepartureInfo.Price * guests;
+            var tour = await ResolveSelectedTourAsync(SelectedDepartureInfo.Departure.TourId);
+            if (tour == null)
+            {
+                ShowAppDialogInfo("Lỗi", "Không tìm thấy thông tin tour.");
+                return;
+            }
+
+            var total = tour.BasePrice * guests;
+            var promoResult = await ValidatePromoCodeForOrderAsync(tour, total, showDialogOnFailure: true);
+            if (!string.IsNullOrWhiteSpace(PromoCodeInput) && (promoResult == null || !promoResult.IsValid))
+            {
+                return;
+            }
+
             PaymentTourName = SelectedDepartureInfo.TourName;
             PaymentScheduleText = $"{SelectedDepartureInfo.StartDateFormatted} - {SelectedDepartureInfo.EndDateFormatted}";
-            PaymentGuestText = $"{guests} khách";
-            PaymentTotalFormatted = $"{total:N0} đ";
-
-            var qrPayload = $"VIETTRAVEL|DEP:{SelectedDepartureInfo.Departure.Id}|GUEST:{guests}|AMT:{total:0}|{DateTime.Now:yyyyMMddHHmmss}";
-            PaymentQrImageUrl = $"https://quickchart.io/qr?size=280&text={Uri.EscapeDataString(qrPayload)}";
+            UpdatePaymentSummary(total, promoResult, SelectedDepartureInfo.Departure.Id, guests);
             IsPaymentModalVisible = true;
-            await Task.CompletedTask;
         }
 
         [RelayCommand]
@@ -733,17 +807,89 @@ namespace VietTravel.UI.ViewModels
                     $"Tour: {PaymentTourName}\n" +
                     $"Lịch đi: {PaymentScheduleText}\n" +
                     $"Số khách: {PaymentGuestText}\n" +
+                    $"Tạm tính: {PaymentOriginalAmountFormatted}\n" +
+                    $"Giảm giá: {PaymentDiscountAmountFormatted}\n" +
                     $"Tổng thanh toán: {PaymentTotalFormatted}\n\n" +
                     "Trạng thái hiện tại: Đợi xác nhận.\n" +
                     "Admin sẽ xác nhận và gửi thông báo cho bạn.");
 
                 await LoadDataAsync();
                 SelectedPage = "MyBookings";
+                ClearPromoCodeStatus(clearCodeInput: true);
             }
             finally
             {
                 IsProcessingPayment = false;
             }
+        }
+
+        private async Task<Tour?> ResolveSelectedTourAsync(int tourId)
+        {
+            var inMemoryTour = SelectedDepartureInfo?.Departure?.Tour;
+            if (inMemoryTour != null && inMemoryTour.Id == tourId)
+            {
+                return inMemoryTour;
+            }
+
+            var client = await SupabaseClientFactory.GetClientAsync();
+            return (await client.From<Tour>().Where(t => t.Id == tourId).Get()).Models.FirstOrDefault();
+        }
+
+        private async Task<PromoValidationResult?> ValidatePromoCodeForOrderAsync(
+            Tour tour,
+            decimal orderAmount,
+            bool showDialogOnFailure)
+        {
+            if (string.IsNullOrWhiteSpace(PromoCodeInput))
+            {
+                ClearPromoCodeStatus(clearCodeInput: false);
+                return null;
+            }
+
+            var client = await SupabaseClientFactory.GetClientAsync();
+            var result = await _promoCodeService.ValidateAsync(client, PromoCodeInput, new PromoValidationContext
+            {
+                CustomerId = _customerProfile?.Id ?? 0,
+                UserId = _mainViewModel.CurrentUser?.Id,
+                TourId = tour.Id,
+                TourType = tour.TourType,
+                OrderAmount = orderAmount,
+                Now = DateTime.Now
+            });
+
+            if (result.IsValid)
+            {
+                AppliedPromoCode = result.NormalizedCode;
+                IsPromoCodeStatusSuccess = true;
+                PromoCodeStatusMessage = $"Áp dụng thành công mã {result.NormalizedCode}. Giảm {result.DiscountAmount:N0} đ.";
+                PromoCodeInput = result.NormalizedCode;
+                return result;
+            }
+
+            AppliedPromoCode = string.Empty;
+            IsPromoCodeStatusSuccess = false;
+            PromoCodeStatusMessage = result.Reason;
+
+            if (showDialogOnFailure)
+            {
+                ShowAppDialogInfo("Mã giảm giá không hợp lệ", result.Reason);
+            }
+
+            return result;
+        }
+
+        private void UpdatePaymentSummary(decimal originalAmount, PromoValidationResult? promoResult, int departureId, int guests)
+        {
+            var discountAmount = promoResult != null && promoResult.IsValid ? promoResult.DiscountAmount : 0;
+            var finalAmount = Math.Max(originalAmount - discountAmount, 0);
+
+            PaymentGuestText = $"{guests} khách";
+            PaymentOriginalAmountFormatted = $"{originalAmount:N0} đ";
+            PaymentDiscountAmountFormatted = $"-{discountAmount:N0} đ";
+            PaymentTotalFormatted = $"{finalAmount:N0} đ";
+
+            var qrPayload = $"VIETTRAVEL|DEP:{departureId}|GUEST:{guests}|AMT:{finalAmount:0}|{DateTime.Now:yyyyMMddHHmmss}";
+            PaymentQrImageUrl = $"https://quickchart.io/qr?size=280&text={Uri.EscapeDataString(qrPayload)}";
         }
 
         private bool TryValidateBookingInput(out int guests)
@@ -846,6 +992,18 @@ namespace VietTravel.UI.ViewModels
             }
 
             return true;
+        }
+
+        private void ClearPromoCodeStatus(bool clearCodeInput)
+        {
+            if (clearCodeInput)
+            {
+                PromoCodeInput = string.Empty;
+            }
+
+            PromoCodeStatusMessage = string.Empty;
+            IsPromoCodeStatusSuccess = false;
+            AppliedPromoCode = string.Empty;
         }
 
         private void NormalizeBookingInputValues()
@@ -966,6 +1124,10 @@ namespace VietTravel.UI.ViewModels
             string originalDepartureStatus = string.Empty;
             bool hasReservedSlots = false;
             int createdBookingId = 0;
+            PromoValidationResult? promoValidation = null;
+            decimal originalAmount = 0;
+            decimal discountAmount = 0;
+            decimal finalAmount = 0;
 
             try
             {
@@ -1061,6 +1223,36 @@ namespace VietTravel.UI.ViewModels
                     }
                 }
 
+                originalAmount = tour.BasePrice * guests;
+                if (!string.IsNullOrWhiteSpace(PromoCodeInput))
+                {
+                    promoValidation = await _promoCodeService.ValidateAsync(client, PromoCodeInput, new PromoValidationContext
+                    {
+                        CustomerId = _customerProfile.Id,
+                        UserId = _mainViewModel.CurrentUser?.Id,
+                        TourId = tour.Id,
+                        TourType = tour.TourType,
+                        OrderAmount = originalAmount,
+                        Now = DateTime.Now
+                    });
+
+                    if (!promoValidation.IsValid)
+                    {
+                        IsPromoCodeStatusSuccess = false;
+                        PromoCodeStatusMessage = promoValidation.Reason;
+                        ShowAppDialogInfo("Mã giảm giá không hợp lệ", promoValidation.Reason);
+                        return false;
+                    }
+
+                    IsPromoCodeStatusSuccess = true;
+                    PromoCodeStatusMessage = $"Áp dụng thành công mã {promoValidation.NormalizedCode}. Giảm {promoValidation.DiscountAmount:N0} đ.";
+                    AppliedPromoCode = promoValidation.NormalizedCode;
+                }
+
+                discountAmount = promoValidation?.DiscountAmount ?? 0;
+                finalAmount = Math.Max(originalAmount - discountAmount, 0);
+                UpdatePaymentSummary(originalAmount, promoValidation, latestDeparture.Id, guests);
+
                 originalAvailableSlots = latestDeparture.AvailableSlots;
                 originalDepartureStatus = latestDeparture.Status;
 
@@ -1091,17 +1283,32 @@ namespace VietTravel.UI.ViewModels
                     throw new InvalidOperationException("Không lấy được dữ liệu booking sau khi tạo.");
 
                 createdBookingId = createdBooking.Id;
-                var totalAmount = tour.BasePrice * guests;
                 var payment = new Payment
                 {
                     BookingId = createdBooking.Id,
-                    TotalAmount = totalAmount,
-                    PaidAmount = totalAmount,
+                    OriginalAmount = originalAmount,
+                    DiscountAmount = discountAmount,
+                    TotalAmount = finalAmount,
+                    PaidAmount = finalAmount,
+                    PromoCodeId = promoValidation?.PromoCode?.Id,
+                    PromoCode = promoValidation?.NormalizedCode ?? string.Empty,
                     Status = "Đợi xác nhận",
                     PaymentDate = DateTime.Now,
                     PaymentMethod = "Chuyển khoản QR (Mock)"
                 };
                 await client.From<Payment>().Insert(payment);
+
+                if (promoValidation != null && promoValidation.IsValid)
+                {
+                    await _promoCodeService.RecordUsageAsync(
+                        client,
+                        promoValidation,
+                        createdBooking.Id,
+                        _customerProfile.Id,
+                        _mainViewModel.CurrentUser?.Id,
+                        originalAmount,
+                        finalAmount);
+                }
 
                 return true;
             }

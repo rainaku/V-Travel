@@ -31,6 +31,9 @@
         <DataTemplate DataType="{x:Type viewmodels:PaymentListViewModel}">
             <views:PaymentListView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:PromoCodeManagementViewModel}">
+            <views:PromoCodeManagementView/>
+        </DataTemplate>
         <DataTemplate DataType="{x:Type viewmodels:NotificationListViewModel}">
             <views:NotificationListView/>
         </DataTemplate>
@@ -166,6 +169,15 @@
                                 <StackPanel Orientation="Horizontal">
                                     <materialDesign:PackIcon Kind="CreditCardOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="Thanh Toán" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton Style="{StaticResource SidebarButton}"
+                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Promotions, Mode=OneWay}"
+                                         Command="{Binding NavigateToPageCommand}" CommandParameter="Promotions">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="TicketOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Mã giảm giá" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </RadioButton>
 

@@ -39,6 +39,7 @@
                             <RowDefinition/>
                             <RowDefinition/>
                             <RowDefinition/>
+                            <RowDefinition/>
                         </Grid.RowDefinitions>
 
                         <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,12">
@@ -60,12 +61,18 @@
                         </StackPanel>
 
                         <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,12">
+                            <TextBlock Text="Loại tour" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding FormTourType, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
+                                     materialDesign:HintAssist.Hint="VD: Nghỉ dưỡng, Mạo hiểm, Gia đình"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,0,12">
                             <TextBlock Text="Số ngày *" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
                             <TextBox Text="{Binding FormDurationDays, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
                                      materialDesign:HintAssist.Hint="VD: 3"/>
                         </StackPanel>
 
-                        <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,0,0,12">
+                        <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,0,0,12">
                             <TextBlock Text="Hình ảnh tour (URL)" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -83,7 +90,7 @@
                             </Grid>
                         </StackPanel>
 
-                        <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,0,0,12">
+                        <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,0,0,12">
                             <TextBlock Text="Mô tả" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
                             <TextBox Text="{Binding FormDescription, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
                                      materialDesign:HintAssist.Hint="Mô tả ngắn về tour"
@@ -130,19 +137,21 @@
                     <Grid Background="#FAFAFA">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="0.4*"/>
-                            <ColumnDefinition Width="1.5*"/>
-                            <ColumnDefinition Width="1.2*"/>
+                            <ColumnDefinition Width="1.4*"/>
+                            <ColumnDefinition Width="1*"/>
+                            <ColumnDefinition Width="1*"/>
                             <ColumnDefinition Width="0.8*"/>
                             <ColumnDefinition Width="1*"/>
                             <ColumnDefinition Width="0.8*"/>
                         </Grid.ColumnDefinitions>
-                        <Border CornerRadius="16,16,0,0" Background="#FAFAFA" Grid.ColumnSpan="6"/>
+                        <Border CornerRadius="16,16,0,0" Background="#FAFAFA" Grid.ColumnSpan="7"/>
                         <TextBlock Text="ID" Grid.Column="0" Padding="20,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
                         <TextBlock Text="Tên Tour" Grid.Column="1" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
                         <TextBlock Text="Điểm đến" Grid.Column="2" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
-                        <TextBlock Text="Thời gian" Grid.Column="3" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
-                        <TextBlock Text="Giá cơ bản" Grid.Column="4" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
-                        <TextBlock Text="Hành động" Grid.Column="5" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Loại tour" Grid.Column="3" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                        <TextBlock Text="Thời gian" Grid.Column="4" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                        <TextBlock Text="Giá cơ bản" Grid.Column="5" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                        <TextBlock Text="Hành động" Grid.Column="6" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}" HorizontalAlignment="Center"/>
                     </Grid>
 
                     <Grid>
@@ -158,8 +167,9 @@
                                         <Grid Margin="0,12">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="0.4*"/>
-                                                <ColumnDefinition Width="1.5*"/>
-                                                <ColumnDefinition Width="1.2*"/>
+                                                <ColumnDefinition Width="1.4*"/>
+                                                <ColumnDefinition Width="1*"/>
+                                                <ColumnDefinition Width="1*"/>
                                                 <ColumnDefinition Width="0.8*"/>
                                                 <ColumnDefinition Width="1*"/>
                                                 <ColumnDefinition Width="0.8*"/>
@@ -168,10 +178,11 @@
                                             <TextBlock Text="{Binding Id}" Grid.Column="0" Padding="20,0,12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" FontFamily="{StaticResource AppFont}"/>
                                             <TextBlock Text="{Binding Name}" Grid.Column="1" Padding="12,0" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                             <TextBlock Text="{Binding Destination}" Grid.Column="2" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                                            <TextBlock Text="{Binding DurationDays, StringFormat={}{0} ngày}" Grid.Column="3" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
-                                            <TextBlock Text="{Binding BasePrice, StringFormat={}{0:N0} đ}" Grid.Column="4" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding TourType}" Grid.Column="3" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding DurationDays, StringFormat={}{0} ngày}" Grid.Column="4" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding BasePrice, StringFormat={}{0:N0} đ}" Grid.Column="5" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                                             
-                                            <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                                 <Button Style="{StaticResource AppleGhostButton}" Width="32" Height="32" Padding="0" Cursor="Hand" ToolTip="Chỉnh sửa"
                                                         Command="{Binding DataContext.ShowEditFormCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                         CommandParameter="{Binding}">

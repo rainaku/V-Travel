@@ -28,6 +28,7 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private string _formName = string.Empty;
         [ObservableProperty] private string _formDescription = string.Empty;
         [ObservableProperty] private string _formDestination = string.Empty;
+        [ObservableProperty] private string _formTourType = "Tiêu chuẩn";
         [ObservableProperty] private string _formBasePrice = string.Empty;
         [ObservableProperty] private string _formDurationDays = string.Empty;
         [ObservableProperty] private string _formImageUrl = string.Empty;
@@ -120,6 +121,7 @@ namespace VietTravel.UI.ViewModels
             FormName = string.Empty;
             FormDescription = string.Empty;
             FormDestination = string.Empty;
+            FormTourType = "Tiêu chuẩn";
             FormBasePrice = string.Empty;
             FormDurationDays = string.Empty;
             FormImageUrl = string.Empty;
@@ -136,6 +138,7 @@ namespace VietTravel.UI.ViewModels
             FormName = tour.Name;
             FormDescription = tour.Description;
             FormDestination = tour.Destination;
+            FormTourType = string.IsNullOrWhiteSpace(tour.TourType) ? "Tiêu chuẩn" : tour.TourType;
             FormBasePrice = tour.BasePrice.ToString("0");
             FormDurationDays = tour.DurationDays.ToString();
             FormImageUrl = tour.ImageUrl;
@@ -195,6 +198,7 @@ namespace VietTravel.UI.ViewModels
             // Validate
             var name = FormName.Trim();
             var destination = FormDestination.Trim();
+            var tourType = string.IsNullOrWhiteSpace(FormTourType) ? "Tiêu chuẩn" : FormTourType.Trim();
             var description = FormDescription.Trim();
             var imageUrl = FormImageUrl.Trim();
 
@@ -233,6 +237,7 @@ namespace VietTravel.UI.ViewModels
                     _editingTour.Name = name;
                     _editingTour.Description = description;
                     _editingTour.Destination = destination;
+                    _editingTour.TourType = tourType;
                     _editingTour.BasePrice = price;
                     _editingTour.DurationDays = days;
                     _editingTour.ImageUrl = imageUrl;
@@ -245,6 +250,7 @@ namespace VietTravel.UI.ViewModels
                         Name = name,
                         Description = description,
                         Destination = destination,
+                        TourType = tourType,
                         BasePrice = price,
                         DurationDays = days,
                         ImageUrl = imageUrl

@@ -226,8 +226,11 @@ namespace VietTravel.UI.ViewModels
                 var payment = new Payment
                 {
                     BookingId = createdBooking.Id,
+                    OriginalAmount = tour.BasePrice * guests,
+                    DiscountAmount = 0,
                     TotalAmount = tour.BasePrice * guests,
                     PaidAmount = 0,
+                    PromoCode = string.Empty,
                     Status = "Chưa thanh toán",
                     PaymentMethod = "Tiền mặt"
                 };

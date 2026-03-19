@@ -18,6 +18,18 @@ namespace VietTravel.Core.Models
         
         [Column("total_amount")]
         public decimal TotalAmount { get; set; }
+
+        [Column("original_amount")]
+        public decimal OriginalAmount { get; set; }
+
+        [Column("discount_amount")]
+        public decimal DiscountAmount { get; set; }
+
+        [Column("promo_code_id")]
+        public int? PromoCodeId { get; set; }
+
+        [Column("promo_code")]
+        public string PromoCode { get; set; } = string.Empty;
         
         [Column("paid_amount")]
         public decimal PaidAmount { get; set; }

@@ -63,6 +63,7 @@ namespace VietTravel.UI.ViewModels
                 "Customers" => new CustomerListViewModel(_mainViewModel),
                 "Users" => new UserManagementViewModel(_mainViewModel),
                 "Payments" => new PaymentListViewModel(_mainViewModel),
+                "Promotions" => new PromoCodeManagementViewModel(_mainViewModel),
                 "Notifications" => new NotificationListViewModel(_mainViewModel),
                 "Debug" => new DebugToolsViewModel(_mainViewModel),
                 "Reports" => new ReportViewModel(_mainViewModel),

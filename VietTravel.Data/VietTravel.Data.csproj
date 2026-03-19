@@ -16,4 +16,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="tmpbuild\**\*.cs" />
+    <EmbeddedResource Remove="tmpbuild\**\*" />
+    <None Remove="tmpbuild\**\*" />
+  </ItemGroup>
+
 </Project>

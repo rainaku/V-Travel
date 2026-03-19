@@ -11,4 +11,10 @@
     <PackageReference Include="supabase-csharp" Version="0.16.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="tmpbuild\**\*.cs" />
+    <EmbeddedResource Remove="tmpbuild\**\*" />
+    <None Remove="tmpbuild\**\*" />
+  </ItemGroup>
+
 </Project>

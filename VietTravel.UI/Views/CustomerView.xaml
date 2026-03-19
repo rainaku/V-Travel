@@ -1365,6 +1365,46 @@
                                          materialDesign:HintAssist.Hint="Nhập số khách" Width="220" HorizontalAlignment="Left"/>
                             </StackPanel>
 
+                            <StackPanel Margin="0,0,0,20">
+                                <TextBlock Text="Mã giảm giá" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="220"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0"
+                                             Text="{Binding PromoCodeInput, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource AppleTextBox}"
+                                             materialDesign:HintAssist.Hint="VD: SUMMER2026"/>
+                                    <Button Grid.Column="1" Margin="10,0,0,0"
+                                            Style="{StaticResource AppleGhostButton}"
+                                            Content="Kiểm tra mã"
+                                            Command="{Binding CheckPromoCodeCommand}"/>
+                                </Grid>
+
+                                <TextBlock Text="{Binding PromoCodeStatusMessage}" Margin="0,8,0,0" FontFamily="{StaticResource AppFont}" FontSize="12">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsPromoCodeStatusSuccess}" Value="True">
+                                                    <Setter Property="Foreground" Value="{StaticResource SuccessBrush}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsPromoCodeStatusSuccess}" Value="False">
+                                                    <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding PromoCodeStatusMessage}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding PromoCodeStatusMessage}" Value="{x:Null}">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+
                             <StackPanel Orientation="Horizontal">
                                 <Button Style="{StaticResource ApplePrimaryButton}" Command="{Binding ProceedToPaymentCommand}" Margin="0,0,12,0">
                                     <StackPanel Orientation="Horizontal">
@@ -1445,7 +1485,9 @@
                                 <TextBlock Text="{Binding PaymentTourName}" FontFamily="{StaticResource AppFont}" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
                                 <TextBlock Text="{Binding PaymentScheduleText}" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0"/>
                                 <TextBlock Text="{Binding PaymentGuestText}" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
-                                <TextBlock Text="{Binding PaymentTotalFormatted}" FontFamily="{StaticResource AppFont}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,8,0,0"/>
+                                <TextBlock Text="{Binding PaymentOriginalAmountFormatted, StringFormat=Tạm tính: {0}}" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,0"/>
+                                <TextBlock Text="{Binding PaymentDiscountAmountFormatted, StringFormat=Giảm giá: {0}}" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource SuccessBrush}" Margin="0,2,0,0"/>
+                                <TextBlock Text="{Binding PaymentTotalFormatted, StringFormat=Thanh toán: {0}}" FontFamily="{StaticResource AppFont}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" Margin="0,8,0,0"/>
                             </StackPanel>
                         </Border>
 
