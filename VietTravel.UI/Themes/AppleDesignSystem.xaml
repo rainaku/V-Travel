@@ -33,9 +33,9 @@
     <Color x:Key="GlassColor">#B3FFFFFF</Color>
 
     <!-- ─── MOTION ─── -->
-    <CubicEase x:Key="EaseOutCubic" EasingMode="EaseOut"/>
+    <BackEase x:Key="EaseOutCubic" EasingMode="EaseOut" Amplitude="0.28"/>
     <CubicEase x:Key="EaseInOutCubic" EasingMode="EaseInOut"/>
-    <BackEase x:Key="EaseOutSpring" EasingMode="EaseOut" Amplitude="0.1"/>
+    <BackEase x:Key="EaseOutSpring" EasingMode="EaseOut" Amplitude="0.34"/>
 
     <!-- ─── BRUSHES ─── -->
     <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}"/>
@@ -164,10 +164,10 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                         From="0" To="1" Duration="0:0:0.24"
+                                         From="0" To="1" Duration="0:0:0.36"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.Y)"
-                                         From="8" To="0" Duration="0:0:0.24"
+                                         From="8" To="0" Duration="0:0:0.36"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -176,13 +176,13 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)"
-                                         To="1.01" Duration="0:0:0.18"
+                                         To="1.01" Duration="0:0:0.27"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)"
-                                         To="1.01" Duration="0:0:0.18"
+                                         To="1.01" Duration="0:0:0.27"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.Y)"
-                                         To="-2" Duration="0:0:0.18"
+                                         To="-2" Duration="0:0:0.27"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -191,13 +191,13 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)"
-                                         To="1" Duration="0:0:0.22"
+                                         To="1" Duration="0:0:0.33"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)"
-                                         To="1" Duration="0:0:0.22"
+                                         To="1" Duration="0:0:0.33"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.Y)"
-                                         To="0" Duration="0:0:0.22"
+                                         To="0" Duration="0:0:0.33"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -270,10 +270,10 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                         To="1.02" Duration="0:0:0.14"
+                                         To="1.02" Duration="0:0:0.21"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                         To="1.02" Duration="0:0:0.14"
+                                         To="1.02" Duration="0:0:0.21"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -282,10 +282,10 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                         To="1" Duration="0:0:0.18"
+                                         To="1" Duration="0:0:0.27"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                         To="1" Duration="0:0:0.18"
+                                         To="1" Duration="0:0:0.27"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -294,10 +294,10 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                         To="0.985" Duration="0:0:0.08"
+                                         To="0.985" Duration="0:0:0.12"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                         To="0.985" Duration="0:0:0.08"
+                                         To="0.985" Duration="0:0:0.12"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -306,10 +306,10 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                         To="1.015" Duration="0:0:0.12"
+                                         To="1.015" Duration="0:0:0.18"
                                          EasingFunction="{StaticResource EaseOutSpring}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                         To="1.015" Duration="0:0:0.12"
+                                         To="1.015" Duration="0:0:0.18"
                                          EasingFunction="{StaticResource EaseOutSpring}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -360,10 +360,10 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                         To="1.015" Duration="0:0:0.14"
+                                         To="1.015" Duration="0:0:0.21"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                         To="1.015" Duration="0:0:0.14"
+                                         To="1.015" Duration="0:0:0.21"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -372,10 +372,10 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                         To="1" Duration="0:0:0.18"
+                                         To="1" Duration="0:0:0.27"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                         To="1" Duration="0:0:0.18"
+                                         To="1" Duration="0:0:0.27"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -420,10 +420,10 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                         To="1.01" Duration="0:0:0.12"
+                                         To="1.01" Duration="0:0:0.18"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                         To="1.01" Duration="0:0:0.12"
+                                         To="1.01" Duration="0:0:0.18"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -432,10 +432,10 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                         To="1" Duration="0:0:0.16"
+                                         To="1" Duration="0:0:0.24"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                         To="1" Duration="0:0:0.16"
+                                         To="1" Duration="0:0:0.24"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -481,10 +481,10 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                         To="1.08" Duration="0:0:0.12"
+                                         To="1.08" Duration="0:0:0.18"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                         To="1.08" Duration="0:0:0.12"
+                                         To="1.08" Duration="0:0:0.18"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -493,10 +493,10 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                         To="1" Duration="0:0:0.16"
+                                         To="1" Duration="0:0:0.24"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                         To="1" Duration="0:0:0.16"
+                                         To="1" Duration="0:0:0.24"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -505,10 +505,10 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                         To="0.94" Duration="0:0:0.08"
+                                         To="0.94" Duration="0:0:0.12"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                         To="0.94" Duration="0:0:0.08"
+                                         To="0.94" Duration="0:0:0.12"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -563,10 +563,10 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                         To="1.008" Duration="0:0:0.14"
+                                         To="1.008" Duration="0:0:0.21"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                         To="1.008" Duration="0:0:0.14"
+                                         To="1.008" Duration="0:0:0.21"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -575,10 +575,10 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                         To="1" Duration="0:0:0.16"
+                                         To="1" Duration="0:0:0.24"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                         To="1" Duration="0:0:0.16"
+                                         To="1" Duration="0:0:0.24"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -633,10 +633,10 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                         To="1.008" Duration="0:0:0.14"
+                                         To="1.008" Duration="0:0:0.21"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                         To="1.008" Duration="0:0:0.14"
+                                         To="1.008" Duration="0:0:0.21"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -645,10 +645,10 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                         To="1" Duration="0:0:0.16"
+                                         To="1" Duration="0:0:0.24"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                         To="1" Duration="0:0:0.16"
+                                         To="1" Duration="0:0:0.24"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -703,10 +703,10 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                         To="1.01" Duration="0:0:0.12"
+                                         To="1.01" Duration="0:0:0.18"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                         To="1.01" Duration="0:0:0.12"
+                                         To="1.01" Duration="0:0:0.18"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -715,10 +715,10 @@
                 <BeginStoryboard>
                     <Storyboard>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                         To="1" Duration="0:0:0.16"
+                                         To="1" Duration="0:0:0.24"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                         To="1" Duration="0:0:0.16"
+                                         To="1" Duration="0:0:0.24"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
@@ -926,3 +926,4 @@
     </Style>
 
 </ResourceDictionary>
+

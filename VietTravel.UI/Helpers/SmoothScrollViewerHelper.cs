@@ -12,6 +12,7 @@ namespace VietTravel.UI.Helpers
     {
         private static bool _globalEnabled;
         private static readonly HashSet<ScrollViewer> ActiveScrollViewers = new();
+        private static readonly MouseWheelEventHandler PreviewMouseWheelHandler = ScrollViewer_PreviewMouseWheel;
         private static bool _isRenderingSubscribed;
 
         public static readonly DependencyProperty SmoothScrollProperty =
@@ -120,14 +121,14 @@ namespace VietTravel.UI.Helpers
                 if ((bool)e.NewValue)
                 {
                     SetAnimatedVerticalOffset(scrollViewer, scrollViewer.VerticalOffset);
-                    scrollViewer.PreviewMouseWheel += ScrollViewer_PreviewMouseWheel;
+                    scrollViewer.AddHandler(UIElement.PreviewMouseWheelEvent, PreviewMouseWheelHandler, true);
                     scrollViewer.ScrollChanged += ScrollViewer_ScrollChanged;
                     scrollViewer.Unloaded += ScrollViewer_Unloaded;
                     EnsureState(scrollViewer);
                 }
                 else
                 {
-                    scrollViewer.PreviewMouseWheel -= ScrollViewer_PreviewMouseWheel;
+                    scrollViewer.RemoveHandler(UIElement.PreviewMouseWheelEvent, PreviewMouseWheelHandler);
                     scrollViewer.ScrollChanged -= ScrollViewer_ScrollChanged;
                     scrollViewer.Unloaded -= ScrollViewer_Unloaded;
                     StopAnimation(scrollViewer);
@@ -217,7 +218,7 @@ namespace VietTravel.UI.Helpers
                 return;
             }
 
-            scrollViewer.PreviewMouseWheel -= ScrollViewer_PreviewMouseWheel;
+            scrollViewer.RemoveHandler(UIElement.PreviewMouseWheelEvent, PreviewMouseWheelHandler);
             scrollViewer.ScrollChanged -= ScrollViewer_ScrollChanged;
             scrollViewer.Unloaded -= ScrollViewer_Unloaded;
             StopAnimation(scrollViewer);

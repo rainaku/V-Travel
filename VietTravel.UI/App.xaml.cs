@@ -15,7 +15,7 @@ namespace VietTravel.UI
 
         protected override void OnStartup(StartupEventArgs e)
         {
-            SmoothScrollViewerHelper.EnableGlobalSmoothScroll();
+            SmoothScrollViewerHelper.EnableGlobalSmoothScroll(wheelStep: 280d, durationMs: 150d);
             base.OnStartup(e);
         }
 

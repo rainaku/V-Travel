@@ -5,8 +5,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
 using System.Windows.Media.Animation;
 using VietTravel.UI.ViewModels;
 
@@ -61,6 +63,11 @@ namespace VietTravel.UI.Views
 
         private void TourDetailsHero_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            if (IsInteractiveElement(e.OriginalSource as DependencyObject))
+            {
+                return;
+            }
+
             _isDraggingDetailsCard = true;
             _dragStartPoint = e.GetPosition(this);
             _dragStartOffsetY = TourDetailsTranslateTransform.Y;
@@ -120,6 +127,30 @@ namespace VietTravel.UI.Views
             TourDetailsHero.ReleaseMouseCapture();
             FinishDragInteraction();
             e.Handled = true;
+        }
+
+        private void TourDetailsOverlay_OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (e.NewValue is not bool isVisible)
+            {
+                return;
+            }
+
+            if (isVisible)
+            {
+                AnimateBackgroundBlur(toRadius: 10, durationMs: 220);
+                return;
+            }
+
+            AnimateBackgroundBlur(toRadius: 0, durationMs: 180);
+
+            if (TourDetailsHero.IsMouseCaptured)
+            {
+                TourDetailsHero.ReleaseMouseCapture();
+            }
+
+            _isDraggingDetailsCard = false;
+            ResetModalVisualState();
         }
 
         private void TourDetailsHero_OnLostMouseCapture(object sender, MouseEventArgs e)
@@ -251,6 +282,29 @@ namespace VietTravel.UI.Views
             TourDetailsScaleTransform.ScaleX = 0.975;
             TourDetailsScaleTransform.ScaleY = 0.975;
             TourDetailsOverlay.Opacity = 0;
+        }
+
+        private void AnimateBackgroundBlur(double toRadius, int durationMs)
+        {
+            if (CustomerMainContentBlurEffect == null)
+            {
+                return;
+            }
+
+            if (durationMs <= 0)
+            {
+                CustomerMainContentBlurEffect.Radius = toRadius;
+                return;
+            }
+
+            CustomerMainContentBlurEffect.BeginAnimation(
+                BlurEffect.RadiusProperty,
+                new DoubleAnimation
+                {
+                    To = toRadius,
+                    Duration = TimeSpan.FromMilliseconds(durationMs),
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+                });
         }
 
         private void TryLoadMoreTours(ScrollViewer scrollViewer)
@@ -500,6 +554,25 @@ namespace VietTravel.UI.Views
             ExploreHeroVideo.Opacity = 1;
             _isSwitchingHeroVideo = false;
             _hasPlayedHeroVideo = false;
+        }
+
+        private static bool IsInteractiveElement(DependencyObject? originalSource)
+        {
+            while (originalSource != null)
+            {
+                if (originalSource is ButtonBase ||
+                    originalSource is ScrollBar ||
+                    originalSource is Slider ||
+                    originalSource is TextBox ||
+                    originalSource is PasswordBox)
+                {
+                    return true;
+                }
+
+                originalSource = VisualTreeHelper.GetParent(originalSource);
+            }
+
+            return false;
         }
     }
 }
