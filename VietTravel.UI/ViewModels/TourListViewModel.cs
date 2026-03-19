@@ -66,12 +66,12 @@ namespace VietTravel.UI.ViewModels
             }
             else
             {
-                var lower = SearchText.ToLower();
+                var lower = SearchText.Trim().ToLowerInvariant();
                 FilteredTours = new ObservableCollection<Tour>(
                     Tours.Where(t =>
-                        t.Name.ToLower().Contains(lower) ||
-                        t.Destination.ToLower().Contains(lower) ||
-                        t.Description.ToLower().Contains(lower))
+                        (t.Name ?? string.Empty).ToLowerInvariant().Contains(lower) ||
+                        (t.Destination ?? string.Empty).ToLowerInvariant().Contains(lower) ||
+                        (t.Description ?? string.Empty).ToLowerInvariant().Contains(lower))
                 );
             }
             OnPropertyChanged(nameof(HasNoData));
@@ -87,8 +87,13 @@ namespace VietTravel.UI.ViewModels
             try
             {
                 var client = await SupabaseClientFactory.GetClientAsync();
-                var response = await client.From<Tour>().Get();
-                var models = response.Models ?? new List<Tour>();
+                var response = await client
+                    .From<Tour>()
+                    .Order(x => x.Id, Postgrest.Constants.Ordering.Descending)
+                    .Range(0, 4999)
+                    .Get();
+                var models = (response.Models ?? new List<Tour>())
+                    .ToList();
 
                 Tours.Clear();
                 foreach (var tour in models)
@@ -249,6 +254,7 @@ namespace VietTravel.UI.ViewModels
                 }
 
                 IsFormVisible = false;
+                SearchText = string.Empty;
                 await LoadToursAsync();
             }
             catch (Exception ex)
