@@ -3,15 +3,19 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows;
 using VietTravel.Core.Models;
 using VietTravel.Data;
 using VietTravel.Data.Services;
+using VietTravel.UI.Models;
 
 namespace VietTravel.UI.ViewModels
 {
@@ -96,10 +100,17 @@ namespace VietTravel.UI.ViewModels
         public bool IsBookDestinationFilterActive => !string.IsNullOrWhiteSpace(BookDestinationFilter);
         public bool HasAvatar => !string.IsNullOrWhiteSpace(AvatarUrl);
         public string ChangeAvatarButtonText => IsUploadingAvatar ? "Đang tải ảnh..." : "Đổi ảnh đại diện";
+        public bool IsDebugMenuVisible => _mainViewModel.IsDebugMenuVisible;
+        public ReadOnlyObservableCollection<AppNotification> AccountNotifications => _mainViewModel.NotificationCenter.Notifications;
+        public int UnreadNotificationCount => _mainViewModel.NotificationCenter.UnreadCount;
+        public bool HasNoNotifications => AccountNotifications.Count == 0;
 
         public CustomerViewModel(MainViewModel mainViewModel)
         {
             _mainViewModel = mainViewModel;
+            PropertyChangedEventManager.AddHandler(_mainViewModel, MainViewModelOnPropertyChanged, nameof(MainViewModel.IsDebugMenuVisible));
+            PropertyChangedEventManager.AddHandler(_mainViewModel.NotificationCenter, NotificationCenterOnPropertyChanged, nameof(_mainViewModel.NotificationCenter.UnreadCount));
+            CollectionChangedEventManager.AddHandler(AccountNotifications, OnNotificationCollectionChanged);
             AvatarUrl = _mainViewModel.CurrentUser?.AvatarUrl ?? string.Empty;
             _ = LoadDataAsync();
         }
@@ -161,6 +172,78 @@ namespace VietTravel.UI.ViewModels
         }
 
         [RelayCommand]
+        private void SimulatePaymentDebug()
+        {
+            var bookingId = Random.Shared.Next(1000, 9999);
+            _mainViewModel.NotificationCenter.AddDebugNotification(
+                "Xác nhận thanh toán",
+                $"(Debug) Booking BK-{bookingId} đã được xác nhận thanh toán.",
+                "Thanh toán");
+        }
+
+        [RelayCommand]
+        private void SimulateDepartureReminderDebug()
+        {
+            var departureTime = DateTime.Now.AddHours(6);
+            _mainViewModel.NotificationCenter.AddDebugNotification(
+                "Nhắc lịch khởi hành",
+                $"(Debug) Tour giả lập sẽ khởi hành lúc {departureTime:dd/MM/yyyy HH:mm}.",
+                "Khởi hành");
+        }
+
+        [RelayCommand]
+        private void SeedDebugNotifications()
+        {
+            for (var i = 1; i <= 5; i++)
+            {
+                _mainViewModel.NotificationCenter.AddDebugNotification(
+                    $"Debug Notification #{i}",
+                    $"Mẫu thông báo số {i} để test UI.",
+                    "Debug");
+            }
+        }
+
+        [RelayCommand]
+        private async Task ForceDebugSyncAsync()
+        {
+            await _mainViewModel.NotificationCenter.RefreshNowAsync();
+            _mainViewModel.NotificationCenter.AddDebugNotification(
+                "Debug Sync",
+                "Đã force đồng bộ notification từ dữ liệu thật.",
+                "Debug");
+        }
+
+        [RelayCommand]
+        private void MarkAllDebugNotificationsRead()
+        {
+            _mainViewModel.NotificationCenter.MarkAllAsRead();
+        }
+
+        [RelayCommand]
+        private void ClearDebugNotifications()
+        {
+            _mainViewModel.NotificationCenter.ClearAllNotifications();
+        }
+
+        [RelayCommand]
+        private void MarkNotificationAsRead(AppNotification? notification)
+        {
+            _mainViewModel.NotificationCenter.MarkAsRead(notification);
+        }
+
+        [RelayCommand]
+        private void MarkAllNotificationsAsRead()
+        {
+            _mainViewModel.NotificationCenter.MarkAllAsRead();
+        }
+
+        [RelayCommand]
+        private async Task RefreshNotificationsAsync()
+        {
+            await _mainViewModel.NotificationCenter.RefreshNowAsync();
+        }
+
+        [RelayCommand]
         private void ClearBookDestinationFilter()
         {
             BookDestinationFilter = string.Empty;
@@ -192,6 +275,27 @@ namespace VietTravel.UI.ViewModels
         {
             OnPropertyChanged(nameof(IsBookingModalOverlayVisible));
             OnPropertyChanged(nameof(IsPaymentModalOverlayVisible));
+        }
+
+        private void MainViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(MainViewModel.IsDebugMenuVisible))
+            {
+                OnPropertyChanged(nameof(IsDebugMenuVisible));
+            }
+        }
+
+        private void NotificationCenterOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(_mainViewModel.NotificationCenter.UnreadCount))
+            {
+                OnPropertyChanged(nameof(UnreadNotificationCount));
+            }
+        }
+
+        private void OnNotificationCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            OnPropertyChanged(nameof(HasNoNotifications));
         }
 
         private void ShowAppDialogInfo(string title, string message)
@@ -1078,6 +1182,10 @@ namespace VietTravel.UI.ViewModels
         [RelayCommand]
         public void Logout()
         {
+            PropertyChangedEventManager.RemoveHandler(_mainViewModel, MainViewModelOnPropertyChanged, nameof(MainViewModel.IsDebugMenuVisible));
+            PropertyChangedEventManager.RemoveHandler(_mainViewModel.NotificationCenter, NotificationCenterOnPropertyChanged, nameof(_mainViewModel.NotificationCenter.UnreadCount));
+            CollectionChangedEventManager.RemoveHandler(AccountNotifications, OnNotificationCollectionChanged);
+            _mainViewModel.StopNotifications();
             _mainViewModel.CurrentUser = null;
             _mainViewModel.NavigateTo(new LoginViewModel(_mainViewModel));
         }

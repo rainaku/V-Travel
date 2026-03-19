@@ -149,6 +149,49 @@
                             <TextBlock Text="Thông tin cá nhân" VerticalAlignment="Center"/>
                         </StackPanel>
                     </RadioButton>
+
+                    <RadioButton Style="{StaticResource SidebarButton}" GroupName="CustomerNav"
+                                 IsChecked="{Binding SelectedPage, Converter={StaticResource PageConverter}, ConverterParameter=Notifications}"
+                                 Command="{Binding NavigateToCommand}" CommandParameter="Notifications">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="BellOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Thông báo" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <Border Grid.Column="1" Background="{StaticResource ErrorBrush}" CornerRadius="9" MinWidth="18"
+                                    Height="18" Padding="6,0,6,0" VerticalAlignment="Center">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding UnreadNotificationCount, Mode=OneWay}" Value="0">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock Text="{Binding UnreadNotificationCount, Mode=OneWay}" Foreground="White" FontSize="10"
+                                           FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                    </RadioButton>
+
+                    <StackPanel Visibility="{Binding IsDebugMenuVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Text="DEBUG" FontFamily="{StaticResource AppFont}" FontSize="10" FontWeight="Bold"
+                                   Foreground="{StaticResource TextTertiaryBrush}" Margin="24,20,0,8"/>
+                        <RadioButton Style="{StaticResource SidebarButton}" GroupName="CustomerNav"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource PageConverter}, ConverterParameter=Debug}"
+                                     Command="{Binding NavigateToCommand}" CommandParameter="Debug">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="BugOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Debug Tools" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </RadioButton>
+                    </StackPanel>
                 </StackPanel>
 
                 <!-- Sidebar Footer -->
@@ -845,6 +888,190 @@
                             </StackPanel>
                         </Border>
                     </Grid>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ──── PAGE: NOTIFICATIONS ──── -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                          Style="{StaticResource AnimatedPageScrollViewer}"
+                          Visibility="{Binding SelectedPage, Converter={StaticResource PageConverter}, ConverterParameter=Notifications}">
+                <StackPanel Margin="32,28,32,32">
+                    <Grid Margin="0,0,0,20">
+                        <StackPanel>
+                            <TextBlock Text="Thông báo tài khoản" Style="{StaticResource HeadingLargeStyle}"/>
+                            <TextBlock Style="{StaticResource CaptionStyle}" FontSize="14" Margin="0,6,0,0">
+                                <Run Text="Bạn có "/>
+                                <Run Text="{Binding UnreadNotificationCount, Mode=OneWay}"/>
+                                <Run Text=" thông báo chưa đọc"/>
+                            </TextBlock>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Button Style="{StaticResource AppleGhostButton}" Command="{Binding RefreshNotificationsCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Làm mới" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource ApplePrimaryButton}" Command="{Binding MarkAllNotificationsAsReadCommand}" Margin="10,0,0,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="EmailCheckOutline" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Đánh dấu tất cả đã đọc" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Style="{StaticResource AppleCard}" Padding="0">
+                        <Grid>
+                            <ItemsControl ItemsSource="{Binding AccountNotifications}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,0,0,1" Padding="18,14">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <Grid Width="42" Height="42" Margin="0,0,12,0">
+                                                    <Ellipse Width="42" Height="42" Fill="#14007AFF"/>
+                                                    <materialDesign:PackIcon Kind="BellOutline" Width="20" Height="20"
+                                                                             Foreground="{StaticResource PrimaryBrush}"
+                                                                             HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Grid>
+
+                                                <StackPanel Grid.Column="1">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding Title}" FontFamily="{StaticResource AppFont}" FontSize="14"
+                                                                   FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                                        <Border Background="#11007AFF" CornerRadius="8" Padding="8,2" Margin="8,0,0,0">
+                                                            <TextBlock Text="{Binding Category}" FontFamily="{StaticResource AppFont}" FontSize="11"
+                                                                       Foreground="{StaticResource PrimaryBrush}"/>
+                                                        </Border>
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding Message}" FontFamily="{StaticResource AppFont}" FontSize="13"
+                                                               Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                                    <TextBlock Text="{Binding CreatedAt, StringFormat={}{0:dd/MM/yyyy HH:mm}}"
+                                                               FontFamily="{StaticResource AppFont}" FontSize="11"
+                                                               Foreground="{StaticResource TextTertiaryBrush}" Margin="0,8,0,0"/>
+                                                </StackPanel>
+
+                                                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                                    <Border Background="#1A34C759" CornerRadius="10" Padding="8,4" HorizontalAlignment="Right">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsRead}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <TextBlock Text="Mới" FontFamily="{StaticResource AppFont}" FontSize="11"
+                                                                   Foreground="{StaticResource SuccessBrush}"/>
+                                                    </Border>
+
+                                                    <Button Margin="0,8,0,0"
+                                                            Command="{Binding DataContext.MarkNotificationAsReadCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding}">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource AppleGhostButton}">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsRead}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
+                                                        <TextBlock Text="Đánh dấu đã đọc"/>
+                                                    </Button>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <StackPanel HorizontalAlignment="Center" Margin="0,60,0,60"
+                                        Visibility="{Binding HasNoNotifications, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Grid Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,14">
+                                    <Ellipse Width="64" Height="64" Fill="#14007AFF"/>
+                                    <materialDesign:PackIcon Kind="BellOffOutline" Width="30" Height="30"
+                                                             Foreground="{StaticResource PrimaryBrush}"
+                                                             HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Grid>
+                                <TextBlock Text="Chưa có thông báo nào" HorizontalAlignment="Center"
+                                           FontFamily="{StaticResource AppFont}" FontSize="16" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Tất cả nhắc nhở, thanh toán và debug sẽ hiển thị tại đây."
+                                           HorizontalAlignment="Center" Margin="0,6,0,0"
+                                           FontFamily="{StaticResource AppFont}" FontSize="13"
+                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- ──── PAGE: DEBUG ──── -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                          Style="{StaticResource AnimatedPageScrollViewer}"
+                          Visibility="{Binding SelectedPage, Converter={StaticResource PageConverter}, ConverterParameter=Debug}">
+                <StackPanel Margin="32,28,32,32">
+                    <StackPanel Margin="0,0,0,24">
+                        <TextBlock Text="Debug Tools" Style="{StaticResource HeadingLargeStyle}"/>
+                        <TextBlock Text="Công cụ test nhanh thông báo dành cho QA/dev." Style="{StaticResource CaptionStyle}" FontSize="14" Margin="0,6,0,0"/>
+                    </StackPanel>
+
+                    <Border Style="{StaticResource AppleCard}" Padding="20">
+                        <WrapPanel ItemWidth="250" ItemHeight="54">
+                            <Button Style="{StaticResource ApplePrimaryButton}" Margin="0,0,12,12" Command="{Binding SimulatePaymentDebugCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="CreditCardCheckOutline" Width="18" Height="18" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Giả lập xác nhận thanh toán"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Style="{StaticResource ApplePrimaryButton}" Margin="0,0,12,12" Command="{Binding SimulateDepartureReminderDebugCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="CalendarClockOutline" Width="18" Height="18" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Giả lập nhắc khởi hành"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Style="{StaticResource AppleGhostButton}" Margin="0,0,12,12" Command="{Binding SeedDebugNotificationsCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="BellRingOutline" Width="18" Height="18" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Tạo batch 5 thông báo"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Style="{StaticResource AppleGhostButton}" Margin="0,0,12,12" Command="{Binding ForceDebugSyncCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="DatabaseSyncOutline" Width="18" Height="18" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Force sync dữ liệu thật"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Style="{StaticResource AppleGhostButton}" Margin="0,0,12,12" Command="{Binding MarkAllDebugNotificationsReadCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="EmailCheckOutline" Width="18" Height="18" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Đánh dấu tất cả đã đọc"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Style="{StaticResource AppleGhostButton}" Margin="0,0,12,12" Command="{Binding ClearDebugNotificationsCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="BellOffOutline" Width="18" Height="18" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Xóa toàn bộ thông báo"/>
+                                </StackPanel>
+                            </Button>
+                        </WrapPanel>
+                    </Border>
                 </StackPanel>
             </ScrollViewer>
 

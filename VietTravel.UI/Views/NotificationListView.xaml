@@ -1,0 +1,135 @@
+<UserControl x:Class="VietTravel.UI.Views.NotificationListView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             Background="{StaticResource BackgroundBrush}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="32,28,32,32">
+
+            <Grid Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="Thông báo" Style="{StaticResource HeadingLargeStyle}"/>
+                    <TextBlock Style="{StaticResource CaptionStyle}" Margin="0,4,0,0">
+                        <Run Text="Bạn có "/>
+                        <Run Text="{Binding UnreadCount}"/>
+                        <Run Text=" thông báo chưa đọc"/>
+                    </TextBlock>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Style="{StaticResource AppleGhostButton}" Command="{Binding RefreshNowCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Làm mới" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button Style="{StaticResource ApplePrimaryButton}" Command="{Binding MarkAllAsReadCommand}" Margin="10,0,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="EmailCheckOutline" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Đánh dấu tất cả đã đọc" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <Border Style="{StaticResource AppleCard}" Padding="0">
+                <Grid>
+                    <ProgressBar Height="4" IsIndeterminate="True"
+                                 Visibility="{Binding IsRefreshing, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                 VerticalAlignment="Top" Margin="0,12,0,0"/>
+
+                    <ItemsControl ItemsSource="{Binding Notifications}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{StaticResource DividerBrush}" BorderThickness="0,0,0,1" Padding="18,14">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Grid Width="42" Height="42" Margin="0,0,12,0">
+                                            <Ellipse Width="42" Height="42" Fill="#14007AFF"/>
+                                            <materialDesign:PackIcon Kind="BellOutline" Width="20" Height="20"
+                                                                     Foreground="{StaticResource PrimaryBrush}"
+                                                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Grid>
+
+                                        <StackPanel Grid.Column="1">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Title}" FontFamily="{StaticResource AppFont}" FontSize="14"
+                                                           FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                                <Border Background="#11007AFF" CornerRadius="8" Padding="8,2" Margin="8,0,0,0">
+                                                    <TextBlock Text="{Binding Category}" FontFamily="{StaticResource AppFont}" FontSize="11"
+                                                               Foreground="{StaticResource PrimaryBrush}"/>
+                                                </Border>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Message}" FontFamily="{StaticResource AppFont}" FontSize="13"
+                                                       Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                            <TextBlock Text="{Binding CreatedAt, StringFormat={}{0:dd/MM/yyyy HH:mm}}"
+                                                       FontFamily="{StaticResource AppFont}" FontSize="11"
+                                                       Foreground="{StaticResource TextTertiaryBrush}" Margin="0,8,0,0"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                            <Border Background="#1A34C759" CornerRadius="10" Padding="8,4" HorizontalAlignment="Right">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsRead}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock Text="Mới" FontFamily="{StaticResource AppFont}" FontSize="11"
+                                                           Foreground="{StaticResource SuccessBrush}"/>
+                                            </Border>
+
+                                            <Button Margin="0,8,0,0"
+                                                    Command="{Binding DataContext.MarkAsReadCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding}">
+                                                <Button.Style>
+                                                    <Style TargetType="Button" BasedOn="{StaticResource AppleGhostButton}">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsRead}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
+                                                <TextBlock Text="Đánh dấu đã đọc"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <StackPanel HorizontalAlignment="Center" Margin="0,60,0,60"
+                                Visibility="{Binding HasNoData, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Grid Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,14">
+                            <Ellipse Width="64" Height="64" Fill="#14007AFF"/>
+                            <materialDesign:PackIcon Kind="BellOffOutline" Width="30" Height="30"
+                                                     Foreground="{StaticResource PrimaryBrush}"
+                                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <TextBlock Text="Chưa có thông báo nào" HorizontalAlignment="Center"
+                                   FontFamily="{StaticResource AppFont}" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                        <TextBlock Text="Thông báo mới sẽ hiển thị tự động tại đây."
+                                   HorizontalAlignment="Center" Margin="0,6,0,0"
+                                   FontFamily="{StaticResource AppFont}" FontSize="13"
+                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -55,6 +55,24 @@ namespace VietTravel.UI
             else
                 this.WindowState = WindowState.Maximized;
         }
+
+        private void Window_OnPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.IsRepeat)
+            {
+                return;
+            }
+
+            if (e.Key != Key.LeftShift && e.Key != Key.RightShift)
+            {
+                return;
+            }
+
+            if (DataContext is MainViewModel viewModel)
+            {
+                viewModel.RegisterShiftPress();
+            }
+        }
     }
 }
 

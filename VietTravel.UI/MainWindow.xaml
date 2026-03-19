@@ -8,7 +8,8 @@
         Title="Viet Travel" Height="750" Width="1280"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         WindowStartupLocation="CenterScreen" MinHeight="650" MinWidth="1100"
-        ResizeMode="CanResizeWithGrip">
+        ResizeMode="CanResizeWithGrip"
+        PreviewKeyDown="Window_OnPreviewKeyDown">
     
     <Grid Margin="10">
         <!-- Main Container with shadow -->
@@ -79,6 +80,12 @@
                 
                 <!-- Content Area -->
                 <ContentControl Grid.Row="1" x:Name="MainContent" Content="{Binding CurrentViewModel}"/>
+
+                <materialDesign:Snackbar Grid.RowSpan="2"
+                                         MessageQueue="{Binding SnackbarMessageQueue}"
+                                         HorizontalAlignment="Right"
+                                         VerticalAlignment="Bottom"
+                                         Margin="0,0,24,24"/>
             </Grid>
         </Border>
     </Grid>

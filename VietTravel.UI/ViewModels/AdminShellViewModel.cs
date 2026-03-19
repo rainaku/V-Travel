@@ -1,11 +1,14 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.ComponentModel;
+using VietTravel.UI.Services;
 
 namespace VietTravel.UI.ViewModels
 {
     public partial class AdminShellViewModel : ObservableObject
     {
         private readonly MainViewModel _mainViewModel;
+        private readonly NotificationCenterService _notificationCenter;
 
         [ObservableProperty]
         private ObservableObject _currentPageViewModel;
@@ -16,10 +19,16 @@ namespace VietTravel.UI.ViewModels
         public string FullName => _mainViewModel.CurrentUser?.FullName ?? "Quản Trị Viên";
         public string UserRole => _mainViewModel.CurrentUser?.Role ?? "Admin";
         public string UserInitials => GetInitials(FullName);
+        public int NotificationUnreadCount => _notificationCenter.UnreadCount;
+        public bool HasUnreadNotifications => NotificationUnreadCount > 0;
+        public bool IsDebugMenuVisible => _mainViewModel.IsDebugMenuVisible;
 
         public AdminShellViewModel(MainViewModel mainViewModel)
         {
             _mainViewModel = mainViewModel;
+            _notificationCenter = _mainViewModel.NotificationCenter;
+            _notificationCenter.PropertyChanged += NotificationCenterOnPropertyChanged;
+            _mainViewModel.PropertyChanged += MainViewModelOnPropertyChanged;
             _currentPageViewModel = new DashboardViewModel(_mainViewModel, this);
         }
 
@@ -37,6 +46,8 @@ namespace VietTravel.UI.ViewModels
                 "Bookings" => new BookingListViewModel(_mainViewModel),
                 "Customers" => new CustomerListViewModel(_mainViewModel),
                 "Payments" => new PaymentListViewModel(_mainViewModel),
+                "Notifications" => new NotificationListViewModel(_mainViewModel),
+                "Debug" => new DebugToolsViewModel(_mainViewModel),
                 "Reports" => new ReportViewModel(_mainViewModel),
                 _ => new DashboardViewModel(_mainViewModel, this)
             };
@@ -45,8 +56,28 @@ namespace VietTravel.UI.ViewModels
         [RelayCommand]
         public void Logout()
         {
+            _notificationCenter.PropertyChanged -= NotificationCenterOnPropertyChanged;
+            _mainViewModel.PropertyChanged -= MainViewModelOnPropertyChanged;
+            _mainViewModel.StopNotifications();
             _mainViewModel.CurrentUser = null;
             _mainViewModel.NavigateTo(new LoginViewModel(_mainViewModel));
+        }
+
+        private void NotificationCenterOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(NotificationCenterService.UnreadCount))
+            {
+                OnPropertyChanged(nameof(NotificationUnreadCount));
+                OnPropertyChanged(nameof(HasUnreadNotifications));
+            }
+        }
+
+        private void MainViewModelOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(MainViewModel.IsDebugMenuVisible))
+            {
+                OnPropertyChanged(nameof(IsDebugMenuVisible));
+            }
         }
 
         private static string GetInitials(string name)

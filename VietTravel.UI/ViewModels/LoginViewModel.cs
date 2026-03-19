@@ -66,6 +66,7 @@ namespace VietTravel.UI.ViewModels
                 if (user != null)
                 {
                     _mainViewModel.CurrentUser = user;
+                    await _mainViewModel.StartNotificationsAsync();
 
                     // Both Admin and Employee go to Admin Shell
                     if (user.Role == "Admin" || user.Role == "Employee")

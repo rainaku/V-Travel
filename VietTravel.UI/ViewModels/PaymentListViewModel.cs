@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using VietTravel.Core.Models;
 using VietTravel.Data;
+using VietTravel.UI.Services;
 
 namespace VietTravel.UI.ViewModels
 {
@@ -92,6 +93,7 @@ namespace VietTravel.UI.ViewModels
             if (payment == null) return;
             try
             {
+                var previousStatus = payment.Status;
                 if (payment.Status == "Đã thanh toán đủ" || payment.Status == "Đã thanh toán")
                 {
                     return;
@@ -104,9 +106,11 @@ namespace VietTravel.UI.ViewModels
                 }
                 payment.PaymentDate = DateTime.Now;
                 payment.Booking = null;
+
                 var client = await SupabaseClientFactory.GetClientAsync();
                 await client.From<Payment>().Update(payment);
                 await MoveBookingToPendingReviewAsync(client, payment.BookingId);
+                NotificationCenterService.Instance.NotifyPaymentStatusChanged(payment, previousStatus);
                 await LoadDataAsync();
             }
             catch (Exception ex)
@@ -121,13 +125,16 @@ namespace VietTravel.UI.ViewModels
             if (payment == null) return;
             try
             {
+                var previousStatus = payment.Status;
                 payment.Status = "Đã thanh toán đủ";
                 payment.PaidAmount = payment.TotalAmount;
                 payment.PaymentDate = DateTime.Now;
                 payment.Booking = null;
+
                 var client = await SupabaseClientFactory.GetClientAsync();
                 await client.From<Payment>().Update(payment);
                 await MoveBookingToPendingReviewAsync(client, payment.BookingId);
+                NotificationCenterService.Instance.NotifyPaymentStatusChanged(payment, previousStatus);
                 await LoadDataAsync();
             }
             catch (Exception ex)
