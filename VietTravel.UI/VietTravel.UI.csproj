@@ -23,6 +23,14 @@
   <ItemGroup>
     <Resource Include="UI\**\*.png" />
     <Resource Include="UI\**\*.jpg" />
+    <Resource Include="Fonts\**\*.otf" />
+    <Resource Include="Fonts\**\*.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="UI\**\*.mp4">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

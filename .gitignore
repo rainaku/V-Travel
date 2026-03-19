@@ -49,3 +49,5 @@ crash.txt
 database.sql
 *.txt
 database.sql
+/tmpbuild
+/.codex-temp

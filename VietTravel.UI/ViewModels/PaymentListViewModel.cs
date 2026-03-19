@@ -71,8 +71,11 @@ namespace VietTravel.UI.ViewModels
             {
                 var client = await SupabaseClientFactory.GetClientAsync();
                 var response = await client.From<Payment>().Get();
+                var sortedPayments = response.Models
+                    .OrderByDescending(p => p.Id)
+                    .ToList();
                 Payments.Clear();
-                foreach (var p in response.Models) Payments.Add(p);
+                foreach (var p in sortedPayments) Payments.Add(p);
                 ApplyFilter();
                 UpdateStats();
             }

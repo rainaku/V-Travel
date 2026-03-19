@@ -98,8 +98,12 @@ namespace VietTravel.UI.ViewModels
 
                 // Load bookings
                 var bookResp = await client.From<Booking>().Get();
+                var sortedBookings = bookResp.Models
+                    .OrderByDescending(b => b.BookingDate)
+                    .ThenByDescending(b => b.Id)
+                    .ToList();
                 Bookings.Clear();
-                foreach (var b in bookResp.Models)
+                foreach (var b in sortedBookings)
                 {
                     b.Customer = CustomerList.FirstOrDefault(c => c.Id == b.CustomerId);
                     b.Departure = DepartureList.FirstOrDefault(d => d.Id == b.DepartureId);

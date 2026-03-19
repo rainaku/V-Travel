@@ -1,4 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -11,16 +15,24 @@ namespace VietTravel.UI.Views
     public partial class CustomerView : UserControl
     {
         private const double TourLoadMoreThreshold = 260;
+        private const string SourceUiVideoDirectory = @"D:\CodeShii\Viet-Travel\VietTravel.UI\UI";
         private bool _isDraggingDetailsCard;
         private Point _dragStartPoint;
         private double _dragStartOffsetY;
         private DateTime _lastSampleTime;
         private double _lastSampleY;
         private double _velocityY;
+        private readonly Random _videoRandom = new();
+        private readonly List<string> _heroVideoSources = new();
+        private readonly Queue<string> _heroVideoQueue = new();
+        private bool _isSwitchingHeroVideo;
+        private bool _hasPlayedHeroVideo;
 
         public CustomerView()
         {
             InitializeComponent();
+            Loaded += CustomerView_OnLoaded;
+            Unloaded += CustomerView_OnUnloaded;
         }
 
         private void ExploreScrollViewer_OnLoaded(object sender, RoutedEventArgs e)
@@ -275,6 +287,219 @@ namespace VietTravel.UI.Views
 
             ExploreTopFadeOverlay.Opacity = topOpacity;
             ExploreBottomFadeOverlay.Opacity = bottomOpacity;
+        }
+
+        private async void CustomerView_OnLoaded(object sender, RoutedEventArgs e)
+        {
+            EnsureHeroVideoSources();
+            await PlayNextHeroVideoAsync(useFade: false);
+        }
+
+        private void ExploreHeroCardContent_OnLoaded(object sender, RoutedEventArgs e)
+        {
+            UpdateExploreHeroCardClip();
+        }
+
+        private void ExploreHeroCardContent_OnSizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            UpdateExploreHeroCardClip();
+        }
+
+        private void UpdateExploreHeroCardClip()
+        {
+            if (ExploreHeroCardContent == null)
+            {
+                return;
+            }
+
+            var width = ExploreHeroCardContent.ActualWidth;
+            var height = ExploreHeroCardContent.ActualHeight;
+            if (width <= 0 || height <= 0)
+            {
+                return;
+            }
+
+            const double cornerRadius = 20;
+            ExploreHeroCardContent.Clip = new RectangleGeometry(
+                new Rect(0, 0, width, height),
+                cornerRadius,
+                cornerRadius);
+        }
+
+        private void CustomerView_OnUnloaded(object sender, RoutedEventArgs e)
+        {
+            StopHeroVideo();
+        }
+
+        private void ExploreHeroVideo_OnMediaEnded(object sender, RoutedEventArgs e)
+        {
+            _ = PlayNextHeroVideoAsync(useFade: true);
+        }
+
+        private void ExploreHeroVideo_OnMediaFailed(object sender, ExceptionRoutedEventArgs e)
+        {
+            _ = PlayNextHeroVideoAsync(useFade: true);
+        }
+
+        private void EnsureHeroVideoSources()
+        {
+            if (_heroVideoSources.Count > 0)
+            {
+                return;
+            }
+
+            var candidateDirectories = new[]
+            {
+                Path.Combine(AppContext.BaseDirectory, "UI"),
+                SourceUiVideoDirectory
+            };
+
+            var distinctDirectories = candidateDirectories
+                .Where(Directory.Exists)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            for (var i = 1; i <= 3; i++)
+            {
+                var fileName = $"{i}.mp4";
+                var candidatePath = distinctDirectories
+                    .Select(dir => Path.Combine(dir, fileName))
+                    .FirstOrDefault(File.Exists);
+
+                if (!string.IsNullOrWhiteSpace(candidatePath))
+                {
+                    _heroVideoSources.Add(candidatePath);
+                }
+            }
+        }
+
+        private void RefillHeroVideoQueue()
+        {
+            if (_heroVideoSources.Count == 0)
+            {
+                return;
+            }
+
+            var shuffled = _heroVideoSources
+                .OrderBy(_ => _videoRandom.Next())
+                .ToList();
+
+            foreach (var source in shuffled)
+            {
+                _heroVideoQueue.Enqueue(source);
+            }
+        }
+
+        private string? DequeueNextHeroVideoPath()
+        {
+            var attemptCount = 0;
+            while (attemptCount < _heroVideoSources.Count)
+            {
+                if (_heroVideoQueue.Count == 0)
+                {
+                    RefillHeroVideoQueue();
+                }
+
+                if (_heroVideoQueue.Count == 0)
+                {
+                    return null;
+                }
+
+                var nextVideoPath = _heroVideoQueue.Dequeue();
+                attemptCount++;
+                if (!File.Exists(nextVideoPath))
+                {
+                    continue;
+                }
+
+                return nextVideoPath;
+            }
+
+            return null;
+        }
+
+        private async Task PlayNextHeroVideoAsync(bool useFade)
+        {
+            if (ExploreHeroVideo == null || _isSwitchingHeroVideo)
+            {
+                return;
+            }
+
+            EnsureHeroVideoSources();
+            if (_heroVideoSources.Count == 0)
+            {
+                return;
+            }
+
+            var nextVideoPath = DequeueNextHeroVideoPath();
+            if (string.IsNullOrWhiteSpace(nextVideoPath))
+            {
+                return;
+            }
+
+            _isSwitchingHeroVideo = true;
+            try
+            {
+                if (useFade && _hasPlayedHeroVideo)
+                {
+                    await AnimateOpacityAsync(ExploreHeroVideo, toOpacity: 0, durationMs: 260);
+                }
+                else
+                {
+                    ExploreHeroVideo.Opacity = 0;
+                }
+
+                ExploreHeroVideo.Stop();
+                ExploreHeroVideo.Source = new Uri(nextVideoPath, UriKind.Absolute);
+                ExploreHeroVideo.Position = TimeSpan.Zero;
+                ExploreHeroVideo.Play();
+
+                await AnimateOpacityAsync(ExploreHeroVideo, toOpacity: 1, durationMs: 420);
+                _hasPlayedHeroVideo = true;
+            }
+            catch
+            {
+                // Ignore broken frame and continue with next clip on next loop.
+            }
+            finally
+            {
+                _isSwitchingHeroVideo = false;
+            }
+        }
+
+        private static Task AnimateOpacityAsync(UIElement element, double toOpacity, int durationMs)
+        {
+            if (durationMs <= 0)
+            {
+                element.Opacity = toOpacity;
+                return Task.CompletedTask;
+            }
+
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var animation = new DoubleAnimation
+            {
+                To = toOpacity,
+                Duration = TimeSpan.FromMilliseconds(durationMs),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+            };
+
+            animation.Completed += (_, _) => tcs.TrySetResult(true);
+            element.BeginAnimation(UIElement.OpacityProperty, animation);
+            return tcs.Task;
+        }
+
+        private void StopHeroVideo()
+        {
+            if (ExploreHeroVideo == null)
+            {
+                return;
+            }
+
+            ExploreHeroVideo.Stop();
+            ExploreHeroVideo.Source = null;
+            ExploreHeroVideo.Opacity = 1;
+            _isSwitchingHeroVideo = false;
+            _hasPlayedHeroVideo = false;
         }
     }
 }

@@ -219,11 +219,79 @@
                               Loaded="ExploreScrollViewer_OnLoaded"
                               ScrollChanged="ExploreScrollViewer_OnScrollChanged">
                 <StackPanel Margin="24,24,24,24">
-                    <!-- Header -->
-                    <StackPanel Margin="0,0,0,24">
-                        <TextBlock Text="Khám phá Tour Du Lịch" Style="{StaticResource HeadingLargeStyle}"/>
-                        <TextBlock Text="Tìm kiếm và khám phá những chuyến đi tuyệt vời cùng V-Travel" Style="{StaticResource CaptionStyle}" FontSize="14" Margin="0,6,0,0"/>
-                    </StackPanel>
+                    <!-- Header / Hero -->
+                    <Border x:Name="ExploreHeroCard" Margin="0,0,0,24" CornerRadius="20" ClipToBounds="True" Height="250">
+                        <Grid x:Name="ExploreHeroCardContent"
+                              Loaded="ExploreHeroCardContent_OnLoaded"
+                              SizeChanged="ExploreHeroCardContent_OnSizeChanged">
+                            <MediaElement x:Name="ExploreHeroVideo"
+                                          Stretch="UniformToFill"
+                                          LoadedBehavior="Manual"
+                                          UnloadedBehavior="Manual"
+                                          IsMuted="True"
+                                          Volume="0"
+                                          MediaEnded="ExploreHeroVideo_OnMediaEnded"
+                                          MediaFailed="ExploreHeroVideo_OnMediaFailed"/>
+
+                            <Grid Margin="24">
+                            <Grid.Resources>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Effect">
+                                        <Setter.Value>
+                                            <DropShadowEffect Color="#000000" BlurRadius="8" ShadowDepth="1" Opacity="0.68" Direction="270"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Grid.Resources>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Ellipse Width="160" Height="160" Fill="#1FFFFFFF" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-78,-62,0"/>
+                            <Ellipse Width="96" Height="96" Fill="#14FFFFFF" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,96,-46"/>
+
+                            <StackPanel Grid.Column="0">
+                                <Border Background="#26FFFFFF" CornerRadius="10" Padding="10,5" HorizontalAlignment="Left">
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="Sparkles" Width="14" Height="14" Foreground="White" Margin="0,0,6,0"/>
+                                        <TextBlock Text="Gợi ý hôm nay" FontFamily="{StaticResource AppFont}" FontSize="11" FontWeight="SemiBold" Foreground="White"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <TextBlock Margin="0,12,0,0" FontFamily="{StaticResource AppFont}" FontSize="34" FontWeight="Bold" Foreground="White" LineHeight="40">
+                                    <Run Text="Khám phá mọi cung đường"/>
+                                    <LineBreak/>
+                                    <Run Text="cùng VTravel"/>
+                                </TextBlock>
+
+                                <TextBlock Margin="0,12,0,0" FontFamily="{StaticResource AppFont}" FontSize="14" Foreground="#EAF6FF" TextWrapping="Wrap">
+                                    Tìm chuyến đi phù hợp ngân sách, lịch trình và điểm đến yêu thích.
+                                    Chọn nhanh và đặt ngay chỉ trong vài thao tác.
+                                </TextBlock>
+
+                                <WrapPanel Margin="0,14,0,0">
+                                    <Border Background="#26FFFFFF" CornerRadius="9" Padding="10,5" Margin="0,0,8,0">
+                                        <TextBlock FontFamily="{StaticResource AppFont}" FontSize="12" FontWeight="SemiBold" Foreground="White">
+                                            <Run Text="{Binding TotalToursAvailable, Mode=OneWay}"/>
+                                            <Run Text=" tour khả dụng"/>
+                                        </TextBlock>
+                                    </Border>
+                                    <Border Background="#26FFFFFF" CornerRadius="9" Padding="10,5">
+                                        <TextBlock Text="Hỗ trợ 24/7" FontFamily="{StaticResource AppFont}" FontSize="12" FontWeight="SemiBold" Foreground="White"/>
+                                    </Border>
+                                </WrapPanel>
+                            </StackPanel>
+
+                            <Border Grid.Column="1" Width="120" Height="120" CornerRadius="60" Background="#26FFFFFF" VerticalAlignment="Center" Margin="24,0,0,0">
+                                <Grid>
+                                    <Ellipse Width="84" Height="84" Fill="#1EFFFFFF"/>
+                                    <materialDesign:PackIcon Kind="AirplaneTakeoff" Width="44" Height="44" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                            </Grid>
+                        </Grid>
+                    </Border>
 
                     <!-- Search Bar -->
                     <Border Style="{StaticResource AppleCard}" Padding="16" Margin="0,0,0,24">
