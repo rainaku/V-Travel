@@ -18,6 +18,8 @@ namespace VietTravel.UI.ViewModels
 
         public string FullName => _mainViewModel.CurrentUser?.FullName ?? "Quản Trị Viên";
         public string UserRole => _mainViewModel.CurrentUser?.Role ?? "Admin";
+        public bool IsGuideRole => string.Equals(UserRole, "Guide", System.StringComparison.OrdinalIgnoreCase);
+        public bool IsNonGuideRole => !IsGuideRole;
         public string UserInitials => GetInitials(FullName);
         public int NotificationUnreadCount => _notificationCenter.UnreadCount;
         public bool HasUnreadNotifications => NotificationUnreadCount > 0;
@@ -29,12 +31,25 @@ namespace VietTravel.UI.ViewModels
             _notificationCenter = _mainViewModel.NotificationCenter;
             _notificationCenter.PropertyChanged += NotificationCenterOnPropertyChanged;
             _mainViewModel.PropertyChanged += MainViewModelOnPropertyChanged;
-            _currentPageViewModel = new DashboardViewModel(_mainViewModel, this);
+            if (IsGuideRole)
+            {
+                _selectedMenuItem = "Guides";
+                _currentPageViewModel = new GuideManagementViewModel(_mainViewModel);
+            }
+            else
+            {
+                _currentPageViewModel = new DashboardViewModel(_mainViewModel, this);
+            }
         }
 
         [RelayCommand]
         public void NavigateToPage(string pageName)
         {
+            if (IsGuideRole && !string.Equals(pageName, "Guides", System.StringComparison.Ordinal))
+            {
+                pageName = "Guides";
+            }
+
             if (SelectedMenuItem == pageName) return;
             SelectedMenuItem = pageName;
 
@@ -44,7 +59,9 @@ namespace VietTravel.UI.ViewModels
                 "Tours" => new TourListViewModel(_mainViewModel),
                 "Departures" => new DepartureListViewModel(_mainViewModel),
                 "Bookings" => new BookingListViewModel(_mainViewModel),
+                "Guides" => new GuideManagementViewModel(_mainViewModel),
                 "Customers" => new CustomerListViewModel(_mainViewModel),
+                "Users" => new UserManagementViewModel(_mainViewModel),
                 "Payments" => new PaymentListViewModel(_mainViewModel),
                 "Notifications" => new NotificationListViewModel(_mainViewModel),
                 "Debug" => new DebugToolsViewModel(_mainViewModel),
@@ -77,6 +94,13 @@ namespace VietTravel.UI.ViewModels
             if (e.PropertyName == nameof(MainViewModel.IsDebugMenuVisible))
             {
                 OnPropertyChanged(nameof(IsDebugMenuVisible));
+            }
+
+            if (e.PropertyName == nameof(MainViewModel.CurrentUser))
+            {
+                OnPropertyChanged(nameof(UserRole));
+                OnPropertyChanged(nameof(IsGuideRole));
+                OnPropertyChanged(nameof(IsNonGuideRole));
             }
         }
 

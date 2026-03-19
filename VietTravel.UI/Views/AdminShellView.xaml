@@ -19,8 +19,14 @@
         <DataTemplate DataType="{x:Type viewmodels:BookingListViewModel}">
             <views:BookingListView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:GuideManagementViewModel}">
+            <views:GuideManagementView/>
+        </DataTemplate>
         <DataTemplate DataType="{x:Type viewmodels:CustomerListViewModel}">
             <views:CustomerListView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:UserManagementViewModel}">
+            <views:UserManagementView/>
         </DataTemplate>
         <DataTemplate DataType="{x:Type viewmodels:PaymentListViewModel}">
             <views:PaymentListView/>
@@ -56,18 +62,7 @@
                     <!-- Logo Area -->
                     <StackPanel Grid.Row="0" Margin="20,20,20,24">
                         <StackPanel Orientation="Horizontal">
-                            <Grid Width="40" Height="40" Margin="0,0,12,0">
-                                <Ellipse Width="40" Height="40">
-                                    <Ellipse.Fill>
-                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                            <GradientStop Color="#007AFF" Offset="0"/>
-                                            <GradientStop Color="#5AC8FA" Offset="1"/>
-                                        </LinearGradientBrush>
-                                    </Ellipse.Fill>
-                                </Ellipse>
-                                <materialDesign:PackIcon Kind="AirplaneTakeoff" Width="20" Height="20"
-                                                         Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Grid>
+                            <Image Source="/UI/Assets/logo.png" Width="40" Height="40" Margin="0,0,12,0" RenderOptions.BitmapScalingMode="HighQuality"/>
                             <StackPanel VerticalAlignment="Center">
                                 <TextBlock Text="Viet Travel" FontFamily="{StaticResource AppFont}" 
                                            FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
@@ -80,6 +75,20 @@
                     <!-- Navigation Items -->
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel Margin="4,0">
+                            <StackPanel Visibility="{Binding IsGuideRole, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <TextBlock Text="LỊCH CÔNG VIỆC" FontFamily="{StaticResource AppFont}" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextTertiaryBrush}" Margin="20,4,0,8"/>
+                                <RadioButton Style="{StaticResource SidebarButton}"
+                                             IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Guides, Mode=OneWay}"
+                                             Command="{Binding NavigateToPageCommand}" CommandParameter="Guides">
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="CalendarAccountOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Lịch của tôi" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </RadioButton>
+                            </StackPanel>
+
+                            <StackPanel Visibility="{Binding IsNonGuideRole, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <!-- Section: Tổng quan -->
                             <TextBlock Text="TỔNG QUAN" FontFamily="{StaticResource AppFont}" FontSize="11" FontWeight="SemiBold"
                                        Foreground="{StaticResource TextTertiaryBrush}" Margin="20,4,0,8"/>
@@ -125,11 +134,29 @@
                             </RadioButton>
 
                             <RadioButton Style="{StaticResource SidebarButton}"
+                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Guides, Mode=OneWay}"
+                                         Command="{Binding NavigateToPageCommand}" CommandParameter="Guides">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="AccountTieOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Hướng dẫn viên" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton Style="{StaticResource SidebarButton}"
                                          IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Customers, Mode=OneWay}"
                                          Command="{Binding NavigateToPageCommand}" CommandParameter="Customers">
                                 <StackPanel Orientation="Horizontal">
                                     <materialDesign:PackIcon Kind="AccountGroupOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="Khách Hàng" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton Style="{StaticResource SidebarButton}"
+                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Users, Mode=OneWay}"
+                                         Command="{Binding NavigateToPageCommand}" CommandParameter="Users">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="AccountCogOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Người dùng &amp; Role" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </RadioButton>
 
@@ -200,6 +227,7 @@
                                     </StackPanel>
                                 </RadioButton>
                             </StackPanel>
+                            </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
 
@@ -250,3 +278,4 @@
         </Grid>
     </Border>
 </UserControl>
+

@@ -43,19 +43,7 @@
 
                 <StackPanel>
                     <!-- Logo Icon -->
-                    <Grid HorizontalAlignment="Center" Margin="0,0,0,8">
-                        <Ellipse Width="72" Height="72" Opacity="0.12">
-                            <Ellipse.Fill>
-                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                    <GradientStop Color="#007AFF" Offset="0"/>
-                                    <GradientStop Color="#5AC8FA" Offset="1"/>
-                                </LinearGradientBrush>
-                            </Ellipse.Fill>
-                        </Ellipse>
-                        <materialDesign:PackIcon Kind="Airplane" Width="36" Height="36" 
-                                                 Foreground="{StaticResource PrimaryBrush}"
-                                                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Grid>
+                    <Image Source="/UI/Assets/logo.png" Width="64" Height="64" Margin="0,0,0,8" HorizontalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality"/>
 
                     <!-- Title -->
                     <TextBlock Text="Viet Travel" HorizontalAlignment="Center" Margin="0,0,0,4"
@@ -129,3 +117,4 @@
         </Grid>
     </Border>
 </UserControl>
+

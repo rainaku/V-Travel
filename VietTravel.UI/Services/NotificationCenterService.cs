@@ -36,7 +36,8 @@ namespace VietTravel.UI.Services
         private bool IsCustomerRole => string.Equals(_currentRole, "Customer", StringComparison.OrdinalIgnoreCase);
         private bool IsAdminOrEmployeeRole =>
             string.Equals(_currentRole, "Admin", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(_currentRole, "Employee", StringComparison.OrdinalIgnoreCase);
+            string.Equals(_currentRole, "Employee", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(_currentRole, "Guide", StringComparison.OrdinalIgnoreCase);
 
         [ObservableProperty]
         private int _unreadCount;

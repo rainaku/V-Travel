@@ -1,0 +1,189 @@
+<UserControl x:Class="VietTravel.UI.Views.UserManagementView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             Background="{StaticResource BackgroundBrush}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="32,28,32,32">
+
+            <!-- Header -->
+            <Grid Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="Quản lý Người Dùng &amp; Role" Style="{StaticResource HeadingLargeStyle}"/>
+                    <TextBlock Text="Admin có thể gán role cho user trực tiếp trong giao diện quản trị" Style="{StaticResource CaptionStyle}" Margin="0,4,0,0"/>
+                </StackPanel>
+                <Button Style="{StaticResource AppleGhostButton}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Command="{Binding LoadDataCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="Làm mới" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- Permission Warning -->
+            <Border Padding="12" Margin="0,0,0,20">
+                <Border.Style>
+                    <Style TargetType="Border" BasedOn="{StaticResource AppleCard}">
+                        <Setter Property="Visibility" Value="Visible"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CanManageRoles}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="AlertCircleOutline" Width="18" Height="18" Foreground="{StaticResource WarningBrush}" Margin="0,0,8,0"/>
+                    <TextBlock Text="Bạn đang đăng nhập không phải Admin. Chỉ có thể xem, không thể đổi role."
+                               FontFamily="{StaticResource AppFont}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Stats -->
+            <UniformGrid Columns="2" Margin="0,0,0,20">
+                <Border Style="{StaticResource StatCard}" Margin="0,0,10,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Grid Width="40" Height="40" Margin="0,0,12,0">
+                            <Ellipse Width="40" Height="40" Fill="#1A007AFF"/>
+                            <materialDesign:PackIcon Kind="AccountGroupOutline" Width="20" Height="20" Foreground="{StaticResource PrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding TotalUsers}" FontFamily="{StaticResource AppFont}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <TextBlock Text="Tổng user" FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}" Margin="10,0,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Grid Width="40" Height="40" Margin="0,0,12,0">
+                            <Ellipse Width="40" Height="40" Fill="#1A34C759"/>
+                            <materialDesign:PackIcon Kind="AccountTieOutline" Width="20" Height="20" Foreground="{StaticResource SuccessBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding TotalGuides}" FontFamily="{StaticResource AppFont}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <TextBlock Text="User role Guide" FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <!-- Search -->
+            <Border Style="{StaticResource AppleCard}" Padding="16" Margin="0,0,0,20">
+                <Grid>
+                    <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource AppleSearchBox}"
+                             materialDesign:HintAssist.Hint="Tìm theo tên, username hoặc role..."/>
+                    <materialDesign:PackIcon Kind="Magnify" Width="18" Height="18" Foreground="{StaticResource TextTertiaryBrush}"
+                                             VerticalAlignment="Center" Margin="12,0,0,0" IsHitTestVisible="False"/>
+                </Grid>
+            </Border>
+
+            <!-- Table -->
+            <Border Style="{StaticResource AppleCard}" Padding="0">
+                <Grid>
+                    <ProgressBar IsIndeterminate="True" Height="4" Margin="0,16,0,0" VerticalAlignment="Top"
+                                 Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                    <StackPanel>
+                        <Grid Background="#FAFAFA">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="0.5*"/>
+                                <ColumnDefinition Width="1.4*"/>
+                                <ColumnDefinition Width="1.2*"/>
+                                <ColumnDefinition Width="1*"/>
+                                <ColumnDefinition Width="0.8*"/>
+                                <ColumnDefinition Width="0.8*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border CornerRadius="16,16,0,0" Background="#FAFAFA" Grid.ColumnSpan="6"/>
+                            <TextBlock Text="ID" Grid.Column="0" Padding="20,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                            <TextBlock Text="Họ tên" Grid.Column="1" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                            <TextBlock Text="Username" Grid.Column="2" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                            <TextBlock Text="Role" Grid.Column="3" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                            <TextBlock Text="Trạng thái" Grid.Column="4" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                            <TextBlock Text="Hành động" Grid.Column="5" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}" HorizontalAlignment="Center"/>
+                        </Grid>
+
+                        <ItemsControl ItemsSource="{Binding FilteredUsers}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="Transparent" BorderBrush="#EEEEEE" BorderThickness="0,0,0,1">
+                                        <Grid Margin="0,10">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="0.5*"/>
+                                                <ColumnDefinition Width="1.4*"/>
+                                                <ColumnDefinition Width="1.2*"/>
+                                                <ColumnDefinition Width="1*"/>
+                                                <ColumnDefinition Width="0.8*"/>
+                                                <ColumnDefinition Width="0.8*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Text="{Binding Id}" Grid.Column="0" Padding="20,0,12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" FontFamily="{StaticResource AppFont}"/>
+                                            <TextBlock Text="{Binding FullName}" Grid.Column="1" Padding="12,0" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Username}" Grid.Column="2" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+
+                                            <ComboBox Grid.Column="3" Margin="8,0"
+                                                      ItemsSource="{Binding DataContext.RoleOptions, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                      SelectedItem="{Binding Role, UpdateSourceTrigger=PropertyChanged}"
+                                                      IsEnabled="{Binding DataContext.CanManageRoles, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                      FontFamily="{StaticResource AppFont}" FontSize="12"/>
+
+                                            <Border Grid.Column="4" Margin="16,0,12,0" Padding="10,4" CornerRadius="10" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="#1A34C759"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsActive}" Value="False">
+                                                                <Setter Property="Background" Value="#1AFF3B30"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock FontFamily="{StaticResource AppFont}" FontSize="11" FontWeight="SemiBold">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="Hoạt động"/>
+                                                            <Setter Property="Foreground" Value="{StaticResource SuccessBrush}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsActive}" Value="False">
+                                                                    <Setter Property="Text" Value="Tạm khóa"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Border>
+
+                                            <Button Grid.Column="5" Style="{StaticResource AppleGhostButton}" Padding="12,0" MinWidth="100" HorizontalAlignment="Center"
+                                                    IsEnabled="{Binding DataContext.CanManageRoles, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    Command="{Binding DataContext.SaveUserRoleCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <materialDesign:PackIcon Kind="ContentSaveOutline" Width="15" Height="15" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="Lưu role" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <StackPanel HorizontalAlignment="Center" Margin="0,48,0,56"
+                                Visibility="{Binding HasNoData, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Grid Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16">
+                            <Ellipse Width="64" Height="64" Fill="#0AAF52DE"/>
+                            <materialDesign:PackIcon Kind="AccountCogOutline" Width="32" Height="32" Foreground="{StaticResource AccentBrush}"
+                                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <TextBlock Text="Không tìm thấy user phù hợp" HorizontalAlignment="Center"
+                                   FontFamily="{StaticResource AppFont}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
