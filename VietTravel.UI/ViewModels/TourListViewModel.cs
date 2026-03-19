@@ -1,18 +1,23 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using VietTravel.Core.Models;
 using VietTravel.Data;
+using VietTravel.Data.Services;
 
 namespace VietTravel.UI.ViewModels
 {
     public partial class TourListViewModel : ObservableObject
     {
         private readonly MainViewModel _mainViewModel;
+        private readonly CloudinaryImageService _cloudinaryImageService = new();
 
         [ObservableProperty] private string _searchText = string.Empty;
         [ObservableProperty] private ObservableCollection<Tour> _tours = new();
@@ -25,6 +30,8 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private string _formDestination = string.Empty;
         [ObservableProperty] private string _formBasePrice = string.Empty;
         [ObservableProperty] private string _formDurationDays = string.Empty;
+        [ObservableProperty] private string _formImageUrl = string.Empty;
+        [ObservableProperty] private bool _isUploadingImage = false;
         [ObservableProperty] private bool _isFormVisible = false;
         [ObservableProperty] private bool _isEditing = false;
         [ObservableProperty] private string _formTitle = "Thêm Tour Mới";
@@ -32,6 +39,7 @@ namespace VietTravel.UI.ViewModels
         private Tour? _editingTour;
 
         public bool HasNoData => !IsLoading && FilteredTours.Count == 0;
+        public string UploadImageButtonText => IsUploadingImage ? "Đang tải ảnh..." : "Tải ảnh lên";
 
         public TourListViewModel(MainViewModel mainViewModel)
         {
@@ -42,6 +50,12 @@ namespace VietTravel.UI.ViewModels
         partial void OnSearchTextChanged(string value)
         {
             ApplyFilter();
+        }
+
+        partial void OnIsUploadingImageChanged(bool value)
+        {
+            OnPropertyChanged(nameof(UploadImageButtonText));
+            UploadTourImageCommand.NotifyCanExecuteChanged();
         }
 
         private void ApplyFilter()
@@ -74,9 +88,10 @@ namespace VietTravel.UI.ViewModels
             {
                 var client = await SupabaseClientFactory.GetClientAsync();
                 var response = await client.From<Tour>().Get();
+                var models = response.Models ?? new List<Tour>();
 
                 Tours.Clear();
-                foreach (var tour in response.Models)
+                foreach (var tour in models)
                 {
                     Tours.Add(tour);
                 }
@@ -102,6 +117,7 @@ namespace VietTravel.UI.ViewModels
             FormDestination = string.Empty;
             FormBasePrice = string.Empty;
             FormDurationDays = string.Empty;
+            FormImageUrl = string.Empty;
             IsEditing = false;
             _editingTour = null;
             IsFormVisible = true;
@@ -117,6 +133,7 @@ namespace VietTravel.UI.ViewModels
             FormDestination = tour.Destination;
             FormBasePrice = tour.BasePrice.ToString("0");
             FormDurationDays = tour.DurationDays.ToString();
+            FormImageUrl = tour.ImageUrl;
             IsEditing = true;
             _editingTour = tour;
             IsFormVisible = true;
@@ -128,28 +145,77 @@ namespace VietTravel.UI.ViewModels
             IsFormVisible = false;
         }
 
+        [RelayCommand(CanExecute = nameof(CanUploadTourImage))]
+        private async Task UploadTourImageAsync()
+        {
+            var fileDialog = new OpenFileDialog
+            {
+                Title = "Chọn ảnh tour",
+                Filter = "Image Files|*.jpg;*.jpeg;*.png;*.webp",
+                CheckFileExists = true,
+                Multiselect = false
+            };
+
+            if (fileDialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            IsUploadingImage = true;
+            try
+            {
+                var tourKey = IsEditing && _editingTour != null
+                    ? _editingTour.Id.ToString(CultureInfo.InvariantCulture)
+                    : $"draft-{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
+                FormImageUrl = await _cloudinaryImageService.UploadTourImageAsync(fileDialog.FileName, tourKey);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Không thể tải ảnh tour: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                IsUploadingImage = false;
+            }
+        }
+
+        private bool CanUploadTourImage()
+        {
+            return !IsUploadingImage;
+        }
+
         [RelayCommand]
         private async Task SaveTourAsync()
         {
             // Validate
-            if (string.IsNullOrWhiteSpace(FormName))
+            var name = FormName.Trim();
+            var destination = FormDestination.Trim();
+            var description = FormDescription.Trim();
+            var imageUrl = FormImageUrl.Trim();
+
+            if (string.IsNullOrWhiteSpace(name))
             {
                 MessageBox.Show("Vui lòng nhập tên tour.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            if (string.IsNullOrWhiteSpace(FormDestination))
+            if (string.IsNullOrWhiteSpace(destination))
             {
                 MessageBox.Show("Vui lòng nhập điểm đến.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            if (!decimal.TryParse(FormBasePrice, out decimal price) || price <= 0)
+            if (!TryParsePositiveMoney(FormBasePrice, out var price))
             {
                 MessageBox.Show("Giá cơ bản phải là số dương.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            if (!int.TryParse(FormDurationDays, out int days) || days <= 0)
+            if (!int.TryParse(FormDurationDays.Trim(), out var days) || days <= 0)
             {
                 MessageBox.Show("Số ngày phải là số nguyên dương.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!string.IsNullOrWhiteSpace(imageUrl) && !Uri.TryCreate(imageUrl, UriKind.Absolute, out _))
+            {
+                MessageBox.Show("URL ảnh tour không hợp lệ.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -159,23 +225,26 @@ namespace VietTravel.UI.ViewModels
 
                 if (IsEditing && _editingTour != null)
                 {
-                    _editingTour.Name = FormName;
-                    _editingTour.Description = FormDescription;
-                    _editingTour.Destination = FormDestination;
+                    _editingTour.Name = name;
+                    _editingTour.Description = description;
+                    _editingTour.Destination = destination;
                     _editingTour.BasePrice = price;
                     _editingTour.DurationDays = days;
+                    _editingTour.ImageUrl = imageUrl;
                     await client.From<Tour>().Update(_editingTour);
                 }
                 else
                 {
                     var newTour = new Tour
                     {
-                        Name = FormName,
-                        Description = FormDescription,
-                        Destination = FormDestination,
+                        Name = name,
+                        Description = description,
+                        Destination = destination,
                         BasePrice = price,
-                        DurationDays = days
+                        DurationDays = days,
+                        ImageUrl = imageUrl
                     };
+
                     await client.From<Tour>().Insert(newTour);
                 }
 
@@ -186,6 +255,25 @@ namespace VietTravel.UI.ViewModels
             {
                 MessageBox.Show($"Lỗi lưu tour: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private static bool TryParsePositiveMoney(string rawInput, out decimal value)
+        {
+            value = 0;
+            if (string.IsNullOrWhiteSpace(rawInput))
+            {
+                return false;
+            }
+
+            var cleaned = rawInput
+                .Trim()
+                .Replace("đ", "", StringComparison.OrdinalIgnoreCase)
+                .Replace("vnd", "", StringComparison.OrdinalIgnoreCase)
+                .Replace(" ", string.Empty)
+                .Replace(".", string.Empty)
+                .Replace(",", string.Empty);
+
+            return decimal.TryParse(cleaned, NumberStyles.Number, CultureInfo.InvariantCulture, out value) && value > 0;
         }
 
         [RelayCommand]

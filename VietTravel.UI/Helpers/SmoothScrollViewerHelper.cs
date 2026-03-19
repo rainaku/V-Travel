@@ -23,14 +23,14 @@ namespace VietTravel.UI.Helpers
                 "WheelStep",
                 typeof(double),
                 typeof(SmoothScrollViewerHelper),
-                new PropertyMetadata(84d));
+                new PropertyMetadata(250d));
 
         public static readonly DependencyProperty DurationMsProperty =
             DependencyProperty.RegisterAttached(
                 "DurationMs",
                 typeof(double),
                 typeof(SmoothScrollViewerHelper),
-                new PropertyMetadata(220d));
+                new PropertyMetadata(180d));
 
         public static readonly DependencyProperty AnimatedVerticalOffsetProperty =
             DependencyProperty.RegisterAttached(
@@ -79,7 +79,7 @@ namespace VietTravel.UI.Helpers
             obj.SetValue(AnimatedVerticalOffsetProperty, value);
         }
 
-        public static void EnableGlobalSmoothScroll(double wheelStep = 88d, double durationMs = 220d)
+        public static void EnableGlobalSmoothScroll(double wheelStep = 250d, double durationMs = 180d)
         {
             if (_globalEnabled)
             {
@@ -154,7 +154,7 @@ namespace VietTravel.UI.Helpers
                 SetAnimatedVerticalOffset(scrollViewer, current);
             }
 
-            var wheelStep = Math.Max(24, GetWheelStep(scrollViewer));
+            var wheelStep = Math.Max(40, GetWheelStep(scrollViewer));
             var target = current - (e.Delta / 120.0) * wheelStep;
             target = Math.Max(0, Math.Min(scrollViewer.ScrollableHeight, target));
 
@@ -172,7 +172,7 @@ namespace VietTravel.UI.Helpers
             {
                 From = current,
                 To = target,
-                Duration = TimeSpan.FromMilliseconds(Math.Max(120, GetDurationMs(scrollViewer))),
+                Duration = TimeSpan.FromMilliseconds(Math.Max(100, GetDurationMs(scrollViewer))),
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             };
 

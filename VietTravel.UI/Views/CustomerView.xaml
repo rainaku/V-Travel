@@ -285,8 +285,12 @@
 
                             <Border Grid.Column="1" Width="120" Height="120" CornerRadius="60" Background="#26FFFFFF" VerticalAlignment="Center" Margin="24,0,0,0">
                                 <Grid>
-                                    <Ellipse Width="84" Height="84" Fill="#1EFFFFFF"/>
-                                    <materialDesign:PackIcon Kind="AirplaneTakeoff" Width="44" Height="44" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <Ellipse Width="100" Height="100" Fill="#1EFFFFFF"/>
+                                    <Image Source="/UI/Assets/logo-white.png" Width="84" Height="84" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality">
+                                        <Image.Effect>
+                                            <DropShadowEffect Color="White" BlurRadius="12" ShadowDepth="0" Opacity="0.8"/>
+                                        </Image.Effect>
+                                    </Image>
                                 </Grid>
                             </Border>
                             </Grid>
@@ -590,12 +594,21 @@
                                                 <TextBlock Text="{Binding Destination}" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
                                                 <TextBlock Text="  •  " FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}"/>
                                                 <materialDesign:PackIcon Kind="CalendarOutline" Width="14" Height="14" Foreground="{StaticResource SuccessBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                                                <TextBlock Text="{Binding StartDateFormatted}" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                <TextBlock FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}">
+                                                    <Run Text="{Binding StartDateFormatted}"/>
+                                                    <Run Text=" - "/>
+                                                    <Run Text="{Binding EndDateFormatted}"/>
+                                                </TextBlock>
                                                 <TextBlock Text="  •  " FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}"/>
                                                 <materialDesign:PackIcon Kind="ClockOutline" Width="14" Height="14" Foreground="{StaticResource WarningBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
                                                 <TextBlock FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}">
                                                     <Run Text="{Binding DurationDays, Mode=OneWay}"/><Run Text=" ngày"/>
                                                 </TextBlock>
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                                <materialDesign:PackIcon Kind="AccountTieOutline" Width="14" Height="14" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="HDV: " FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{Binding GuideName}" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                                                 <Border Background="#0A34C759" CornerRadius="6" Padding="8,3" Margin="0,0,8,0">
@@ -738,11 +751,35 @@
 
                                             <StackPanel>
                                                 <TextBlock Text="{Binding TourName}" FontFamily="{StaticResource AppFont}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                                    <materialDesign:PackIcon Kind="MapMarkerOutline" Width="14" Height="14" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                                                    <TextBlock Text="{Binding Destination}" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                <WrapPanel Margin="0,6,0,0" ItemHeight="18">
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                                        <materialDesign:PackIcon Kind="MapMarkerOutline" Width="14" Height="14" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding Destination}" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                                        <materialDesign:PackIcon Kind="CalendarRange" Width="14" Height="14" Foreground="{StaticResource TextTertiaryBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                        <TextBlock FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}">
+                                                            <Run Text="{Binding StartDateFormatted}"/>
+                                                            <Run Text=" - "/>
+                                                            <Run Text="{Binding EndDateFormatted}"/>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <materialDesign:PackIcon Kind="ClockOutline" Width="14" Height="14" Foreground="{StaticResource WarningBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                        <TextBlock FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}">
+                                                            <Run Text="{Binding DurationDays}"/>
+                                                            <Run Text=" ngày"/>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                </WrapPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                                    <materialDesign:PackIcon Kind="AccountTieOutline" Width="14" Height="14" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                    <TextBlock FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}">
+                                                        <Run Text="HDV: "/>
+                                                        <Run Text="{Binding GuideName}"/>
+                                                    </TextBlock>
                                                 </StackPanel>
-                                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                                <WrapPanel Margin="0,10,0,0">
                                                     <Border Background="#0A007AFF" CornerRadius="6" Padding="8,3" Margin="0,0,8,0">
                                                         <TextBlock FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="{StaticResource PrimaryBrush}">
                                                             <Run Text="Khởi hành: "/>
@@ -761,11 +798,26 @@
                                                             <Run Text="{Binding BookingDateFormatted, Mode=OneWay}"/>
                                                         </TextBlock>
                                                     </Border>
-                                                </StackPanel>
+                                                </WrapPanel>
+                                                <TextBlock FontFamily="{StaticResource AppFont}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource SuccessBrush}" Margin="0,8,0,0"
+                                                           Text="{Binding AvailableSlots, StringFormat=Còn {0} chỗ}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding AvailableSlots}" Value="0">
+                                                                    <Setter Property="Text" Value="Hết chỗ"/>
+                                                                    <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
                                             </StackPanel>
 
                                             <!-- Status badge -->
                                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding PriceFormatted}" FontFamily="{StaticResource AppFont}" FontSize="32" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" HorizontalAlignment="Right"/>
+                                                <TextBlock Text="/người" FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="{StaticResource TextTertiaryBrush}" HorizontalAlignment="Right" Margin="0,-2,0,8"/>
                                                 <Border CornerRadius="8" Padding="12,6" HorizontalAlignment="Right">
                                                     <Border.Background>
                                                         <SolidColorBrush Color="{Binding StatusColor}" Opacity="0.1"/>
@@ -1545,7 +1597,54 @@
                             <!-- Description -->
                             <TextBlock Text="Chi tiết tour" FontFamily="{StaticResource AppFont}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,8"/>
                             <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
-                                <TextBlock Text="{Binding SelectedTour.Description, Mode=OneWay}" FontFamily="{StaticResource AppFont}" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="22"/>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding SelectedTour.Description, Mode=OneWay}" FontFamily="{StaticResource AppFont}" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="22" Margin="0,0,0,16"/>
+                                    <!-- Điểm tham quan -->
+                                    <StackPanel Visibility="{Binding SelectedTour.HasAttractions, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,16">
+                                        <TextBlock Text="Điểm tham quan nổi bật" FontFamily="{StaticResource AppFont}" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+                                        <ItemsControl ItemsSource="{Binding SelectedTour.Attractions}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                                        <materialDesign:PackIcon Kind="MapMarkerStarOutline" Width="16" Height="16" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding Name}" FontFamily="{StaticResource AppFont}" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                    <!-- Nơi ở / Khách sạn -->
+                                    <StackPanel Visibility="{Binding SelectedTour.HasHotels, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,16">
+                                        <TextBlock Text="Nơi lưu trú" FontFamily="{StaticResource AppFont}" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+                                        <ItemsControl ItemsSource="{Binding SelectedTour.Hotels}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                                        <materialDesign:PackIcon Kind="BedOutline" Width="16" Height="16" Foreground="{StaticResource WarningBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                        <TextBlock FontFamily="{StaticResource AppFont}" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}">
+                                                            <Run Text="{Binding Name}"/>
+                                                            <Run Text=" ("/><Run Text="{Binding StarRating}"/><Run Text=" Sao)"/>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                    <!-- Phương tiện -->
+                                    <StackPanel Visibility="{Binding SelectedTour.HasTransports, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,16">
+                                        <TextBlock Text="Phương tiện di chuyển" FontFamily="{StaticResource AppFont}" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+                                        <ItemsControl ItemsSource="{Binding SelectedTour.Transports}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                                        <materialDesign:PackIcon Kind="CarMultiple" Width="16" Height="16" Foreground="{StaticResource SuccessBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding Name}" FontFamily="{StaticResource AppFont}" FontSize="14" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </StackPanel>
                             </ScrollViewer>
 
                             <!-- Action Buttons -->

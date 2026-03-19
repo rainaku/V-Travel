@@ -11,6 +11,17 @@ namespace VietTravel.Data.Services
     {
         public async Task<string> UploadAvatarAsync(string filePath, int userId)
         {
+            return await UploadImageAsync(filePath, $"viet-travel/users/{userId}");
+        }
+
+        public async Task<string> UploadTourImageAsync(string filePath, string tourKey)
+        {
+            var safeKey = string.IsNullOrWhiteSpace(tourKey) ? "draft" : tourKey.Trim();
+            return await UploadImageAsync(filePath, $"viet-travel/tours/{safeKey}");
+        }
+
+        private static async Task<string> UploadImageAsync(string filePath, string folder)
+        {
             if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
             {
                 throw new FileNotFoundException("Không tìm thấy file ảnh để upload.", filePath);
@@ -25,7 +36,6 @@ namespace VietTravel.Data.Services
                 throw new InvalidOperationException("Thiếu CLOUDINARY_CLOUD_NAME trong file .env.");
             }
 
-            var folder = $"viet-travel/users/{userId}";
             var apiKey = Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY");
             var apiSecret = Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET");
 

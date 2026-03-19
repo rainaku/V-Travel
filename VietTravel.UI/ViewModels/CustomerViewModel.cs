@@ -369,7 +369,28 @@ namespace VietTravel.UI.ViewModels
                 var client = await SupabaseClientFactory.GetClientAsync();
 
                 // Load tours
-                var tours = (await client.From<Tour>().Get()).Models;
+                var tours = (await client.From<Tour>().Get()).Models ?? new List<Tour>();
+
+                var allTransports = (await client.From<Transport>().Get()).Models ?? new List<Transport>();
+                var allHotels = (await client.From<Hotel>().Get()).Models ?? new List<Hotel>();
+                var allAttractions = (await client.From<Attraction>().Get()).Models ?? new List<Attraction>();
+                var allTourTransports = (await client.From<TourTransport>().Get()).Models ?? new List<TourTransport>();
+                var allTourHotels = (await client.From<TourHotel>().Get()).Models ?? new List<TourHotel>();
+                var allTourAttractions = (await client.From<TourAttraction>().Get()).Models ?? new List<TourAttraction>();
+
+                foreach (var tour in tours)
+                {
+                    tour.TourTransports = allTourTransports.Where(x => x.TourId == tour.Id).ToList();
+                    foreach (var tx in tour.TourTransports) tx.Transport = allTransports.FirstOrDefault(t => t.Id == tx.TransportId)!;
+
+                    tour.TourHotels = allTourHotels.Where(x => x.TourId == tour.Id).ToList();
+                    foreach (var hx in tour.TourHotels) hx.Hotel = allHotels.FirstOrDefault(t => t.Id == hx.HotelId)!;
+
+                    tour.TourAttractions = allTourAttractions.Where(x => x.TourId == tour.Id).OrderBy(x => x.OrderIndex).ToList();
+                    foreach (var ax in tour.TourAttractions) ax.Attraction = allAttractions.FirstOrDefault(t => t.Id == ax.AttractionId)!;
+                }
+
+                // Chỉ đọc mapping từ database, không inject ngẫu nhiên trong ứng dụng.
                 
                 // Stable and destination-aware tour thumbnails (direct JPEG URLs).
                 var displayTours = tours.Select((t, i) => new TourDisplayInfo
@@ -384,6 +405,9 @@ namespace VietTravel.UI.ViewModels
 
                 // Load departures with tour info
                 var deps = (await client.From<Departure>().Get()).Models;
+                var assignments = (await client.From<TourGuideAssignment>().Get()).Models ?? new List<TourGuideAssignment>();
+                var users = (await client.From<User>().Get()).Models ?? new List<User>();
+
                 foreach (var d in deps) d.Tour = tours.FirstOrDefault(t => t.Id == d.TourId);
                 AllDepartures = new ObservableCollection<Departure>(deps);
 
@@ -391,19 +415,24 @@ namespace VietTravel.UI.ViewModels
                 var displayDeps = deps
                     .Where(d => d.Status == "Mở bán" && d.AvailableSlots > 0)
                     .OrderBy(d => d.StartDate)
-                    .Select(d => new DepartureDisplayInfo
-                    {
-                        Departure = d,
-                        TourName = d.Tour?.Name ?? "N/A",
-                        Destination = d.Tour?.Destination ?? "",
-                        StartDateFormatted = d.StartDate.ToString("dd/MM/yyyy"),
-                        EndDateFormatted = d.StartDate
-                            .AddDays(Math.Max((d.Tour?.DurationDays ?? 1) - 1, 0))
-                            .ToString("dd/MM/yyyy"),
-                        AvailableSlots = d.AvailableSlots,
-                        Price = d.Tour?.BasePrice ?? 0,
-                        PriceFormatted = $"{(d.Tour?.BasePrice ?? 0):N0} đ",
-                        DurationDays = d.Tour?.DurationDays ?? 0
+                    .Select(d => {
+                        var guideId = assignments.FirstOrDefault(a => a.DepartureId == d.Id)?.GuideUserId;
+                        var guideName = guideId != null ? users.FirstOrDefault(u => u.Id == guideId)?.FullName : null;
+                        return new DepartureDisplayInfo
+                        {
+                            Departure = d,
+                            TourName = d.Tour?.Name ?? "N/A",
+                            Destination = d.Tour?.Destination ?? "",
+                            StartDateFormatted = d.StartDate.ToString("dd/MM/yyyy"),
+                            EndDateFormatted = d.StartDate
+                                .AddDays(Math.Max((d.Tour?.DurationDays ?? 1) - 1, 0))
+                                .ToString("dd/MM/yyyy"),
+                            AvailableSlots = d.AvailableSlots,
+                            Price = d.Tour?.BasePrice ?? 0,
+                            PriceFormatted = $"{(d.Tour?.BasePrice ?? 0):N0} đ",
+                            DurationDays = d.Tour?.DurationDays ?? 0,
+                            GuideName = string.IsNullOrWhiteSpace(guideName) ? "Chưa phân công" : guideName
+                        };
                     })
                     .ToList();
                 AvailableDepartures = new ObservableCollection<DepartureDisplayInfo>(displayDeps);
@@ -432,13 +461,28 @@ namespace VietTravel.UI.ViewModels
                     {
                         var dep = deps.FirstOrDefault(d => d.Id == b.DepartureId);
                         var tour = dep?.Tour;
+                        var durationDays = tour?.DurationDays ?? 0;
+                        var startDateFormatted = dep?.StartDate.ToString("dd/MM/yyyy") ?? "N/A";
+                        var endDateFormatted = dep?.StartDate
+                            .AddDays(Math.Max(durationDays - 1, 0))
+                            .ToString("dd/MM/yyyy") ?? "N/A";
+                        var guideId = dep != null ? assignments.FirstOrDefault(a => a.DepartureId == dep.Id)?.GuideUserId : null;
+                        var guideName = guideId != null ? users.FirstOrDefault(u => u.Id == guideId)?.FullName : null;
+                        var price = tour?.BasePrice ?? 0;
                         var cancelDisabledReason = GetCancelDisabledReason(b, dep);
                         MyBookings.Add(new BookingDisplayInfo
                         {
                             Booking = b,
                             TourName = tour?.Name ?? "N/A",
                             Destination = tour?.Destination ?? "",
-                            DepartureDate = dep?.StartDate.ToString("dd/MM/yyyy") ?? "N/A",
+                            DepartureDate = startDateFormatted,
+                            StartDateFormatted = startDateFormatted,
+                            EndDateFormatted = endDateFormatted,
+                            DurationDays = durationDays,
+                            GuideName = string.IsNullOrWhiteSpace(guideName) ? "Chưa phân công" : guideName,
+                            Price = price,
+                            PriceFormatted = $"{price:N0} đ",
+                            AvailableSlots = dep?.AvailableSlots ?? 0,
                             DepartureStartDate = dep?.StartDate,
                             BookingDateFormatted = b.BookingDate.ToString("dd/MM/yyyy"),
                             GuestCount = b.GuestCount,
@@ -1350,6 +1394,11 @@ namespace VietTravel.UI.ViewModels
 
         private static string ResolveTourImageUrl(Tour tour, int index)
         {
+            if (!string.IsNullOrWhiteSpace(tour.ImageUrl))
+            {
+                return tour.ImageUrl;
+            }
+
             var normalized = NormalizeText($"{tour.Name} {tour.Destination}");
 
             foreach (var rule in TourImageRules)
@@ -1410,6 +1459,7 @@ namespace VietTravel.UI.ViewModels
             "https://images.pexels.com/photos/1365425/pexels-photo-1365425.jpeg?auto=compress&cs=tinysrgb&w=1200",
             "https://images.pexels.com/photos/2161467/pexels-photo-2161467.jpeg?auto=compress&cs=tinysrgb&w=1200"
         };
+
     }
 
     // Display models for rich UI binding
@@ -1424,6 +1474,7 @@ namespace VietTravel.UI.ViewModels
         public decimal Price { get; set; }
         public string PriceFormatted { get; set; } = "0 đ";
         public int DurationDays { get; set; }
+        public string GuideName { get; set; } = string.Empty;
     }
 
     public class BookingDisplayInfo
@@ -1432,6 +1483,13 @@ namespace VietTravel.UI.ViewModels
         public string TourName { get; set; } = string.Empty;
         public string Destination { get; set; } = string.Empty;
         public string DepartureDate { get; set; } = string.Empty;
+        public string StartDateFormatted { get; set; } = string.Empty;
+        public string EndDateFormatted { get; set; } = string.Empty;
+        public int DurationDays { get; set; }
+        public string GuideName { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public string PriceFormatted { get; set; } = "0 đ";
+        public int AvailableSlots { get; set; }
         public DateTime? DepartureStartDate { get; set; }
         public string BookingDateFormatted { get; set; } = string.Empty;
         public int GuestCount { get; set; }
@@ -1452,5 +1510,13 @@ namespace VietTravel.UI.ViewModels
         public int DurationDays => Tour?.DurationDays ?? 0;
         public string Description => Tour?.Description ?? string.Empty;
         public string ImageUrl { get; set; } = string.Empty;
+
+        public List<Transport> Transports => Tour?.TourTransports?.Select(t => t.Transport!).Where(x => x != null).ToList() ?? new List<Transport>();
+        public List<Hotel> Hotels => Tour?.TourHotels?.Select(t => t.Hotel!).Where(x => x != null).ToList() ?? new List<Hotel>();
+        public List<Attraction> Attractions => Tour?.TourAttractions?.Select(t => t.Attraction!).Where(x => x != null).ToList() ?? new List<Attraction>();
+
+        public bool HasTransports => Transports.Any();
+        public bool HasHotels => Hotels.Any();
+        public bool HasAttractions => Attractions.Any();
     }
 }

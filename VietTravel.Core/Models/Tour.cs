@@ -25,5 +25,17 @@ namespace VietTravel.Core.Models
 
         [Column("destination")]
         public string Destination { get; set; } = string.Empty;
+
+        [Column("image_url")]
+        public string ImageUrl { get; set; } = string.Empty;
+
+        [Reference(typeof(TourTransport))]
+        public List<TourTransport> TourTransports { get; set; } = new();
+
+        [Reference(typeof(TourHotel))]
+        public List<TourHotel> TourHotels { get; set; } = new();
+
+        [Reference(typeof(TourAttraction))]
+        public List<TourAttraction> TourAttractions { get; set; } = new();
     }
 }
