@@ -17,6 +17,8 @@
             <!-- Converters -->
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <converters:StringMatchConverter x:Key="StringMatchConverter"/>
+            <converters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+            <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
 
             <!-- Legacy compatibility for MainWindow.xaml -->
             <SolidColorBrush x:Key="AppBackground" Color="White"/>

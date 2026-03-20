@@ -43,6 +43,9 @@
         <DataTemplate DataType="{x:Type viewmodels:ReportViewModel}">
             <views:ReportView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:AdminProfileViewModel}">
+            <views:AdminProfileView/>
+        </DataTemplate>
     </UserControl.Resources>
 
     <Border CornerRadius="16" ClipToBounds="True">
@@ -217,16 +220,29 @@
                             <TextBlock Text="THỐNG KÊ" FontFamily="{StaticResource AppFont}" FontSize="11" FontWeight="SemiBold"
                                        Foreground="{StaticResource TextTertiaryBrush}" Margin="20,20,0,8"/>
 
-                            <RadioButton Style="{StaticResource SidebarButton}"
-                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Reports, Mode=OneWay}"
-                                         Command="{Binding NavigateToPageCommand}" CommandParameter="Reports">
-                                <StackPanel Orientation="Horizontal">
-                                    <materialDesign:PackIcon Kind="ChartBoxOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Báo Cáo" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </RadioButton>
+                                <RadioButton Style="{StaticResource SidebarButton}"
+                                             IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Reports, Mode=OneWay}"
+                                             Command="{Binding NavigateToPageCommand}" CommandParameter="Reports">
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="ChartBoxOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Báo Cáo" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </RadioButton>
 
-                            <StackPanel Visibility="{Binding IsDebugMenuVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <!-- Section: Tài khoản -->
+                                <TextBlock Text="TÀI KHOẢN" FontFamily="{StaticResource AppFont}" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextTertiaryBrush}" Margin="20,20,0,8"/>
+
+                                <RadioButton Style="{StaticResource SidebarButton}"
+                                             IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Profile, Mode=OneWay}"
+                                             Command="{Binding NavigateToPageCommand}" CommandParameter="Profile">
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="AccountOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Hồ sơ cá nhân" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </RadioButton>
+
+                                <StackPanel Visibility="{Binding IsDebugMenuVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <TextBlock Text="DEBUG" FontFamily="{StaticResource AppFont}" FontSize="11" FontWeight="SemiBold"
                                            Foreground="{StaticResource TextTertiaryBrush}" Margin="20,20,0,8"/>
 
@@ -263,8 +279,43 @@
                                         </LinearGradientBrush>
                                     </Ellipse.Fill>
                                 </Ellipse>
+                                
+                                <!-- Avatar Image if exists -->
+                                <Ellipse Width="38" Height="38">
+                                    <Ellipse.Fill>
+                                        <ImageBrush ImageSource="{Binding AvatarUrl}" Stretch="UniformToFill"/>
+                                    </Ellipse.Fill>
+                                    <Ellipse.Style>
+                                        <Style TargetType="Ellipse">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding AvatarUrl}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding AvatarUrl}" Value="{x:Null}">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Ellipse.Style>
+                                </Ellipse>
+
                                 <TextBlock Text="{Binding UserInitials}" Foreground="White" FontWeight="SemiBold" FontSize="14"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="{StaticResource AppFont}"/>
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="{StaticResource AppFont}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding AvatarUrl}" Value="">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding AvatarUrl}" Value="{x:Null}">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </Grid>
 
                             <!-- Name & Role -->

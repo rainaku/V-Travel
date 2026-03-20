@@ -17,6 +17,7 @@ namespace VietTravel.UI.ViewModels
         private string _selectedMenuItem = "Dashboard";
 
         public string FullName => _mainViewModel.CurrentUser?.FullName ?? "Quản Trị Viên";
+        public string AvatarUrl => _mainViewModel.CurrentUser?.AvatarUrl ?? string.Empty;
         public string UserRole => _mainViewModel.CurrentUser?.Role ?? "Admin";
         public bool IsGuideRole => string.Equals(UserRole, "Guide", System.StringComparison.OrdinalIgnoreCase);
         public bool IsNonGuideRole => !IsGuideRole;
@@ -67,6 +68,7 @@ namespace VietTravel.UI.ViewModels
                 "Notifications" => new NotificationListViewModel(_mainViewModel),
                 "Debug" => new DebugToolsViewModel(_mainViewModel),
                 "Reports" => new ReportViewModel(_mainViewModel),
+                "Profile" => new AdminProfileViewModel(_mainViewModel),
                 _ => new DashboardViewModel(_mainViewModel, this)
             };
         }
@@ -99,6 +101,9 @@ namespace VietTravel.UI.ViewModels
 
             if (e.PropertyName == nameof(MainViewModel.CurrentUser))
             {
+                OnPropertyChanged(nameof(FullName));
+                OnPropertyChanged(nameof(AvatarUrl));
+                OnPropertyChanged(nameof(UserInitials));
                 OnPropertyChanged(nameof(UserRole));
                 OnPropertyChanged(nameof(IsGuideRole));
                 OnPropertyChanged(nameof(IsNonGuideRole));

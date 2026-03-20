@@ -925,5 +925,13 @@
         <Setter Property="MinWidth" Value="140"/>
     </Style>
 
-</ResourceDictionary>
+    <!-- Additional Typography for Admin Profile -->
+    <Style x:Key="HeadingMediumStyle" TargetType="TextBlock" BasedOn="{StaticResource HeadingStyle}">
+        <Setter Property="FontSize" Value="20"/>
+    </Style>
 
+    <Style x:Key="HeadingSmallStyle" TargetType="TextBlock" BasedOn="{StaticResource SubheadingStyle}">
+        <Setter Property="FontSize" Value="17"/>
+    </Style>
+
+</ResourceDictionary>

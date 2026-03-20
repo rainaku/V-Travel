@@ -20,7 +20,8 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty]
         private bool _isDebugMenuVisible;
 
-        public User? CurrentUser { get; set; }
+        [ObservableProperty]
+        private User? _currentUser;
         public bool IsLoginViewActive => CurrentViewModel is LoginViewModel;
         public NotificationCenterService NotificationCenter => NotificationCenterService.Instance;
         public ISnackbarMessageQueue SnackbarMessageQueue { get; }
@@ -37,6 +38,11 @@ namespace VietTravel.UI.ViewModels
         public void NavigateTo(ObservableObject viewModel)
         {
             CurrentViewModel = viewModel;
+        }
+
+        public void RefreshCurrentUser()
+        {
+            OnPropertyChanged(nameof(CurrentUser));
         }
 
         partial void OnCurrentViewModelChanged(ObservableObject value)

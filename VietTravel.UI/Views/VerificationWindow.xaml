@@ -1,0 +1,82 @@
+<Window x:Class="VietTravel.UI.Views.VerificationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        mc:Ignorable="d"
+        Title="Xác thực Email" Height="400" Width="420"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        WindowStartupLocation="CenterScreen">
+
+    <Border CornerRadius="28" Background="#F0FFFFFF" Margin="15" Padding="32,24">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="30" ShadowDepth="4" Opacity="0.15" Color="Black" Direction="270"/>
+        </Border.Effect>
+        
+        <StackPanel>
+            <!-- Header -->
+            <Grid Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Xác thực Email" FontSize="22" FontWeight="Bold" 
+                               FontFamily="{StaticResource AppFont}" Foreground="{StaticResource TextPrimaryBrush}"/>
+                    <TextBlock Text="Mã xác nhận đã được gửi đến:" Margin="0,4,0,0"
+                               FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"
+                               FontFamily="{StaticResource AppFont}"/>
+                    <TextBlock Text="{Binding Email}" FontWeight="SemiBold" FontSize="13"
+                               Foreground="{StaticResource PrimaryBrush}"
+                               FontFamily="{StaticResource AppFont}"/>
+                </StackPanel>
+                <Button Grid.Column="1" Style="{StaticResource AppleIconButton}" 
+                        Command="{Binding CancelCommand}" VerticalAlignment="Top">
+                    <materialDesign:PackIcon Kind="Close" Width="20" Height="20"/>
+                </Button>
+            </Grid>
+
+            <!-- OTP Input -->
+            <TextBlock Text="Nhập mã 6 số" Margin="4,0,0,8"
+                       FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}"
+                       FontFamily="{StaticResource AppFont}"/>
+            <Grid Margin="0,0,0,12">
+                <TextBox x:Name="OtpTextBox" Text="{Binding VerificationCode, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource AppleTextBox}" Padding="16,14"
+                         FontSize="24" FontWeight="Bold" MaxLength="6"
+                         HorizontalContentAlignment="Center" HorizontalAlignment="Stretch"
+                         Tag="6" materialDesign:TextFieldAssist.CharacterCounterVisibility="Hidden">
+                </TextBox>
+            </Grid>
+
+            <!-- Error Message -->
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource ErrorBrush}" 
+                       HorizontalAlignment="Center" Margin="0,0,0,12" TextWrapping="Wrap"
+                       TextAlignment="Center" FontSize="12" FontFamily="{StaticResource AppFont}"
+                       Visibility="{Binding HasErrorMessage, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+            <!-- Action Buttons -->
+            <Button Command="{Binding VerifyCommand}" Style="{StaticResource ApplePrimaryButton}"
+                    Height="48" Margin="0,8,0,12" FontSize="14" IsDefault="True">
+                <TextBlock Text="Xác nhận mã" VerticalAlignment="Center" FontWeight="SemiBold"/>
+            </Button>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <TextBlock Text="Chưa nhận được mã? " VerticalAlignment="Center"
+                           FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"
+                           FontFamily="{StaticResource AppFont}"/>
+                <Button Command="{Binding ResendCodeCommand}" Style="{StaticResource AppleGhostButton}"
+                        Padding="4,2" IsEnabled="{Binding CanSendCode}">
+                    <TextBlock Text="{Binding CountdownText}" FontSize="13" FontWeight="Bold"
+                               Foreground="{StaticResource PrimaryBrush}"/>
+                </Button>
+            </StackPanel>
+
+            <!-- Loading Indicator -->
+            <ProgressBar IsIndeterminate="True" Height="2" Margin="0,16,0,0"
+                         Visibility="{Binding IsSendingCode, Converter={StaticResource BooleanToVisibilityConverter}}" 
+                         Foreground="{StaticResource PrimaryBrush}" Background="Transparent" BorderThickness="0"/>
+        </StackPanel>
+    </Border>
+</Window>

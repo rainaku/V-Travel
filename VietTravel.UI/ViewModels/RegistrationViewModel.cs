@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using VietTravel.Data.Services;
+using VietTravel.UI.Views;
 
 namespace VietTravel.UI.ViewModels
 {
@@ -12,6 +13,7 @@ namespace VietTravel.UI.ViewModels
     {
         private readonly MainViewModel _mainViewModel;
         private readonly AuthService _authService;
+        private readonly EmailService _emailService;
 
         [ObservableProperty] private string _fullName = "";
         [ObservableProperty] private string _username = "";
@@ -22,6 +24,7 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private string _confirmPassword = "";
         [ObservableProperty] private string _errorMessage = "";
         [ObservableProperty] private bool _isLoading;
+
         private static readonly Regex FullNamePattern = new(@"^[\p{L}\p{M}]+(?:[ '\-][\p{L}\p{M}]+)*$", RegexOptions.Compiled);
         private static readonly Regex EmailPattern = new(@"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         private static readonly Regex UsernamePattern = new(@"^[a-zA-Z0-9._-]{4,50}$", RegexOptions.Compiled);
@@ -38,6 +41,7 @@ namespace VietTravel.UI.ViewModels
         {
             _mainViewModel = mainViewModel;
             _authService = new AuthService();
+            _emailService = new EmailService();
         }
 
         [RelayCommand]
@@ -57,8 +61,45 @@ namespace VietTravel.UI.ViewModels
 
             IsLoading = true;
             ErrorMessage = "";
+
             try
             {
+                // 1. Kiểm tra thông tin đã tồn tại trong DB chưa
+                if (await _authService.IsUsernameExistsAsync(Username))
+                {
+                    ErrorMessage = "Tên đăng nhập này đã được sử dụng.";
+                    return;
+                }
+
+                if (await _authService.IsEmailExistsAsync(Email))
+                {
+                    ErrorMessage = "Email này đã được đăng ký bằng một tài khoản khác.";
+                    return;
+                }
+
+                if (await _authService.IsPhoneNumberExistsAsync(PhoneNumber))
+                {
+                    ErrorMessage = "Số điện thoại này đã được đăng ký bằng một tài khoản khác.";
+                    return;
+                }
+
+                // 2. Gửi mã OTP trước khi hiện popup
+                await _emailService.SendVerificationEmailAsync(Email);
+
+                // 2. Hiển thị popup xác thực
+                var verificationVM = new VerificationViewModel(Email);
+                var verificationWindow = new VerificationWindow(verificationVM);
+                
+                // ShowDialog sẽ chặn đến khi window đóng
+                bool? result = verificationWindow.ShowDialog();
+
+                if (result != true)
+                {
+                    ErrorMessage = "Xác thực email không thành công. Vui lòng thử lại.";
+                    return;
+                }
+
+                // 3. Nếu xác thực thành công, tiến hành tạo tài khoản
                 var newUser = await _authService.RegisterCustomerAsync(Username, Password, FullName, PhoneNumber, Email, Address);
                 if (newUser != null)
                 {
@@ -70,7 +111,7 @@ namespace VietTravel.UI.ViewModels
                     ErrorMessage = "Đăng ký thất bại. Tên đăng nhập có thể đã tồn tại.";
                 }
             }
-            catch (System.InvalidOperationException ex)
+            catch (InvalidOperationException ex)
             {
                 ErrorMessage = ex.Message;
             }

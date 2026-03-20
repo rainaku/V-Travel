@@ -29,6 +29,33 @@ namespace VietTravel.Data.Services
             }
         }
 
+        public async Task<bool> IsUsernameExistsAsync(string username)
+        {
+            var client = await SupabaseClientFactory.GetClientAsync();
+            var response = await client.From<User>()
+                .Where(x => x.Username == username)
+                .Get();
+            return response.Models.Any();
+        }
+
+        public async Task<bool> IsEmailExistsAsync(string email)
+        {
+            var client = await SupabaseClientFactory.GetClientAsync();
+            var response = await client.From<Customer>()
+                .Where(x => x.Email == email)
+                .Get();
+            return response.Models.Any();
+        }
+
+        public async Task<bool> IsPhoneNumberExistsAsync(string phoneNumber)
+        {
+            var client = await SupabaseClientFactory.GetClientAsync();
+            var response = await client.From<Customer>()
+                .Where(x => x.PhoneNumber == phoneNumber)
+                .Get();
+            return response.Models.Any();
+        }
+
         public async Task<User?> LoginAsync(string username, string password)
         {
             var client = await SupabaseClientFactory.GetClientAsync();
