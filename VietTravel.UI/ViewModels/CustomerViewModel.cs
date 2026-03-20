@@ -16,6 +16,7 @@ using VietTravel.Core.Models;
 using VietTravel.Data;
 using VietTravel.Data.Services;
 using VietTravel.UI.Models;
+using Postgrest;
 
 namespace VietTravel.UI.ViewModels
 {
@@ -451,8 +452,7 @@ namespace VietTravel.UI.ViewModels
                 ApplyDepartureFilter();
 
                 // Load customer profile linked to current user.
-                var custs = (await client.From<Customer>().Get()).Models;
-                _customerProfile = await ResolveCustomerProfileAsync(client, custs);
+                _customerProfile = await ResolveCustomerProfileAsync(client);
                 AvatarUrl = _mainViewModel.CurrentUser?.AvatarUrl ?? string.Empty;
 
                 if (_customerProfile != null)
@@ -461,84 +461,107 @@ namespace VietTravel.UI.ViewModels
                     InfoPhone = _customerProfile.PhoneNumber;
                     InfoEmail = _customerProfile.Email;
                     InfoAddress = _customerProfile.Address;
-
-                    // Load my bookings (server-side filter for performance)
-                    var bookings = (await client.From<Booking>()
-                        .Where(b => b.CustomerId == _customerProfile.Id)
-                        .Get()).Models
-                        .OrderByDescending(b => b.BookingDate)
-                        .ToList();
-
-                    var bookingIdSet = bookings.Select(b => b.Id).ToHashSet();
-                    var paymentByBookingId = ((await client.From<Payment>().Get()).Models ?? new List<Payment>())
-                        .Where(p => bookingIdSet.Contains(p.BookingId))
-                        .GroupBy(p => p.BookingId)
-                        .ToDictionary(g => g.Key, g => g.OrderByDescending(p => p.Id).First());
-
-                    MyBookings.Clear();
-                    foreach (var b in bookings)
-                    {
-                        var dep = deps.FirstOrDefault(d => d.Id == b.DepartureId);
-                        var tour = dep?.Tour;
-                        var durationDays = tour?.DurationDays ?? 0;
-                        var startDateFormatted = dep?.StartDate.ToString("dd/MM/yyyy") ?? "N/A";
-                        var endDateFormatted = dep?.StartDate
-                            .AddDays(Math.Max(durationDays - 1, 0))
-                            .ToString("dd/MM/yyyy") ?? "N/A";
-                        var guideId = dep != null ? assignments.FirstOrDefault(a => a.DepartureId == dep.Id)?.GuideUserId : null;
-                        var guideName = guideId != null ? users.FirstOrDefault(u => u.Id == guideId)?.FullName : null;
-                        paymentByBookingId.TryGetValue(b.Id, out var payment);
-                        var basePricePerGuest = tour?.BasePrice ?? 0;
-                        var fallbackTotalAmount = basePricePerGuest * b.GuestCount;
-                        var paidTotalAmount = payment?.TotalAmount ?? fallbackTotalAmount;
-                        var price = b.GuestCount > 0 ? paidTotalAmount / b.GuestCount : paidTotalAmount;
-                        var cancelDisabledReason = GetCancelDisabledReason(b, dep);
-                        MyBookings.Add(new BookingDisplayInfo
-                        {
-                            Booking = b,
-                            TourName = tour?.Name ?? "N/A",
-                            Destination = tour?.Destination ?? "",
-                            DepartureDate = startDateFormatted,
-                            StartDateFormatted = startDateFormatted,
-                            EndDateFormatted = endDateFormatted,
-                            DurationDays = durationDays,
-                            GuideName = string.IsNullOrWhiteSpace(guideName) ? "Chưa phân công" : guideName,
-                            Price = price,
-                            PriceFormatted = $"{price:N0} đ",
-                            AvailableSlots = dep?.AvailableSlots ?? 0,
-                            DepartureStartDate = dep?.StartDate,
-                            BookingDateFormatted = b.BookingDate.ToString("dd/MM/yyyy"),
-                            GuestCount = b.GuestCount,
-                            Status = b.Status,
-                            StatusColor = b.Status switch
-                            {
-                                "Đã xác nhận" => "#34C759",
-                                "Đợi xác nhận" => "#5AC8FA",
-                                "Đã hủy" => "#FF3B30",
-                                "Hủy" => "#FF3B30",
-                                _ => "#FF9500"
-                            },
-                            ShowCancelButton = !IsCancelledBookingStatus(b.Status),
-                            CanCancel = string.IsNullOrWhiteSpace(cancelDisabledReason),
-                            CancelDisabledReason = cancelDisabledReason
-                        });
-                    }
-
-                    TotalBookingsCount = bookings.Count;
-                    PendingBookingsCount = bookings.Count(b =>
-                        b.Status == "Chờ xử lý" ||
-                        b.Status == "Chờ thanh toán" ||
-                        b.Status == "Đợi xác nhận");
-                    ConfirmedBookingsCount = bookings.Count(b => b.Status == "Đã xác nhận");
                 }
                 else
                 {
                     InfoFullName = _mainViewModel.CurrentUser?.FullName ?? "";
                 }
+
+                // Load my bookings (server-side filter for performance)
+                var currentUserId = _mainViewModel.CurrentUser?.Id ?? -1;
+                
+                var bookingsRes = await client.From<Booking>()
+                    .Where(b => b.UserId == currentUserId)
+                    .Order(b => b.BookingDate, Postgrest.Constants.Ordering.Descending)
+                    .Get();
+                var bookingsList = bookingsRes.Models ?? new List<Booking>();
+                
+                if (_customerProfile != null)
+                {
+                    var custBookingsRes = await client.From<Booking>()
+                        .Where(b => b.CustomerId == _customerProfile.Id)
+                        .Order(b => b.BookingDate, Postgrest.Constants.Ordering.Descending)
+                        .Get();
+                    
+                    if (custBookingsRes.Models.Any())
+                    {
+                        var custBookings = custBookingsRes.Models;
+                        bookingsList = bookingsList.UnionBy(custBookings, b => b.Id)
+                            .OrderByDescending(b => b.BookingDate)
+                            .ToList();
+                    }
+                }
+
+                var bookings = bookingsList;
+
+                // Load payments only for these bookings
+                var paymentByBookingId = new Dictionary<int, Payment>();
+                if (bookings.Any())
+                {
+                    var bookingIds = bookings.Select(b => (object)b.Id).Distinct().ToList();
+                    var paymentsResponse = await client.From<Payment>()
+                        .Filter("booking_id", Postgrest.Constants.Operator.In, bookingIds)
+                        .Get();
+                    
+                    var payments = paymentsResponse.Models ?? new List<Payment>();
+
+                    paymentByBookingId = payments
+                        .GroupBy(p => p.BookingId)
+                        .ToDictionary(g => g.Key, g => g.OrderByDescending(p => p.Id).First());
+                }
+
+                MyBookings.Clear();
+                foreach (var b in bookings)
+                {
+                    var dep = deps.FirstOrDefault(d => d.Id == b.DepartureId);
+                    var tour = dep?.Tour;
+                    var durationDays = tour?.DurationDays ?? 0;
+                    var startDateFormatted = dep?.StartDate.ToString("dd/MM/yyyy") ?? "N/A";
+                    var endDateFormatted = dep?.StartDate
+                        .AddDays(Math.Max(durationDays - 1, 0))
+                        .ToString("dd/MM/yyyy") ?? "N/A";
+                    var guideId = dep != null ? assignments.FirstOrDefault(a => a.DepartureId == dep.Id)?.GuideUserId : null;
+                    var guideName = guideId != null ? users.FirstOrDefault(u => u.Id == guideId)?.FullName : null;
+                    
+                    paymentByBookingId.TryGetValue(b.Id, out var payment);
+                    var basePricePerGuest = tour?.BasePrice ?? 0;
+                    var fallbackTotalAmount = basePricePerGuest * b.GuestCount;
+                    var paidTotalAmount = payment?.TotalAmount ?? fallbackTotalAmount;
+                    var price = b.GuestCount > 0 ? paidTotalAmount / b.GuestCount : paidTotalAmount;
+                    var cancelDisabledReason = GetCancelDisabledReason(b, dep);
+
+                    MyBookings.Add(new BookingDisplayInfo
+                    {
+                        Booking = b,
+                        TourName = tour?.Name ?? "Khách lẻ (N/A)",
+                        Destination = tour?.Destination ?? "N/A",
+                        DepartureDate = dep?.StartDate.ToString("dd/MM/yyyy") ?? "N/A",
+                        StartDateFormatted = startDateFormatted,
+                        EndDateFormatted = endDateFormatted,
+                        DurationDays = durationDays,
+                        GuideName = string.IsNullOrWhiteSpace(guideName) ? "Chưa phân công" : guideName,
+                        Price = price,
+                        PriceFormatted = $"{price:N0} đ",
+                        AvailableSlots = dep?.AvailableSlots ?? 0,
+                        DepartureStartDate = dep?.StartDate,
+                        BookingDateFormatted = b.BookingDate.ToString("dd/MM/yyyy HH:mm"),
+                        GuestCount = b.GuestCount,
+                        Status = b.Status,
+                        StatusColor = GetStatusColor(b.Status),
+                        ShowCancelButton = !CancelledBookingStatuses.Contains(b.Status),
+                        CanCancel = string.IsNullOrEmpty(cancelDisabledReason),
+                        CancelDisabledReason = cancelDisabledReason
+                    });
+                }
+
+                TotalBookingsCount = MyBookings.Count;
+                PendingBookingsCount = MyBookings.Count(b => b.Status == "Chờ thanh toán" || b.Status == "Chờ xác nhận" || b.Status == "Đợi xác nhận");
+                ConfirmedBookingsCount = MyBookings.Count(b => b.Status == "Đã xác nhận");
+                TotalToursAvailable = tours.Count;
             }
             catch (Exception ex)
             {
-                ShowAppDialogInfo("Lỗi", $"Lỗi tải dữ liệu: {ex.Message}");
+                ShowAppDialogInfo("Lỗi", $"Không thể tải dữ liệu: {ex.Message}");
             }
             finally
             {
@@ -1070,6 +1093,20 @@ namespace VietTravel.UI.ViewModels
             return string.Empty;
         }
 
+        private static string GetStatusColor(string status)
+        {
+            return (status ?? "").Trim() switch
+            {
+                "Đã xác nhận" => "#34C759",
+                "Đợi xác nhận" => "#5AC8FA",
+                "Chờ xử lý" => "#5AC8FA",
+                "Đã hủy" => "#FF3B30",
+                "Hủy" => "#FF3B30",
+                "Chờ thanh toán" => "#FF9500",
+                _ => "#8E8E93" // Default gray
+            };
+        }
+
         private bool CanLoadMoreTours()
         {
             return HasMoreToursToLoad && !_isLoadingMoreTours;
@@ -1342,9 +1379,7 @@ namespace VietTravel.UI.ViewModels
 
 
 
-        private async Task<Customer?> ResolveCustomerProfileAsync(
-            Supabase.Client client,
-            System.Collections.Generic.IEnumerable<Customer> customers)
+        private async Task<Customer?> ResolveCustomerProfileAsync(Supabase.Client client)
         {
             var currentUser = _mainViewModel.CurrentUser;
             if (currentUser == null)
@@ -1352,44 +1387,60 @@ namespace VietTravel.UI.ViewModels
                 return null;
             }
 
-            var customerList = customers.ToList();
             var currentFullName = (currentUser.FullName ?? string.Empty).Trim();
             var currentUsername = (currentUser.Username ?? string.Empty).Trim();
 
-            var profile = customerList.FirstOrDefault(c =>
-                string.Equals((c.FullName ?? string.Empty).Trim(), currentFullName, StringComparison.OrdinalIgnoreCase));
-
-            // Fallback for older accounts: match username as email when possible.
-            if (profile == null &&
-                !string.IsNullOrWhiteSpace(currentUsername) &&
-                currentUsername.Contains("@", StringComparison.Ordinal))
+            // 1. Try to resolve via booking history (most reliable link for active customers)
+            try
             {
-                profile = customerList.FirstOrDefault(c =>
-                    string.Equals((c.Email ?? string.Empty).Trim(), currentUsername, StringComparison.OrdinalIgnoreCase));
-            }
-
-            // Fallback from booking history linked by user_id.
-            if (profile == null)
-            {
-                var bookings = (await client.From<Booking>().Get()).Models
+                var bookingsResponse = await client.From<Booking>()
                     .Where(b => b.UserId == currentUser.Id)
-                    .OrderByDescending(b => b.BookingDate)
-                    .ToList();
+                    .Order(b => b.BookingDate, Postgrest.Constants.Ordering.Descending)
+                    .Limit(1)
+                    .Get();
 
-                var customerId = bookings.Select(b => b.CustomerId).FirstOrDefault();
-                if (customerId > 0)
+                if (bookingsResponse.Models.Any())
                 {
-                    profile = customerList.FirstOrDefault(c => c.Id == customerId);
-                    if (profile == null)
+                    var lastBooking = bookingsResponse.Models.First();
+                    var customerResponse = await client.From<Customer>()
+                        .Where(c => c.Id == lastBooking.CustomerId)
+                        .Get();
+
+                    if (customerResponse.Models.Any())
                     {
-                        profile = (await client.From<Customer>().Where(c => c.Id == customerId).Get())
-                            .Models
-                            .FirstOrDefault();
+                        return customerResponse.Models.First();
                     }
                 }
             }
+            catch { /* Ignore and fallback */ }
 
-            return profile;
+            // 2. Try to match by FullName (Standard for new/converted accounts)
+            if (!string.IsNullOrWhiteSpace(currentFullName))
+            {
+                var nameResponse = await client.From<Customer>()
+                    .Where(c => c.FullName == currentFullName)
+                    .Get();
+
+                if (nameResponse.Models.Any())
+                {
+                    return nameResponse.Models.First();
+                }
+            }
+
+            // 3. Fallback for accounts where username is email
+            if (!string.IsNullOrWhiteSpace(currentUsername) && currentUsername.Contains("@", StringComparison.Ordinal))
+            {
+                var emailResponse = await client.From<Customer>()
+                    .Where(c => c.Email == currentUsername)
+                    .Get();
+
+                if (emailResponse.Models.Any())
+                {
+                    return emailResponse.Models.First();
+                }
+            }
+
+            return null;
         }
 
         private async Task SyncCurrentUserProfileAsync(Supabase.Client client)

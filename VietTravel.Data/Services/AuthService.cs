@@ -96,6 +96,27 @@ namespace VietTravel.Data.Services
             }
 
             var client = await SupabaseClientFactory.GetClientAsync();
+
+            // Check for existing username
+            var existingUser = await client.From<User>().Where(u => u.Username == username).Get();
+            if (existingUser.Models.Any())
+            {
+                throw new InvalidOperationException("Tên đăng nhập đã tồn tại trên hệ thống.");
+            }
+
+            // Check for existing email or phone in Customer table
+            var emailCheck = await client.From<Customer>().Where(c => c.Email == email).Get();
+            if (emailCheck.Models.Any())
+            {
+                throw new InvalidOperationException("Email này đã được đăng ký cho một khách hàng khác.");
+            }
+
+            var phoneCheck = await client.From<Customer>().Where(c => c.PhoneNumber == phoneNumber).Get();
+            if (phoneCheck.Models.Any())
+            {
+                throw new InvalidOperationException("Số điện thoại này đã được sử dụng.");
+            }
+
             var user = new User
             {
                 Username = username,
