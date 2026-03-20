@@ -1,4 +1,4 @@
-<UserControl x:Class="VietTravel.UI.Views.DepartureListView"
+<UserControl Style="{StaticResource AnimatedPageStyle}" x:Class="VietTravel.UI.Views.DepartureListView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
@@ -179,3 +179,4 @@
         </StackPanel>
     </ScrollViewer>
 </UserControl>
+

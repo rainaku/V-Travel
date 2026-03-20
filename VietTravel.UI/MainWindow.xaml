@@ -88,7 +88,11 @@
                 </Border>
                 
                 <!-- Content Area -->
-                <ContentControl Grid.Row="1" x:Name="MainContent" Content="{Binding CurrentViewModel}" SnapsToDevicePixels="True"/>
+                <materialDesign:TransitioningContent Grid.Row="1" x:Name="MainContent" Content="{Binding CurrentViewModel}" SnapsToDevicePixels="True">
+                    <materialDesign:TransitioningContent.OpeningEffect>
+                        <materialDesign:TransitionEffect Kind="FadeIn" Duration="0:0:0.35" />
+                    </materialDesign:TransitioningContent.OpeningEffect>
+                </materialDesign:TransitioningContent>
 
                 <materialDesign:Snackbar Grid.RowSpan="2"
                                          MessageQueue="{Binding SnackbarMessageQueue}"
@@ -99,4 +103,5 @@
         </Border>
     </Grid>
 </Window>
+
 

@@ -181,9 +181,7 @@
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)"
                                          To="1.01" Duration="0:0:0.27"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
-                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.Y)"
-                                         To="-2" Duration="0:0:0.27"
-                                         EasingFunction="{StaticResource EaseOutCubic}"/>
+
                     </Storyboard>
                 </BeginStoryboard>
             </EventTrigger>
@@ -196,9 +194,7 @@
                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)"
                                          To="1" Duration="0:0:0.33"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
-                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.Y)"
-                                         To="0" Duration="0:0:0.33"
-                                         EasingFunction="{StaticResource EaseInOutCubic}"/>
+
                     </Storyboard>
                 </BeginStoryboard>
             </EventTrigger>
@@ -932,6 +928,33 @@
 
     <Style x:Key="HeadingSmallStyle" TargetType="TextBlock" BasedOn="{StaticResource SubheadingStyle}">
         <Setter Property="FontSize" Value="17"/>
+    </Style>
+
+    <!-- ─── PAGE ENTRY ANIMATION (APP WIDE) ─── -->
+    <Style x:Key="AnimatedPageStyle" TargetType="{x:Type UserControl}">
+        <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+        <Setter Property="RenderTransform">
+            <Setter.Value>
+                <TransformGroup>
+                    <TranslateTransform Y="20"/>
+                </TransformGroup>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Opacity" Value="0"/>
+        <Style.Triggers>
+            <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                <BeginStoryboard>
+                    <Storyboard>
+                        <DoubleAnimation Storyboard.TargetProperty="Opacity" 
+                                         From="0" To="1" Duration="0:0:0.35" 
+                                         EasingFunction="{StaticResource EaseOutCubic}"/>
+                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(TranslateTransform.Y)" 
+                                         From="20" To="0" Duration="0:0:0.35" 
+                                         EasingFunction="{StaticResource EaseOutCubic}"/>
+                    </Storyboard>
+                </BeginStoryboard>
+            </EventTrigger>
+        </Style.Triggers>
     </Style>
 
 </ResourceDictionary>
