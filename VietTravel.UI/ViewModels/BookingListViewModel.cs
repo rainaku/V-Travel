@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using VietTravel.Core.Models;
 using VietTravel.Data;
-using VietTravel.UI.Services;
 
 namespace VietTravel.UI.ViewModels
 {
@@ -370,7 +369,7 @@ namespace VietTravel.UI.ViewModels
                     UserId = _mainViewModel.CurrentUser?.Id ?? 1,
                     BookingDate = DateTime.Now,
                     GuestCount = guests,
-                    Status = "Chờ thanh toán"
+                    Status = "Đã xác nhận"
                 };
 
                 var bookingResp = await client.From<Booking>().Insert(booking);
@@ -419,63 +418,6 @@ namespace VietTravel.UI.ViewModels
                 }
 
                 MessageBox.Show($"Lỗi tạo booking: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        [RelayCommand]
-        private async Task ConfirmBookingAsync(Booking booking)
-        {
-            if (booking == null) return;
-            if (booking.Status == "Đã hủy" || booking.Status == "Hủy")
-            {
-                MessageBox.Show("Booking đã hủy, không thể xác nhận.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            if (booking.Status == "Đã xác nhận") return;
-
-            try
-            {
-                var client = await SupabaseClientFactory.GetClientAsync();
-                var payResp = await client.From<Payment>().Where(p => p.BookingId == booking.Id).Get();
-                var payment = payResp.Models.FirstOrDefault();
-                if (payment == null)
-                {
-                    MessageBox.Show("Booking chưa có phiếu thanh toán.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                var hasValidPayment = payment.Status == "Đã cọc"
-                                      || payment.Status == "Đã thanh toán đủ"
-                                      || payment.Status == "Đã thanh toán"
-                                      || payment.Status == "Đợi xác nhận";
-                if (!hasValidPayment)
-                {
-                    MessageBox.Show("Cần thanh toán cọc hoặc thanh toán đủ trước khi xác nhận booking.",
-                        "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                if (payment.Status == "Đợi xác nhận")
-                {
-                    var previousStatus = payment.Status;
-                    payment.Status = "Đã thanh toán đủ";
-                    payment.PaidAmount = payment.TotalAmount;
-                    payment.PaymentDate = DateTime.Now;
-                    payment.Booking = null;
-                    await client.From<Payment>().Update(payment);
-                    await NotificationCenterService.Instance.NotifyPaymentStatusChangedAsync(payment, previousStatus, booking.UserId);
-                }
-
-                booking.Status = "Đã xác nhận";
-                booking.Customer = null;
-                booking.Departure = null;
-                booking.User = null;
-                await client.From<Booking>().Update(booking);
-                await LoadDataAsync();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

@@ -164,6 +164,26 @@
                                 </StackPanel>
                             </RadioButton>
 
+                            <RadioButton Style="{StaticResource SidebarButton}"
+                                         Visibility="{Binding CanAccessAdminOnlyModules, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Payments, Mode=OneWay}"
+                                         Command="{Binding NavigateToPageCommand}" CommandParameter="Payments">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="CreditCardOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Thanh Toán" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton Style="{StaticResource SidebarButton}"
+                                         Visibility="{Binding CanAccessAdminOnlyModules, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Promotions, Mode=OneWay}"
+                                         Command="{Binding NavigateToPageCommand}" CommandParameter="Promotions">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="TicketOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Mã giảm giá" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
                             <TextBlock Text="ĐÁNH GIÁ" FontFamily="{StaticResource AppFont}" FontSize="11" FontWeight="SemiBold"
                                        Foreground="{StaticResource TextTertiaryBrush}" Margin="20,20,0,8"/>
 
@@ -192,26 +212,6 @@
                                 <StackPanel Orientation="Horizontal">
                                     <materialDesign:PackIcon Kind="AccountCogOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="Người dùng &amp; Role" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </RadioButton>
-
-                            <RadioButton Style="{StaticResource SidebarButton}"
-                                         Visibility="{Binding CanAccessAdminOnlyModules, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Payments, Mode=OneWay}"
-                                         Command="{Binding NavigateToPageCommand}" CommandParameter="Payments">
-                                <StackPanel Orientation="Horizontal">
-                                    <materialDesign:PackIcon Kind="CreditCardOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Thanh Toán" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </RadioButton>
-
-                            <RadioButton Style="{StaticResource SidebarButton}"
-                                         Visibility="{Binding CanAccessAdminOnlyModules, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Promotions, Mode=OneWay}"
-                                         Command="{Binding NavigateToPageCommand}" CommandParameter="Promotions">
-                                <StackPanel Orientation="Horizontal">
-                                    <materialDesign:PackIcon Kind="TicketOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Mã giảm giá" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </RadioButton>
 

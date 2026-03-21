@@ -235,14 +235,6 @@
                                                 </TextBlock.Style>
                                             </TextBlock>
                                             <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                <Button Style="{StaticResource AppleGhostButton}" Width="36" Height="36" Padding="0" Margin="0,0,4,0" Cursor="Hand" ToolTip="Xác nhận"
-                                                        Command="{Binding DataContext.ConfirmBookingCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                        CommandParameter="{Binding}">
-                                                    <Grid Width="32" Height="32">
-                                                        <Ellipse Width="32" Height="32" Fill="#1A34C759"/>
-                                                        <materialDesign:PackIcon Kind="Check" Width="20" Height="20" Foreground="{StaticResource SuccessBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Grid>
-                                                </Button>
                                                 <Button Style="{StaticResource AppleGhostButton}" Width="36" Height="36" Padding="0" Cursor="Hand" ToolTip="Hủy booking"
                                                         Command="{Binding DataContext.CancelBookingCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                         CommandParameter="{Binding}">
