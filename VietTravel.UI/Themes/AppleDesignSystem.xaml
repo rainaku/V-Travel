@@ -94,7 +94,7 @@
     </LinearGradientBrush>
 
     <!-- ─── TYPOGRAPHY ─── -->
-    <FontFamily x:Key="AppFont">SF Pro Display, SF Pro Text, Segoe UI</FontFamily>
+    <FontFamily x:Key="AppFont">Roboto, Segoe UI</FontFamily>
     
     <Style x:Key="HeadingLargeStyle" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
