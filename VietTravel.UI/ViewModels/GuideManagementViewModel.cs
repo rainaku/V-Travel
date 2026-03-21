@@ -17,6 +17,7 @@ namespace VietTravel.UI.ViewModels
         private const int PageSize = 12;
         private readonly MainViewModel _mainViewModel;
         private readonly Dictionary<int, int> _tourDurationByTourId = new();
+        private readonly Dictionary<int, int> _departureDurationByDepartureId = new();
         private List<GuideContactItem> _guideFilteredSource = new();
         private List<GuideScheduleItem> _assignmentFilteredSource = new();
 
@@ -254,16 +255,23 @@ namespace VietTravel.UI.ViewModels
             {
                 var client = await SupabaseClientFactory.GetClientAsync();
                 var existingAssignmentItem = Assignments.FirstOrDefault(a => a.DepartureId == FormSelectedDeparture.Id);
-                if (HasDepartureDateConflict(
+                var targetDuration = Math.Max(1, _tourDurationByTourId.TryGetValue(FormSelectedDeparture.TourId, out var resolvedDuration)
+                    ? resolvedDuration
+                    : 1);
+                if (HasWorkScheduleConflict(
                         FormSelectedGuide.Id,
+                        FormWorkStart,
+                        FormWorkEnd,
                         FormSelectedDeparture.StartDate,
+                        targetDuration,
                         existingAssignmentItem?.AssignmentId,
                         out var conflictTourName,
-                        out var conflictDate))
+                        out var conflictWorkStart,
+                        out var conflictWorkEnd))
                 {
                     MessageBox.Show(
-                        $"Hướng dẫn viên đã có tour \"{conflictTourName}\" khởi hành ngày {conflictDate:dd/MM/yyyy}.\nVui lòng chọn guide khác hoặc đổi ngày.",
-                        "Trùng ngày khởi hành",
+                        $"Hướng dẫn viên đã có lịch công tác tour \"{conflictTourName}\" trong khoảng {conflictWorkStart:dd/MM/yyyy} - {conflictWorkEnd:dd/MM/yyyy}.\nKhông được trùng ngày khởi hành hoặc ngày kết thúc. Nếu xếp tour sau, phải bắt đầu từ {conflictWorkEnd.Date.AddDays(1):dd/MM/yyyy}.",
+                        "Trùng lịch công tác",
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);
                     return;
@@ -353,6 +361,29 @@ namespace VietTravel.UI.ViewModels
                     return;
                 }
 
+                var targetDuration = ResolveDepartureDurationDays(assignmentItem.DepartureId);
+                var targetDepartureStart = assignmentItem.DepartureStartDate == DateTime.MinValue
+                    ? assignmentItem.WorkStart
+                    : assignmentItem.DepartureStartDate;
+                if (HasWorkScheduleConflict(
+                        assignment.GuideUserId,
+                        assignmentItem.WorkStart,
+                        assignmentItem.WorkEnd,
+                        targetDepartureStart,
+                        targetDuration,
+                        assignment.Id,
+                        out var conflictTourName,
+                        out var conflictWorkStart,
+                        out var conflictWorkEnd))
+                {
+                    MessageBox.Show(
+                        $"Hướng dẫn viên đã có lịch công tác tour \"{conflictTourName}\" trong khoảng {conflictWorkStart:dd/MM/yyyy} - {conflictWorkEnd:dd/MM/yyyy}.\nKhông được trùng ngày khởi hành hoặc ngày kết thúc. Nếu xếp tour sau, phải bắt đầu từ {conflictWorkEnd.Date.AddDays(1):dd/MM/yyyy}.",
+                        "Trùng lịch công tác",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+
                 assignment.WorkStart = assignmentItem.WorkStart;
                 assignment.WorkEnd = assignmentItem.WorkEnd;
                 assignment.Status = string.IsNullOrWhiteSpace(assignmentItem.Status)
@@ -419,6 +450,15 @@ namespace VietTravel.UI.ViewModels
             foreach (var t in tours)
             {
                 _tourDurationByTourId[t.Id] = t.DurationDays;
+            }
+
+            _departureDurationByDepartureId.Clear();
+            foreach (var dep in departures)
+            {
+                var duration = _tourDurationByTourId.TryGetValue(dep.TourId, out var resolvedDuration)
+                    ? Math.Max(1, resolvedDuration)
+                    : 1;
+                _departureDurationByDepartureId[dep.Id] = duration;
             }
 
             var guideUsers = users
@@ -666,13 +706,28 @@ namespace VietTravel.UI.ViewModels
             }
         }
 
-        private bool HasDepartureDateConflict(
+        private bool HasWorkScheduleConflict(
             int guideUserId,
+            DateTime workStart,
+            DateTime workEnd,
             DateTime departureStartDate,
+            int departureDurationDays,
             int? excludeAssignmentId,
             out string conflictTourName,
-            out DateTime conflictDate)
+            out DateTime conflictWorkStart,
+            out DateTime conflictWorkEnd)
         {
+            var targetDepartureStart = departureStartDate == DateTime.MinValue
+                ? workStart.Date
+                : departureStartDate.Date;
+            var targetStart = workStart.Date < targetDepartureStart ? workStart.Date : targetDepartureStart;
+            var targetEnd = workEnd.Date;
+            var targetPlannedEnd = ResolvePlannedEndDate(targetDepartureStart, departureDurationDays);
+            if (targetEnd < targetPlannedEnd)
+            {
+                targetEnd = targetPlannedEnd;
+            }
+
             foreach (var item in Assignments)
             {
                 if (item.GuideUserId != guideUserId)
@@ -690,19 +745,46 @@ namespace VietTravel.UI.ViewModels
                     continue;
                 }
 
-                if (item.DepartureStartDate.Date != departureStartDate.Date)
+                var existingDuration = ResolveDepartureDurationDays(item.DepartureId);
+                var existingDepartureStart = item.DepartureStartDate == DateTime.MinValue
+                    ? item.WorkStart.Date
+                    : item.DepartureStartDate.Date;
+                var existingStart = item.WorkStart.Date < existingDepartureStart ? item.WorkStart.Date : existingDepartureStart;
+                var existingEnd = item.WorkEnd.Date;
+                var existingPlannedEnd = ResolvePlannedEndDate(existingDepartureStart, existingDuration);
+                if (existingEnd < existingPlannedEnd)
+                {
+                    existingEnd = existingPlannedEnd;
+                }
+
+                var isOverlapping = targetStart <= existingEnd && targetEnd >= existingStart;
+                if (!isOverlapping)
                 {
                     continue;
                 }
 
                 conflictTourName = item.TourName;
-                conflictDate = item.DepartureStartDate;
+                conflictWorkStart = existingStart;
+                conflictWorkEnd = existingEnd;
                 return true;
             }
 
             conflictTourName = string.Empty;
-            conflictDate = DateTime.MinValue;
+            conflictWorkStart = DateTime.MinValue;
+            conflictWorkEnd = DateTime.MinValue;
             return false;
+        }
+
+        private int ResolveDepartureDurationDays(int departureId)
+        {
+            return _departureDurationByDepartureId.TryGetValue(departureId, out var duration)
+                ? Math.Max(1, duration)
+                : 1;
+        }
+
+        private static DateTime ResolvePlannedEndDate(DateTime departureStartDate, int durationDays)
+        {
+            return departureStartDate.Date.AddDays(Math.Max(1, durationDays) - 1);
         }
 
         private static bool IsGuideUser(User user)

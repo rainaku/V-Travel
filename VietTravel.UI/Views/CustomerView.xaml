@@ -452,11 +452,21 @@
                                                        Foreground="{StaticResource TextTertiaryBrush}" Margin="0,6,0,0"
                                                        TextTrimming="CharacterEllipsis" MaxHeight="34" TextWrapping="Wrap"/>
                                             <Grid Margin="0,12,0,0">
-                                                <TextBlock FontFamily="{StaticResource AppFont}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" VerticalAlignment="Center">
-                                                    <Run Text="{Binding BasePrice, StringFormat={}{0:N0}, Mode=OneWay}"/><Run Text=" đ" FontSize="13" FontWeight="Normal"/>
-                                                </TextBlock>
-                                                <TextBlock Text="/người" FontFamily="{StaticResource AppFont}" FontSize="12"
-                                                           Foreground="{StaticResource TextTertiaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                                                <StackPanel>
+                                                    <Grid>
+                                                        <TextBlock FontFamily="{StaticResource AppFont}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" VerticalAlignment="Center">
+                                                            <Run Text="{Binding BasePrice, StringFormat={}{0:N0}, Mode=OneWay}"/><Run Text=" đ" FontSize="13" FontWeight="Normal"/>
+                                                        </TextBlock>
+                                                        <TextBlock Text="/người" FontFamily="{StaticResource AppFont}" FontSize="12"
+                                                                   Foreground="{StaticResource TextTertiaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                                                    </Grid>
+                                                    <StackPanel Margin="0,8,0,0">
+                                                        <TextBlock Text="{Binding RatingStarsText}" FontFamily="{StaticResource AppFont}" FontSize="13"
+                                                                   Foreground="{StaticResource WarningBrush}" FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding RatingSummaryText}" FontFamily="{StaticResource AppFont}" FontSize="11"
+                                                                   Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                                                    </StackPanel>
+                                                </StackPanel>
                                             </Grid>
                                         </StackPanel>
                                     </StackPanel>
@@ -1727,6 +1737,10 @@
                                     <TextBlock FontFamily="{StaticResource AppFont}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource SuccessBrush}">
                                         <Run Text="{Binding SelectedTour.BasePrice, Mode=OneWay, StringFormat={}{0:N0}}"/><Run Text=" đ" FontSize="14" FontWeight="Normal"/>
                                     </TextBlock>
+                                    <TextBlock Text="{Binding SelectedTour.RatingStarsText, Mode=OneWay}" FontFamily="{StaticResource AppFont}" FontSize="13"
+                                               Foreground="{StaticResource WarningBrush}" Margin="0,8,0,0"/>
+                                    <TextBlock Text="{Binding SelectedTour.RatingSummaryText, Mode=OneWay}" FontFamily="{StaticResource AppFont}" FontSize="12"
+                                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                                 </StackPanel>
                             </Grid>
 

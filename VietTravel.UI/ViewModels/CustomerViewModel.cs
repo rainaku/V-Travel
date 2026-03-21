@@ -419,14 +419,21 @@ namespace VietTravel.UI.ViewModels
 
                 // Load tours
                 var tours = (await client.From<Tour>().Get()).Models ?? new List<Tour>();
+                var approvedTourRatings = await LoadApprovedTourRatingsAsync();
 
                 // (Đã loại bỏ API fetch Transport/Hotel/Attraction để tối ưu hiệu suất, do View không hiển thị các thông tin này)
                 
                 // Stable and destination-aware tour thumbnails (direct JPEG URLs).
-                var displayTours = tours.Select((t, i) => new TourDisplayInfo
+                var displayTours = tours.Select((t, i) =>
                 {
-                    Tour = t,
-                    ImageUrl = ResolveTourImageUrl(t, i)
+                    approvedTourRatings.TryGetValue(t.Id, out var ratingSummary);
+                    return new TourDisplayInfo
+                    {
+                        Tour = t,
+                        ImageUrl = ResolveTourImageUrl(t, i),
+                        AverageRating = ratingSummary.AverageRating,
+                        RatingCount = ratingSummary.RatingCount
+                    };
                 }).ToList();
 
                 AllTours = new ObservableCollection<TourDisplayInfo>(displayTours);
@@ -1734,6 +1741,26 @@ namespace VietTravel.UI.ViewModels
             return parts[0][0].ToString().ToUpper();
         }
 
+        private async Task<Dictionary<int, TourRatingSummary>> LoadApprovedTourRatingsAsync()
+        {
+            try
+            {
+                var ratings = await _tourRatingService.GetAllAsync();
+                return ratings
+                    .Where(x => string.Equals(x.Status, TourRatingStatuses.Approved, StringComparison.OrdinalIgnoreCase))
+                    .GroupBy(x => x.TourId)
+                    .ToDictionary(
+                        x => x.Key,
+                        x => new TourRatingSummary(
+                            Math.Round((decimal)x.Average(y => y.RatingValue), 1),
+                            x.Count()));
+            }
+            catch (Exception ex) when (TourRatingService.HasMissingRatingSchema(ex))
+            {
+                return new Dictionary<int, TourRatingSummary>();
+            }
+        }
+
         private static string ResolveTourImageUrl(Tour tour, int index)
         {
             if (!string.IsNullOrWhiteSpace(tour.ImageUrl))
@@ -1875,6 +1902,14 @@ namespace VietTravel.UI.ViewModels
         public int DurationDays => Tour?.DurationDays ?? 0;
         public string Description => Tour?.Description ?? string.Empty;
         public string ImageUrl { get; set; } = string.Empty;
+        public decimal AverageRating { get; set; }
+        public int RatingCount { get; set; }
+        public bool HasRatings => RatingCount > 0;
+        public int RoundedAverageRating => Math.Clamp((int)Math.Round(AverageRating, MidpointRounding.AwayFromZero), 0, 5);
+        public string RatingStarsText => TourRatingDisplayHelper.ToStarsText(RoundedAverageRating);
+        public string RatingSummaryText => HasRatings
+            ? $"{AverageRating:0.0}/5 ({RatingCount} đánh giá)"
+            : "Chưa có đánh giá";
 
         public List<Transport> Transports => Tour?.TourTransports?.Select(t => t.Transport!).Where(x => x != null).ToList() ?? new List<Transport>();
         public List<Hotel> Hotels => Tour?.TourHotels?.Select(t => t.Hotel!).Where(x => x != null).ToList() ?? new List<Hotel>();
@@ -1884,4 +1919,6 @@ namespace VietTravel.UI.ViewModels
         public bool HasHotels => Hotels.Any();
         public bool HasAttractions => Attractions.Any();
     }
+
+    public readonly record struct TourRatingSummary(decimal AverageRating, int RatingCount);
 }
