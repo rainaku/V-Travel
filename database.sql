@@ -1,5 +1,4 @@
--- KẾT NỐI VÀ TẠO BẢNG CHO SUPABASE
--- Chạy script này trong phần SQL Editor trên Supabase Dashboard
+
 
 -- 1. Table users
 CREATE TABLE users (
@@ -12,7 +11,7 @@ CREATE TABLE users (
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
--- Bổ sung cột avatar cho dữ liệu cũ (an toàn khi chạy nhiều lần)
+-- Bổ sung cột avatar cho dữ liệu cũ 
 ALTER TABLE users
 ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 
@@ -27,7 +26,7 @@ CREATE TABLE tours (
     image_url TEXT DEFAULT ''
 );
 
--- Bổ sung cột ảnh tour cho dữ liệu cũ (an toàn khi chạy nhiều lần)
+-- Bổ sung cột ảnh tour cho dữ liệu cũ 
 ALTER TABLE tours
 ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT '';
 
@@ -130,12 +129,6 @@ ON tour_guide_assignments (guide_user_id);
 INSERT INTO users (username, password_hash, full_name, role, is_active, avatar_url)
 SELECT 'admin', 'admin_hash_placeholder', 'Administrator', 'Admin', TRUE, ''
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');
-
-
--- ==========================================================
--- SCRIPT CẬP NHẬT DATABASE: QUẢN LÝ PHƯƠNG TIỆN & DỊCH VỤ TOUR
--- Chạy script này trong phần SQL Editor trên Supabase Dashboard
--- ==========================================================
 
 -- 10. Table transports (Phương tiện)
 CREATE TABLE IF NOT EXISTS transports (

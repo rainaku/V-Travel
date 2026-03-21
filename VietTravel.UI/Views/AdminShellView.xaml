@@ -4,6 +4,7 @@
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:viewmodels="clr-namespace:VietTravel.UI.ViewModels"
              xmlns:views="clr-namespace:VietTravel.UI.Views"
+             SizeChanged="UserControl_SizeChanged"
              Background="{StaticResource BackgroundBrush}">
 
     <UserControl.Resources>
@@ -57,7 +58,7 @@
     <Border CornerRadius="16" ClipToBounds="True">
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="240"/>
+                <ColumnDefinition x:Name="SidebarColumn" Width="240"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
@@ -76,9 +77,9 @@
                         <StackPanel Orientation="Horizontal">
                             <Image Source="/UI/Assets/logo.png" Width="40" Height="40" Margin="0,0,12,0" RenderOptions.BitmapScalingMode="HighQuality"/>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Viet Travel" FontFamily="{StaticResource AppFont}" 
+                                <TextBlock x:Name="BrandTitleText" Text="Viet Travel" FontFamily="{StaticResource AppFont}" 
                                            FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                <TextBlock Text="Management" FontFamily="{StaticResource AppFont}" 
+                                <TextBlock x:Name="BrandSubtitleText" Text="Management" FontFamily="{StaticResource AppFont}" 
                                            FontSize="11" Foreground="{StaticResource TextTertiaryBrush}"/>
                             </StackPanel>
                         </StackPanel>
@@ -353,7 +354,7 @@
                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding FullName}" FontFamily="{StaticResource AppFont}" FontSize="13" FontWeight="SemiBold"
                                            Foreground="{StaticResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Text="{Binding UserRole}" FontFamily="{StaticResource AppFont}" FontSize="11"
+                                <TextBlock x:Name="UserRoleText" Text="{Binding UserRole}" FontFamily="{StaticResource AppFont}" FontSize="11"
                                            Foreground="{StaticResource TextSecondaryBrush}"/>
                             </StackPanel>
 

@@ -680,22 +680,22 @@
                                         <StackPanel Grid.Column="1" Margin="20,18,16,18">
                                             <TextBlock Text="{Binding TourName}" FontFamily="{StaticResource AppFont}" FontSize="16" FontWeight="Bold"
                                                        Foreground="{StaticResource TextPrimaryBrush}"/>
-                                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                                <materialDesign:PackIcon Kind="MapMarkerOutline" Width="14" Height="14" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                                                <TextBlock Text="{Binding Destination}" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
-                                                <TextBlock Text="  •  " FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}"/>
-                                                <materialDesign:PackIcon Kind="CalendarOutline" Width="14" Height="14" Foreground="{StaticResource SuccessBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                                                <TextBlock FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}">
-                                                    <Run Text="{Binding StartDateFormatted}"/>
-                                                    <Run Text=" - "/>
-                                                    <Run Text="{Binding EndDateFormatted}"/>
-                                                </TextBlock>
-                                                <TextBlock Text="  •  " FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}"/>
-                                                <materialDesign:PackIcon Kind="ClockOutline" Width="14" Height="14" Foreground="{StaticResource WarningBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                                                <TextBlock FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}">
-                                                    <Run Text="{Binding DurationDays, Mode=OneWay}"/><Run Text=" ngày"/>
-                                                </TextBlock>
-                                            </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                                    <materialDesign:PackIcon Kind="MapMarkerOutline" Width="14" Height="14" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding Destination}" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="  •  " FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" VerticalAlignment="Center"/>
+                                                    <materialDesign:PackIcon Kind="CalendarOutline" Width="14" Height="14" Foreground="{StaticResource SuccessBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                    <TextBlock FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center">
+                                                        <Run Text="{Binding StartDateFormatted}"/>
+                                                        <Run Text=" - "/>
+                                                        <Run Text="{Binding EndDateFormatted}"/>
+                                                    </TextBlock>
+                                                    <TextBlock Text="  •  " FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextTertiaryBrush}" VerticalAlignment="Center"/>
+                                                    <materialDesign:PackIcon Kind="ClockOutline" Width="14" Height="14" Foreground="{StaticResource WarningBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                    <TextBlock FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center">
+                                                        <Run Text="{Binding DurationDays, Mode=OneWay}"/><Run Text=" ngày"/>
+                                                    </TextBlock>
+                                                </StackPanel>
                                             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                                                 <materialDesign:PackIcon Kind="AccountTieOutline" Width="14" Height="14" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
                                                 <TextBlock Text="HDV: " FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" FontWeight="SemiBold"/>
@@ -907,22 +907,22 @@
 
                                             <StackPanel>
                                                 <TextBlock Text="{Binding TourName}" FontFamily="{StaticResource AppFont}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                                <WrapPanel Margin="0,6,0,0" ItemHeight="18">
-                                                    <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                                <WrapPanel Margin="0,6,0,0">
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,12,0" VerticalAlignment="Center">
                                                         <materialDesign:PackIcon Kind="MapMarkerOutline" Width="14" Height="14" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                                                        <TextBlock Text="{Binding Destination}" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                        <TextBlock Text="{Binding Destination}" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                                                     </StackPanel>
-                                                    <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,12,0" VerticalAlignment="Center">
                                                         <materialDesign:PackIcon Kind="CalendarRange" Width="14" Height="14" Foreground="{StaticResource TextTertiaryBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                                                        <TextBlock FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}">
+                                                        <TextBlock FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center">
                                                             <Run Text="{Binding StartDateFormatted}"/>
                                                             <Run Text=" - "/>
                                                             <Run Text="{Binding EndDateFormatted}"/>
                                                         </TextBlock>
                                                     </StackPanel>
-                                                    <StackPanel Orientation="Horizontal">
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                         <materialDesign:PackIcon Kind="ClockOutline" Width="14" Height="14" Foreground="{StaticResource WarningBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                                                        <TextBlock FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}">
+                                                        <TextBlock FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center">
                                                             <Run Text="{Binding DurationDays}"/>
                                                             <Run Text=" ngày"/>
                                                         </TextBlock>
