@@ -14,7 +14,7 @@ using VietTravel.Data.Services;
 
 namespace VietTravel.UI.ViewModels
 {
-    public partial class PromoCodeManagementViewModel : ObservableObject
+    public partial class PromoCodeManagementViewModel : PaginatedListViewModelBase<PromoCodeDisplayItem>
     {
         private static readonly Regex PromoCodePattern = new("^[A-Z0-9_-]{3,30}$", RegexOptions.Compiled);
         private readonly PromoCodeService _promoCodeService = new();
@@ -26,6 +26,10 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private ObservableCollection<PromoCodeDisplayItem> _filteredPromoCodes = new();
         [ObservableProperty] private ObservableCollection<TourSelectionItem> _tourSelections = new();
         [ObservableProperty] private ObservableCollection<PromoCodeUsageDisplayItem> _selectedPromoUsages = new();
+
+        // Filters
+        [ObservableProperty] private ObservableCollection<string> _statuses = new() { "Tất cả", "Sắp diễn ra", "Đang hoạt động", "Hết hạn", "Đã vô hiệu hoá" };
+        [ObservableProperty] private string _selectedStatus = "Tất cả";
         [ObservableProperty] private bool _isLoading;
         [ObservableProperty] private bool _isFormVisible;
         [ObservableProperty] private bool _isEditing;
@@ -63,6 +67,11 @@ namespace VietTravel.UI.ViewModels
         }
 
         partial void OnSearchTextChanged(string value)
+        {
+            ApplyFilter();
+        }
+
+        partial void OnSelectedStatusChanged(string value)
         {
             ApplyFilter();
         }
@@ -472,19 +481,18 @@ namespace VietTravel.UI.ViewModels
 
         private void ApplyFilter()
         {
-            if (string.IsNullOrWhiteSpace(SearchText))
-            {
-                FilteredPromoCodes = new ObservableCollection<PromoCodeDisplayItem>(PromoCodes);
-            }
-            else
-            {
-                var lower = SearchText.Trim().ToLowerInvariant();
-                FilteredPromoCodes = new ObservableCollection<PromoCodeDisplayItem>(
-                    PromoCodes.Where(x =>
-                        x.Code.ToLowerInvariant().Contains(lower) ||
-                        x.StatusLabel.ToLowerInvariant().Contains(lower) ||
-                        x.ScopeSummary.ToLowerInvariant().Contains(lower)));
-            }
+            var isSearchEmpty = string.IsNullOrWhiteSpace(SearchText);
+            var lower = isSearchEmpty ? string.Empty : SearchText.Trim().ToLowerInvariant();
+            var filterStatus = SelectedStatus == "Tất cả" ? null : SelectedStatus;
+
+            var filtered = PromoCodes.Where(x =>
+                    (isSearchEmpty ||
+                     x.Code.ToLowerInvariant().Contains(lower) ||
+                     x.StatusLabel.ToLowerInvariant().Contains(lower) ||
+                     x.ScopeSummary.ToLowerInvariant().Contains(lower)) &&
+                    (filterStatus == null || x.StatusLabel == filterStatus))
+                .ToList();
+            SetPagedItems(filtered, FilteredPromoCodes);
 
             OnPropertyChanged(nameof(HasNoData));
         }

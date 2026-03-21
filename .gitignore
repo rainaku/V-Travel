@@ -51,3 +51,5 @@ database.sql
 database.sql
 /tmpbuild
 /.codex-temp
+tasks/seed_tour_ratings.ps1
+tasks/todo.md

@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:views="clr-namespace:VietTravel.UI.Views"
              Background="{StaticResource BackgroundBrush}">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -71,26 +72,44 @@
                 </StackPanel>
             </Border>
 
-            <!-- Search -->
+            <!-- Search & Filter Bar -->
             <Border Style="{StaticResource AppleCard}" Padding="16" Margin="0,0,0,20">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
+                    
                     <Grid>
-                        <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" 
-                                 Style="{StaticResource AppleSearchBox}"
-                                 materialDesign:HintAssist.Hint="Tìm kiếm theo tên tour, ngày khởi hành..."/>
-                        <materialDesign:PackIcon Kind="Magnify" Width="18" Height="18" Foreground="{StaticResource TextTertiaryBrush}"
-                                                 VerticalAlignment="Center" Margin="12,0,0,0" IsHitTestVisible="False"/>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="1*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid Grid.Column="0" Margin="0,0,12,0">
+                            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" 
+                                     Style="{StaticResource AppleSearchBox}"
+                                     materialDesign:HintAssist.Hint="Tìm kiếm theo tên tour, ngày khởi hành..."/>
+                            <materialDesign:PackIcon Kind="Magnify" Width="18" Height="18" Foreground="{StaticResource TextTertiaryBrush}"
+                                                     VerticalAlignment="Center" Margin="12,0,0,0" IsHitTestVisible="False"/>
+                        </Grid>
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding Statuses}" SelectedItem="{Binding SelectedStatus}"
+                                  Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                                  materialDesign:HintAssist.Hint="Trạng thái"
+                                  Padding="12,10"
+                                  Foreground="{StaticResource TextPrimaryBrush}"
+                                  BorderBrush="#E5E5EA"
+                                  materialDesign:TextFieldAssist.HasClearButton="False"
+                                  VerticalAlignment="Center"/>
                     </Grid>
-                    <Button Grid.Column="1" Style="{StaticResource AppleGhostButton}" Command="{Binding LoadDataCommand}" Margin="12,0,0,0">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="Làm mới" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
+                    
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0">
+                        <Button Style="{StaticResource AppleGhostButton}" Command="{Binding LoadDataCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Làm mới" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                 </Grid>
             </Border>
 
@@ -175,6 +194,14 @@
                     </Grid>
                 </StackPanel>
             </Border>
+
+            <views:AdminPaginationBar Margin="0,12,0,0"
+                                      SummaryText="{Binding PaginationSummary}"
+                                      CanGoPrevious="{Binding CanGoToPreviousPage}"
+                                      CanGoNext="{Binding CanGoToNextPage}"
+                                      ShowPagination="{Binding ShowPagination}"
+                                      PreviousCommand="{Binding PreviousPageCommand}"
+                                      NextCommand="{Binding NextPageCommand}"/>
 
         </StackPanel>
     </ScrollViewer>

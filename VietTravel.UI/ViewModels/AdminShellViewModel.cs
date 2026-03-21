@@ -62,6 +62,7 @@ namespace VietTravel.UI.ViewModels
                 "Bookings" => new BookingListViewModel(_mainViewModel),
                 "Guides" => new GuideManagementViewModel(_mainViewModel),
                 "Customers" => new CustomerListViewModel(_mainViewModel),
+                "Ratings" => new RatingManagementViewModel(_mainViewModel),
                 "Users" => new UserManagementViewModel(_mainViewModel),
                 "Payments" => new PaymentListViewModel(_mainViewModel),
                 "Promotions" => new PromoCodeManagementViewModel(_mainViewModel),

@@ -14,8 +14,11 @@ namespace VietTravel.UI.ViewModels
 {
     public partial class GuideManagementViewModel : ObservableObject
     {
+        private const int PageSize = 12;
         private readonly MainViewModel _mainViewModel;
         private readonly Dictionary<int, int> _tourDurationByTourId = new();
+        private List<GuideContactItem> _guideFilteredSource = new();
+        private List<GuideScheduleItem> _assignmentFilteredSource = new();
 
         [ObservableProperty] private bool _isLoading;
         [ObservableProperty] private string _guideSearchText = string.Empty;
@@ -26,6 +29,10 @@ namespace VietTravel.UI.ViewModels
 
         [ObservableProperty] private ObservableCollection<GuideScheduleItem> _assignments = new();
         [ObservableProperty] private ObservableCollection<GuideScheduleItem> _filteredAssignments = new();
+
+        // Filters
+        [ObservableProperty] private ObservableCollection<string> _scheduleStatuses = new() { "Tất cả" };
+        [ObservableProperty] private string _selectedScheduleStatus = "Tất cả";
 
         [ObservableProperty] private ObservableCollection<User> _availableGuides = new();
         [ObservableProperty] private ObservableCollection<Departure> _availableDepartures = new();
@@ -42,6 +49,12 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private int _totalGuides;
         [ObservableProperty] private int _totalAssignments;
         [ObservableProperty] private int _unassignedActiveTours;
+        [ObservableProperty] private int _guideCurrentPage = 1;
+        [ObservableProperty] private int _guideTotalPages = 1;
+        [ObservableProperty] private int _guideTotalItems;
+        [ObservableProperty] private int _assignmentCurrentPage = 1;
+        [ObservableProperty] private int _assignmentTotalPages = 1;
+        [ObservableProperty] private int _assignmentTotalItems;
 
         public bool HasNoGuides => !IsLoading && FilteredGuides.Count == 0;
         public bool HasNoAssignments => !IsLoading && FilteredAssignments.Count == 0;
@@ -52,6 +65,18 @@ namespace VietTravel.UI.ViewModels
         public string PageSubtitle => IsGuideViewOnly
             ? "Theo dõi các tour bạn được phân công"
             : "Phân công guide cho tour, lịch làm việc và thông tin liên hệ";
+        public bool CanGoToPreviousGuidePage => GuideCurrentPage > 1;
+        public bool CanGoToNextGuidePage => GuideCurrentPage < GuideTotalPages;
+        public bool ShowGuidePagination => GuideTotalItems > PageSize;
+        public string GuidePaginationSummary => GuideTotalItems == 0
+            ? "0 mục"
+            : $"Trang {GuideCurrentPage}/{GuideTotalPages} • {GuideTotalItems} mục";
+        public bool CanGoToPreviousAssignmentPage => AssignmentCurrentPage > 1;
+        public bool CanGoToNextAssignmentPage => AssignmentCurrentPage < AssignmentTotalPages;
+        public bool ShowAssignmentPagination => AssignmentTotalItems > PageSize;
+        public string AssignmentPaginationSummary => AssignmentTotalItems == 0
+            ? "0 mục"
+            : $"Trang {AssignmentCurrentPage}/{AssignmentTotalPages} • {AssignmentTotalItems} mục";
 
         public GuideManagementViewModel(MainViewModel mainViewModel)
         {
@@ -61,6 +86,9 @@ namespace VietTravel.UI.ViewModels
 
         partial void OnGuideSearchTextChanged(string value) => ApplyGuideFilter();
         partial void OnScheduleSearchTextChanged(string value) => ApplyScheduleFilter();
+        partial void OnSelectedScheduleStatusChanged(string value) => ApplyScheduleFilter();
+        partial void OnGuideCurrentPageChanged(int value) => RefreshGuidePage();
+        partial void OnAssignmentCurrentPageChanged(int value) => RefreshAssignmentPage();
 
         partial void OnFormSelectedDepartureChanged(Departure? value)
         {
@@ -491,48 +519,141 @@ namespace VietTravel.UI.ViewModels
                 FormSelectedDeparture = null;
             }
 
+            var distinctStatuses = Assignments.Select(a => a.Status).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().OrderBy(s => s).ToList();
+            var currentStatus = SelectedScheduleStatus;
+            ScheduleStatuses.Clear();
+            ScheduleStatuses.Add("Tất cả");
+            foreach (var status in distinctStatuses)
+            {
+                ScheduleStatuses.Add(status);
+            }
+            if (ScheduleStatuses.Contains(currentStatus))
+                SelectedScheduleStatus = currentStatus;
+            else
+                SelectedScheduleStatus = "Tất cả";
+
             ApplyGuideFilter();
             ApplyScheduleFilter();
         }
 
         private void ApplyGuideFilter()
         {
-            if (string.IsNullOrWhiteSpace(GuideSearchText))
-            {
-                FilteredGuides = new ObservableCollection<GuideContactItem>(Guides);
-            }
-            else
-            {
-                var lower = GuideSearchText.Trim().ToLowerInvariant();
-                FilteredGuides = new ObservableCollection<GuideContactItem>(
-                    Guides.Where(g =>
-                        g.FullName.ToLowerInvariant().Contains(lower) ||
-                        g.Username.ToLowerInvariant().Contains(lower) ||
-                        g.PhoneNumber.ToLowerInvariant().Contains(lower) ||
-                        g.Email.ToLowerInvariant().Contains(lower)));
-            }
+            _guideFilteredSource = string.IsNullOrWhiteSpace(GuideSearchText)
+                ? Guides.ToList()
+                : Guides.Where(g =>
+                        g.FullName.ToLowerInvariant().Contains(GuideSearchText.Trim().ToLowerInvariant()) ||
+                        g.Username.ToLowerInvariant().Contains(GuideSearchText.Trim().ToLowerInvariant()) ||
+                        g.PhoneNumber.ToLowerInvariant().Contains(GuideSearchText.Trim().ToLowerInvariant()) ||
+                        g.Email.ToLowerInvariant().Contains(GuideSearchText.Trim().ToLowerInvariant()))
+                    .ToList();
 
+            GuideTotalItems = _guideFilteredSource.Count;
+            GuideTotalPages = Math.Max(1, (int)Math.Ceiling(GuideTotalItems / (double)PageSize));
+            GuideCurrentPage = 1;
+            RefreshGuidePage();
             OnPropertyChanged(nameof(HasNoGuides));
         }
 
         private void ApplyScheduleFilter()
         {
-            if (string.IsNullOrWhiteSpace(ScheduleSearchText))
+            var isSearchEmpty = string.IsNullOrWhiteSpace(ScheduleSearchText);
+            var lower = isSearchEmpty ? string.Empty : ScheduleSearchText.Trim().ToLowerInvariant();
+            var filterStatus = SelectedScheduleStatus == "Tất cả" ? null : SelectedScheduleStatus;
+
+            _assignmentFilteredSource = Assignments.Where(a =>
+                    (isSearchEmpty ||
+                     a.GuideName.ToLowerInvariant().Contains(lower) ||
+                     a.TourName.ToLowerInvariant().Contains(lower) ||
+                     (a.Status ?? string.Empty).ToLowerInvariant().Contains(lower) ||
+                     a.WorkStart.ToString("dd/MM/yyyy").Contains(lower)) &&
+                    (filterStatus == null || string.Equals(a.Status, filterStatus, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+
+            AssignmentTotalItems = _assignmentFilteredSource.Count;
+            AssignmentTotalPages = Math.Max(1, (int)Math.Ceiling(AssignmentTotalItems / (double)PageSize));
+            AssignmentCurrentPage = 1;
+            RefreshAssignmentPage();
+            OnPropertyChanged(nameof(HasNoAssignments));
+        }
+
+        [RelayCommand(CanExecute = nameof(CanGoToPreviousGuidePage))]
+        private void PreviousGuidePage()
+        {
+            if (!CanGoToPreviousGuidePage)
             {
-                FilteredAssignments = new ObservableCollection<GuideScheduleItem>(Assignments);
-            }
-            else
-            {
-                var lower = ScheduleSearchText.Trim().ToLowerInvariant();
-                FilteredAssignments = new ObservableCollection<GuideScheduleItem>(
-                    Assignments.Where(a =>
-                        a.GuideName.ToLowerInvariant().Contains(lower) ||
-                        a.TourName.ToLowerInvariant().Contains(lower) ||
-                        a.Status.ToLowerInvariant().Contains(lower) ||
-                        a.WorkStart.ToString("dd/MM/yyyy").Contains(lower)));
+                return;
             }
 
-            OnPropertyChanged(nameof(HasNoAssignments));
+            GuideCurrentPage--;
+        }
+
+        [RelayCommand(CanExecute = nameof(CanGoToNextGuidePage))]
+        private void NextGuidePage()
+        {
+            if (!CanGoToNextGuidePage)
+            {
+                return;
+            }
+
+            GuideCurrentPage++;
+        }
+
+        [RelayCommand(CanExecute = nameof(CanGoToPreviousAssignmentPage))]
+        private void PreviousAssignmentPage()
+        {
+            if (!CanGoToPreviousAssignmentPage)
+            {
+                return;
+            }
+
+            AssignmentCurrentPage--;
+        }
+
+        [RelayCommand(CanExecute = nameof(CanGoToNextAssignmentPage))]
+        private void NextAssignmentPage()
+        {
+            if (!CanGoToNextAssignmentPage)
+            {
+                return;
+            }
+
+            AssignmentCurrentPage++;
+        }
+
+        private void RefreshGuidePage()
+        {
+            FilteredGuides.Clear();
+            foreach (var item in _guideFilteredSource
+                         .Skip((Math.Max(GuideCurrentPage, 1) - 1) * PageSize)
+                         .Take(PageSize))
+            {
+                FilteredGuides.Add(item);
+            }
+
+            OnPropertyChanged(nameof(CanGoToPreviousGuidePage));
+            OnPropertyChanged(nameof(CanGoToNextGuidePage));
+            OnPropertyChanged(nameof(ShowGuidePagination));
+            OnPropertyChanged(nameof(GuidePaginationSummary));
+            PreviousGuidePageCommand.NotifyCanExecuteChanged();
+            NextGuidePageCommand.NotifyCanExecuteChanged();
+        }
+
+        private void RefreshAssignmentPage()
+        {
+            FilteredAssignments.Clear();
+            foreach (var item in _assignmentFilteredSource
+                         .Skip((Math.Max(AssignmentCurrentPage, 1) - 1) * PageSize)
+                         .Take(PageSize))
+            {
+                FilteredAssignments.Add(item);
+            }
+
+            OnPropertyChanged(nameof(CanGoToPreviousAssignmentPage));
+            OnPropertyChanged(nameof(CanGoToNextAssignmentPage));
+            OnPropertyChanged(nameof(ShowAssignmentPagination));
+            OnPropertyChanged(nameof(AssignmentPaginationSummary));
+            PreviousAssignmentPageCommand.NotifyCanExecuteChanged();
+            NextAssignmentPageCommand.NotifyCanExecuteChanged();
         }
 
         private void ClearAssignForm()

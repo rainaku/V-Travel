@@ -10,7 +10,7 @@ using VietTravel.Data;
 
 namespace VietTravel.UI.ViewModels
 {
-    public partial class CustomerListViewModel : ObservableObject
+    public partial class CustomerListViewModel : PaginatedListViewModelBase<Customer>
     {
         private readonly MainViewModel _mainViewModel;
 
@@ -46,20 +46,14 @@ namespace VietTravel.UI.ViewModels
 
         private void ApplyFilter()
         {
-            if (string.IsNullOrWhiteSpace(SearchText))
-            {
-                FilteredCustomers = new ObservableCollection<Customer>(Customers);
-            }
-            else
-            {
-                var lower = SearchText.ToLower();
-                FilteredCustomers = new ObservableCollection<Customer>(
-                    Customers.Where(c =>
-                        c.FullName.ToLower().Contains(lower) ||
-                        c.PhoneNumber.ToLower().Contains(lower) ||
-                        c.Email.ToLower().Contains(lower))
-                );
-            }
+            var filtered = string.IsNullOrWhiteSpace(SearchText)
+                ? Customers.ToList()
+                : Customers.Where(c =>
+                        c.FullName.ToLower().Contains(SearchText.ToLower()) ||
+                        c.PhoneNumber.ToLower().Contains(SearchText.ToLower()) ||
+                        c.Email.ToLower().Contains(SearchText.ToLower()))
+                    .ToList();
+            SetPagedItems(filtered, FilteredCustomers);
             OnPropertyChanged(nameof(HasNoData));
         }
 

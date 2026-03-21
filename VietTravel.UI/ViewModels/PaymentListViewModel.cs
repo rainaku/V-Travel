@@ -8,10 +8,9 @@ using System.Windows;
 using VietTravel.Core.Models;
 using VietTravel.Data;
 using VietTravel.UI.Services;
-
 namespace VietTravel.UI.ViewModels
 {
-    public partial class PaymentListViewModel : ObservableObject
+    public partial class PaymentListViewModel : PaginatedListViewModelBase<Payment>
     {
         private readonly MainViewModel _mainViewModel;
 
@@ -19,6 +18,10 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private ObservableCollection<Payment> _payments = new();
         [ObservableProperty] private ObservableCollection<Payment> _filteredPayments = new();
         [ObservableProperty] private bool _isLoading = false;
+
+        // Filters
+        [ObservableProperty] private ObservableCollection<string> _statuses = new() { "Tất cả" };
+        [ObservableProperty] private string _selectedStatus = "Tất cả";
 
         // Stats
         [ObservableProperty] private int _unpaidCount = 0;
@@ -34,23 +37,22 @@ namespace VietTravel.UI.ViewModels
         }
 
         partial void OnSearchTextChanged(string value) => ApplyFilter();
+        partial void OnSelectedStatusChanged(string value) => ApplyFilter();
 
         private void ApplyFilter()
         {
-            if (string.IsNullOrWhiteSpace(SearchText))
-            {
-                FilteredPayments = new ObservableCollection<Payment>(Payments);
-            }
-            else
-            {
-                var lower = SearchText.ToLower();
-                FilteredPayments = new ObservableCollection<Payment>(
-                    Payments.Where(p =>
-                        p.Status.ToLower().Contains(lower) ||
-                        p.PaymentMethod.ToLower().Contains(lower) ||
-                        p.BookingId.ToString().Contains(lower))
-                );
-            }
+            var isSearchEmpty = string.IsNullOrWhiteSpace(SearchText);
+            var lower = isSearchEmpty ? string.Empty : SearchText.ToLower();
+            var filterStatus = SelectedStatus == "Tất cả" ? null : SelectedStatus;
+
+            var filtered = Payments.Where(p =>
+                    (isSearchEmpty ||
+                     p.Status.ToLower().Contains(lower) ||
+                     p.PaymentMethod.ToLower().Contains(lower) ||
+                     p.BookingId.ToString().Contains(lower)) &&
+                    (filterStatus == null || p.Status == filterStatus))
+                .ToList();
+            SetPagedItems(filtered, FilteredPayments);
             OnPropertyChanged(nameof(HasNoData));
         }
 
@@ -76,6 +78,20 @@ namespace VietTravel.UI.ViewModels
                     .ToList();
                 Payments.Clear();
                 foreach (var p in sortedPayments) Payments.Add(p);
+
+                var distinctStatuses = sortedPayments.Where(p => !string.IsNullOrWhiteSpace(p.Status)).Select(p => p.Status!).Distinct().OrderBy(s => s).ToList();
+                var currentSelected = SelectedStatus;
+                Statuses.Clear();
+                Statuses.Add("Tất cả");
+                foreach (var status in distinctStatuses)
+                {
+                    Statuses.Add(status);
+                }
+                if (Statuses.Contains(currentSelected))
+                    SelectedStatus = currentSelected;
+                else
+                    SelectedStatus = "Tất cả";
+
                 ApplyFilter();
                 UpdateStats();
             }

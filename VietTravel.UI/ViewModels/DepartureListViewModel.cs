@@ -10,7 +10,7 @@ using VietTravel.Data;
 
 namespace VietTravel.UI.ViewModels
 {
-    public partial class DepartureListViewModel : ObservableObject
+    public partial class DepartureListViewModel : PaginatedListViewModelBase<Departure>
     {
         private readonly MainViewModel _mainViewModel;
 
@@ -19,6 +19,10 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private ObservableCollection<Departure> _filteredDepartures = new();
         [ObservableProperty] private ObservableCollection<Tour> _availableTours = new();
         [ObservableProperty] private bool _isLoading = false;
+
+        // Filters
+        [ObservableProperty] private ObservableCollection<string> _statuses = new() { "Tất cả" };
+        [ObservableProperty] private string _selectedStatus = "Tất cả";
 
         // Form
         [ObservableProperty] private bool _isFormVisible = false;
@@ -41,23 +45,22 @@ namespace VietTravel.UI.ViewModels
         }
 
         partial void OnSearchTextChanged(string value) => ApplyFilter();
+        partial void OnSelectedStatusChanged(string value) => ApplyFilter();
 
         private void ApplyFilter()
         {
-            if (string.IsNullOrWhiteSpace(SearchText))
-            {
-                FilteredDepartures = new ObservableCollection<Departure>(Departures);
-            }
-            else
-            {
-                var lower = SearchText.ToLower();
-                FilteredDepartures = new ObservableCollection<Departure>(
-                    Departures.Where(d =>
-                        (d.Tour?.Name?.ToLower().Contains(lower) ?? false) ||
-                        d.StartDate.ToString("dd/MM/yyyy").Contains(lower) ||
-                        d.Status.ToLower().Contains(lower))
-                );
-            }
+            var isSearchEmpty = string.IsNullOrWhiteSpace(SearchText);
+            var lower = isSearchEmpty ? string.Empty : SearchText.ToLower();
+            var filterStatus = SelectedStatus == "Tất cả" ? null : SelectedStatus;
+
+            var filtered = Departures.Where(d =>
+                    (isSearchEmpty ||
+                     (d.Tour?.Name?.ToLower().Contains(lower) ?? false) ||
+                     d.StartDate.ToString("dd/MM/yyyy").Contains(lower) ||
+                     d.Status.ToLower().Contains(lower)) &&
+                    (filterStatus == null || d.Status == filterStatus))
+                .ToList();
+            SetPagedItems(filtered, FilteredDepartures);
             OnPropertyChanged(nameof(HasNoData));
         }
 
@@ -82,6 +85,20 @@ namespace VietTravel.UI.ViewModels
                     dep.Tour = AvailableTours.FirstOrDefault(t => t.Id == dep.TourId);
                     Departures.Add(dep);
                 }
+
+                var distinctStatuses = response.Models.Where(d => !string.IsNullOrWhiteSpace(d.Status)).Select(d => d.Status!).Distinct().OrderBy(s => s).ToList();
+                var currentSelected = SelectedStatus;
+                Statuses.Clear();
+                Statuses.Add("Tất cả");
+                foreach (var status in distinctStatuses)
+                {
+                    Statuses.Add(status);
+                }
+                if (Statuses.Contains(currentSelected))
+                    SelectedStatus = currentSelected;
+                else
+                    SelectedStatus = "Tất cả";
+
                 ApplyFilter();
             }
             catch (Exception ex)

@@ -12,7 +12,7 @@ using VietTravel.UI.Models;
 
 namespace VietTravel.UI.ViewModels
 {
-    public partial class UserManagementViewModel : ObservableObject
+    public partial class UserManagementViewModel : PaginatedListViewModelBase<UserRoleItem>
     {
         private readonly MainViewModel _mainViewModel;
         private readonly Dictionary<int, User> _userCache = new();
@@ -23,6 +23,10 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private ObservableCollection<UserRoleItem> _filteredUsers = new();
         [ObservableProperty] private ObservableCollection<string> _roleOptions =
             new(new[] { "Admin", "Employee", "Guide", "Customer" });
+
+        // Filters
+        [ObservableProperty] private ObservableCollection<string> _filterRoles = new() { "Tất cả", "Admin", "Employee", "Guide", "Customer" };
+        [ObservableProperty] private string _selectedFilterRole = "Tất cả";
 
         [ObservableProperty] private int _totalUsers;
         [ObservableProperty] private int _totalGuides;
@@ -39,6 +43,7 @@ namespace VietTravel.UI.ViewModels
         }
 
         partial void OnSearchTextChanged(string value) => ApplyFilter();
+        partial void OnSelectedFilterRoleChanged(string value) => ApplyFilter();
 
         [RelayCommand]
         private async Task LoadDataAsync()
@@ -188,19 +193,18 @@ namespace VietTravel.UI.ViewModels
 
         private void ApplyFilter()
         {
-            if (string.IsNullOrWhiteSpace(SearchText))
-            {
-                FilteredUsers = new ObservableCollection<UserRoleItem>(Users);
-            }
-            else
-            {
-                var lower = SearchText.Trim().ToLowerInvariant();
-                FilteredUsers = new ObservableCollection<UserRoleItem>(
-                    Users.Where(u =>
-                        u.FullName.ToLowerInvariant().Contains(lower) ||
-                        u.Username.ToLowerInvariant().Contains(lower) ||
-                        u.Role.ToLowerInvariant().Contains(lower)));
-            }
+            var isSearchEmpty = string.IsNullOrWhiteSpace(SearchText);
+            var lower = isSearchEmpty ? string.Empty : SearchText.Trim().ToLowerInvariant();
+            var filterRole = SelectedFilterRole == "Tất cả" ? null : SelectedFilterRole;
+
+            var filtered = Users.Where(u =>
+                    (isSearchEmpty ||
+                     u.FullName.ToLowerInvariant().Contains(lower) ||
+                     u.Username.ToLowerInvariant().Contains(lower) ||
+                     u.Role.ToLowerInvariant().Contains(lower)) &&
+                    (filterRole == null || string.Equals(u.Role, filterRole, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+            SetPagedItems(filtered, FilteredUsers);
 
             OnPropertyChanged(nameof(HasNoData));
         }

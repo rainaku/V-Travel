@@ -25,6 +25,9 @@
         <DataTemplate DataType="{x:Type viewmodels:CustomerListViewModel}">
             <views:CustomerListView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:RatingManagementViewModel}">
+            <views:RatingManagementView/>
+        </DataTemplate>
         <DataTemplate DataType="{x:Type viewmodels:UserManagementViewModel}">
             <views:UserManagementView/>
         </DataTemplate>
@@ -154,6 +157,15 @@
                                 <StackPanel Orientation="Horizontal">
                                     <materialDesign:PackIcon Kind="AccountGroupOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="Khách Hàng" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton Style="{StaticResource SidebarButton}"
+                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Ratings, Mode=OneWay}"
+                                         Command="{Binding NavigateToPageCommand}" CommandParameter="Ratings">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="StarBoxOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Đánh giá &amp; Bình luận" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </RadioButton>
 

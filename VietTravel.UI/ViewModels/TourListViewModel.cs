@@ -14,7 +14,7 @@ using VietTravel.Data.Services;
 
 namespace VietTravel.UI.ViewModels
 {
-    public partial class TourListViewModel : ObservableObject
+    public partial class TourListViewModel : PaginatedListViewModelBase<Tour>
     {
         private readonly MainViewModel _mainViewModel;
         private readonly CloudinaryImageService _cloudinaryImageService = new();
@@ -23,6 +23,10 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private ObservableCollection<Tour> _tours = new();
         [ObservableProperty] private ObservableCollection<Tour> _filteredTours = new();
         [ObservableProperty] private bool _isLoading = false;
+
+        // Filters
+        [ObservableProperty] private ObservableCollection<string> _tourTypes = new() { "Tất cả" };
+        [ObservableProperty] private string _selectedTourType = "Tất cả";
 
         // Form fields
         [ObservableProperty] private string _formName = string.Empty;
@@ -53,6 +57,11 @@ namespace VietTravel.UI.ViewModels
             ApplyFilter();
         }
 
+        partial void OnSelectedTourTypeChanged(string value)
+        {
+            ApplyFilter();
+        }
+
         partial void OnIsUploadingImageChanged(bool value)
         {
             OnPropertyChanged(nameof(UploadImageButtonText));
@@ -61,20 +70,18 @@ namespace VietTravel.UI.ViewModels
 
         private void ApplyFilter()
         {
-            if (string.IsNullOrWhiteSpace(SearchText))
-            {
-                FilteredTours = new ObservableCollection<Tour>(Tours);
-            }
-            else
-            {
-                var lower = SearchText.Trim().ToLowerInvariant();
-                FilteredTours = new ObservableCollection<Tour>(
-                    Tours.Where(t =>
-                        (t.Name ?? string.Empty).ToLowerInvariant().Contains(lower) ||
-                        (t.Destination ?? string.Empty).ToLowerInvariant().Contains(lower) ||
-                        (t.Description ?? string.Empty).ToLowerInvariant().Contains(lower))
-                );
-            }
+            var isSearchEmpty = string.IsNullOrWhiteSpace(SearchText);
+            var lower = isSearchEmpty ? string.Empty : SearchText.Trim().ToLowerInvariant();
+            var filterType = SelectedTourType == "Tất cả" ? null : SelectedTourType;
+
+            var filtered = Tours.Where(t =>
+                    (isSearchEmpty ||
+                     (t.Name ?? string.Empty).ToLowerInvariant().Contains(lower) ||
+                     (t.Destination ?? string.Empty).ToLowerInvariant().Contains(lower) ||
+                     (t.Description ?? string.Empty).ToLowerInvariant().Contains(lower)) &&
+                    (filterType == null || t.TourType == filterType))
+                .ToList();
+            SetPagedItems(filtered, FilteredTours);
             OnPropertyChanged(nameof(HasNoData));
         }
 
@@ -101,6 +108,20 @@ namespace VietTravel.UI.ViewModels
                 {
                     Tours.Add(tour);
                 }
+
+                var distinctTypes = models.Where(t => !string.IsNullOrWhiteSpace(t.TourType)).Select(t => t.TourType!).Distinct().OrderBy(t => t).ToList();
+                var currentSelected = SelectedTourType;
+                TourTypes.Clear();
+                TourTypes.Add("Tất cả");
+                foreach (var type in distinctTypes)
+                {
+                    TourTypes.Add(type);
+                }
+                if (TourTypes.Contains(currentSelected))
+                    SelectedTourType = currentSelected;
+                else
+                    SelectedTourType = "Tất cả";
+
                 ApplyFilter();
             }
             catch (Exception ex)
