@@ -155,6 +155,7 @@
                             </RadioButton>
 
                             <RadioButton Style="{StaticResource SidebarButton}"
+                                         Visibility="{Binding CanAccessAdminOnlyModules, Converter={StaticResource BooleanToVisibilityConverter}}"
                                          IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Customers, Mode=OneWay}"
                                          Command="{Binding NavigateToPageCommand}" CommandParameter="Customers">
                                 <StackPanel Orientation="Horizontal">
@@ -185,6 +186,7 @@
                             </RadioButton>
 
                             <RadioButton Style="{StaticResource SidebarButton}"
+                                         Visibility="{Binding CanAccessAdminOnlyModules, Converter={StaticResource BooleanToVisibilityConverter}}"
                                          IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Users, Mode=OneWay}"
                                          Command="{Binding NavigateToPageCommand}" CommandParameter="Users">
                                 <StackPanel Orientation="Horizontal">
@@ -194,6 +196,7 @@
                             </RadioButton>
 
                             <RadioButton Style="{StaticResource SidebarButton}"
+                                         Visibility="{Binding CanAccessAdminOnlyModules, Converter={StaticResource BooleanToVisibilityConverter}}"
                                          IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Payments, Mode=OneWay}"
                                          Command="{Binding NavigateToPageCommand}" CommandParameter="Payments">
                                 <StackPanel Orientation="Horizontal">
@@ -203,6 +206,7 @@
                             </RadioButton>
 
                             <RadioButton Style="{StaticResource SidebarButton}"
+                                         Visibility="{Binding CanAccessAdminOnlyModules, Converter={StaticResource BooleanToVisibilityConverter}}"
                                          IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Promotions, Mode=OneWay}"
                                          Command="{Binding NavigateToPageCommand}" CommandParameter="Promotions">
                                 <StackPanel Orientation="Horizontal">

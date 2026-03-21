@@ -34,6 +34,12 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private bool _isFormVisible = false;
         [ObservableProperty] private ObservableCollection<Customer> _customerList = new();
         [ObservableProperty] private ObservableCollection<Departure> _departureList = new();
+        [ObservableProperty] private ObservableCollection<Customer> _formCustomers = new();
+        [ObservableProperty] private ObservableCollection<Departure> _formDepartures = new();
+        [ObservableProperty] private string _customerSearchText = string.Empty;
+        [ObservableProperty] private string _departureSearchText = string.Empty;
+        [ObservableProperty] private bool _isCustomerDropdownOpen = false;
+        [ObservableProperty] private bool _isDepartureDropdownOpen = false;
         [ObservableProperty] private Customer? _formCustomer;
         [ObservableProperty] private Departure? _formDeparture;
         [ObservableProperty] private string _formGuestCount = string.Empty;
@@ -48,6 +54,59 @@ namespace VietTravel.UI.ViewModels
 
         partial void OnSearchTextChanged(string value) => ApplyFilter();
         partial void OnSelectedStatusChanged(string value) => ApplyFilter();
+        partial void OnCustomerSearchTextChanged(string value)
+        {
+            if (FormCustomer != null &&
+                !string.Equals(FormCustomer.FullName, value?.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                FormCustomer = null;
+            }
+
+            ApplyFormFilters();
+        }
+
+        partial void OnDepartureSearchTextChanged(string value)
+        {
+            if (FormDeparture != null &&
+                !string.Equals(BuildDepartureSearchText(FormDeparture), value?.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                FormDeparture = null;
+            }
+
+            ApplyFormFilters();
+        }
+
+        partial void OnFormCustomerChanged(Customer? value)
+        {
+            if (value == null)
+            {
+                return;
+            }
+
+            var selectedText = value.FullName;
+            if (!string.Equals(CustomerSearchText, selectedText, StringComparison.OrdinalIgnoreCase))
+            {
+                CustomerSearchText = selectedText;
+            }
+
+            IsCustomerDropdownOpen = false;
+        }
+
+        partial void OnFormDepartureChanged(Departure? value)
+        {
+            if (value == null)
+            {
+                return;
+            }
+
+            var selectedText = BuildDepartureSearchText(value);
+            if (!string.Equals(DepartureSearchText, selectedText, StringComparison.OrdinalIgnoreCase))
+            {
+                DepartureSearchText = selectedText;
+            }
+
+            IsDepartureDropdownOpen = false;
+        }
 
         private void ApplyFilter()
         {
@@ -77,6 +136,80 @@ namespace VietTravel.UI.ViewModels
             CancelledCount = Bookings.Count(b => b.Status == "Đã hủy" || b.Status == "Hủy");
         }
 
+        private void ApplyFormFilters()
+        {
+            var customerKeyword = string.IsNullOrWhiteSpace(CustomerSearchText)
+                ? null
+                : CustomerSearchText.Trim().ToLowerInvariant();
+            var selectedCustomerId = FormCustomer?.Id;
+
+            var filteredCustomers = CustomerList
+                .Where(c =>
+                    customerKeyword == null ||
+                    (c.FullName?.ToLowerInvariant().Contains(customerKeyword) ?? false) ||
+                    (c.PhoneNumber?.ToLowerInvariant().Contains(customerKeyword) ?? false) ||
+                    (c.Email?.ToLowerInvariant().Contains(customerKeyword) ?? false))
+                .OrderBy(c => c.FullName)
+                .ToList();
+
+            FormCustomers = new ObservableCollection<Customer>(filteredCustomers);
+            if (selectedCustomerId.HasValue)
+            {
+                FormCustomer = FormCustomers.FirstOrDefault(c => c.Id == selectedCustomerId.Value);
+            }
+            var normalizedCustomerText = CustomerSearchText?.Trim() ?? string.Empty;
+            IsCustomerDropdownOpen =
+                !string.IsNullOrWhiteSpace(normalizedCustomerText) &&
+                FormCustomers.Count > 0 &&
+                (FormCustomer == null ||
+                 !string.Equals(FormCustomer.FullName, normalizedCustomerText, StringComparison.OrdinalIgnoreCase));
+
+            var departureKeyword = string.IsNullOrWhiteSpace(DepartureSearchText)
+                ? null
+                : DepartureSearchText.Trim().ToLowerInvariant();
+            var selectedDepartureId = FormDeparture?.Id;
+
+            var filteredDepartures = DepartureList
+                .Where(d =>
+                {
+                    if (departureKeyword == null) return true;
+
+                    var tourName = d.Tour?.Name?.ToLowerInvariant() ?? string.Empty;
+                    var destination = d.Tour?.Destination?.ToLowerInvariant() ?? string.Empty;
+                    var startDateText = d.StartDate.ToString("dd/MM/yyyy").ToLowerInvariant();
+                    var departureId = d.Id.ToString();
+                    var displayText = BuildDepartureSearchText(d).ToLowerInvariant();
+
+                    return tourName.Contains(departureKeyword)
+                           || destination.Contains(departureKeyword)
+                           || startDateText.Contains(departureKeyword)
+                           || departureId.Contains(departureKeyword)
+                           || displayText.Contains(departureKeyword);
+                })
+                .OrderBy(d => d.StartDate)
+                .ToList();
+
+            FormDepartures = new ObservableCollection<Departure>(filteredDepartures);
+            if (selectedDepartureId.HasValue)
+            {
+                FormDeparture = FormDepartures.FirstOrDefault(d => d.Id == selectedDepartureId.Value);
+            }
+            var normalizedDepartureText = DepartureSearchText?.Trim() ?? string.Empty;
+            IsDepartureDropdownOpen =
+                !string.IsNullOrWhiteSpace(normalizedDepartureText) &&
+                FormDepartures.Count > 0 &&
+                (FormDeparture == null ||
+                 !string.Equals(BuildDepartureSearchText(FormDeparture), normalizedDepartureText, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string BuildDepartureSearchText(Departure departure)
+        {
+            var tourName = departure.Tour?.Name;
+            return string.IsNullOrWhiteSpace(tourName)
+                ? departure.StartDate.ToString("dd/MM/yyyy")
+                : $"{tourName} - {departure.StartDate:dd/MM/yyyy}";
+        }
+
         [RelayCommand]
         private async Task LoadDataAsync()
         {
@@ -98,6 +231,7 @@ namespace VietTravel.UI.ViewModels
                 var deps = depResp.Models;
                 foreach (var d in deps) d.Tour = tours.FirstOrDefault(t => t.Id == d.TourId);
                 DepartureList = new ObservableCollection<Departure>(deps);
+                ApplyFormFilters();
 
                 // Load bookings
                 var bookResp = await client.From<Booking>().Get();
@@ -143,6 +277,11 @@ namespace VietTravel.UI.ViewModels
         [RelayCommand]
         private void ShowAddForm()
         {
+            CustomerSearchText = string.Empty;
+            DepartureSearchText = string.Empty;
+            IsCustomerDropdownOpen = false;
+            IsDepartureDropdownOpen = false;
+            ApplyFormFilters();
             FormCustomer = null;
             FormDeparture = null;
             FormGuestCount = string.Empty;

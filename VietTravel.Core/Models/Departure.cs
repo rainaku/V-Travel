@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using Postgrest.Attributes;
 using Postgrest.Models;
 
@@ -28,5 +29,17 @@ namespace VietTravel.Core.Models
 
         [Column("status")]
         public string Status { get; set; } = "Mở bán"; // "Mở bán", "Hết chỗ", "Đóng"
+
+        [JsonIgnore]
+        public string SearchDisplay
+        {
+            get
+            {
+                var tourName = Tour?.Name;
+                return string.IsNullOrWhiteSpace(tourName)
+                    ? StartDate.ToString("dd/MM/yyyy")
+                    : $"{tourName} - {StartDate:dd/MM/yyyy}";
+            }
+        }
     }
 }

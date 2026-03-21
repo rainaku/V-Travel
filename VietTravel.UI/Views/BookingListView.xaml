@@ -92,26 +92,27 @@
 
                         <StackPanel Grid.Column="0" Margin="0,0,0,12">
                             <TextBlock Text="Khách hàng *" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                            <ComboBox ItemsSource="{Binding CustomerList}" SelectedItem="{Binding FormCustomer}"
+                            <ComboBox ItemsSource="{Binding FormCustomers}" SelectedItem="{Binding FormCustomer}"
+                                      Text="{Binding CustomerSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                      IsEditable="True"
+                                      IsTextSearchEnabled="False"
+                                      StaysOpenOnEdit="True"
+                                      IsDropDownOpen="{Binding IsCustomerDropdownOpen, Mode=TwoWay}"
                                       DisplayMemberPath="FullName" FontFamily="{StaticResource AppFont}" FontSize="13"
-                                      materialDesign:HintAssist.Hint="Chọn khách hàng"/>
+                                      materialDesign:HintAssist.Hint="Gõ tên, SĐT hoặc email để tìm nhanh"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="2" Margin="0,0,0,12">
                             <TextBlock Text="Lịch khởi hành *" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                            <ComboBox ItemsSource="{Binding DepartureList}" SelectedItem="{Binding FormDeparture}"
+                            <ComboBox ItemsSource="{Binding FormDepartures}" SelectedItem="{Binding FormDeparture}"
+                                      Text="{Binding DepartureSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                      IsEditable="True"
+                                      IsTextSearchEnabled="False"
+                                      StaysOpenOnEdit="True"
+                                      IsDropDownOpen="{Binding IsDepartureDropdownOpen, Mode=TwoWay}"
+                                      DisplayMemberPath="SearchDisplay"
                                       FontFamily="{StaticResource AppFont}" FontSize="13"
-                                      materialDesign:HintAssist.Hint="Chọn lịch trình">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock>
-                                            <Run Text="{Binding Tour.Name, Mode=OneWay}"/>
-                                            <Run Text=" - "/>
-                                            <Run Text="{Binding StartDate, StringFormat={}{0:dd/MM/yyyy}, Mode=OneWay}"/>
-                                        </TextBlock>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
+                                      materialDesign:HintAssist.Hint="Gõ tên tour hoặc ngày để tìm nhanh"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="4" Margin="0,0,0,12">

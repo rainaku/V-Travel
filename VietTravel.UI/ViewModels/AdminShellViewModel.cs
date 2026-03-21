@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.ComponentModel;
+using System.Windows;
 using VietTravel.UI.Services;
 
 namespace VietTravel.UI.ViewModels
@@ -21,6 +22,8 @@ namespace VietTravel.UI.ViewModels
         public string UserRole => _mainViewModel.CurrentUser?.Role ?? "Admin";
         public bool IsGuideRole => string.Equals(UserRole, "Guide", System.StringComparison.OrdinalIgnoreCase);
         public bool IsNonGuideRole => !IsGuideRole;
+        public bool IsAdminOrHigher => GetRoleLevel(UserRole) >= GetRoleLevel("Admin");
+        public bool CanAccessAdminOnlyModules => IsAdminOrHigher;
         public string UserInitials => GetInitials(FullName);
         public int NotificationUnreadCount => _notificationCenter.UnreadCount;
         public bool HasUnreadNotifications => NotificationUnreadCount > 0;
@@ -46,9 +49,25 @@ namespace VietTravel.UI.ViewModels
         [RelayCommand]
         public void NavigateToPage(string pageName)
         {
+            var isBlockedByPermission = false;
+
             if (IsGuideRole && !string.Equals(pageName, "Guides", System.StringComparison.Ordinal))
             {
                 pageName = "Guides";
+            }
+            else if (IsAdminOnlyPage(pageName) && !CanAccessAdminOnlyModules)
+            {
+                pageName = "Dashboard";
+                isBlockedByPermission = true;
+            }
+
+            if (isBlockedByPermission)
+            {
+                MessageBox.Show(
+                    "Chỉ Admin trở lên mới được truy cập mục này.",
+                    "Không đủ quyền",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
             }
 
             if (SelectedMenuItem == pageName) return;
@@ -110,7 +129,36 @@ namespace VietTravel.UI.ViewModels
                 OnPropertyChanged(nameof(UserRole));
                 OnPropertyChanged(nameof(IsGuideRole));
                 OnPropertyChanged(nameof(IsNonGuideRole));
+                OnPropertyChanged(nameof(IsAdminOrHigher));
+                OnPropertyChanged(nameof(CanAccessAdminOnlyModules));
+
+                if (IsAdminOnlyPage(SelectedMenuItem) && !CanAccessAdminOnlyModules)
+                {
+                    NavigateToPage("Dashboard");
+                }
             }
+        }
+
+        private static bool IsAdminOnlyPage(string? pageName)
+        {
+            return string.Equals(pageName, "Customers", System.StringComparison.Ordinal)
+                   || string.Equals(pageName, "Users", System.StringComparison.Ordinal)
+                   || string.Equals(pageName, "Payments", System.StringComparison.Ordinal)
+                   || string.Equals(pageName, "Promotions", System.StringComparison.Ordinal);
+        }
+
+        private static int GetRoleLevel(string? role)
+        {
+            return (role ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "customer" => 0,
+                "guide" => 1,
+                "employee" => 2,
+                "admin" => 3,
+                "superadmin" => 4,
+                "owner" => 5,
+                _ => 0
+            };
         }
 
         private static string GetInitials(string name)

@@ -16,7 +16,7 @@
             </StackPanel>
 
             <!-- Stat Cards Row -->
-            <UniformGrid Columns="4" Margin="0,0,0,24">
+            <UniformGrid Columns="2" Margin="0,0,0,24">
                 <!-- Total Tours -->
                 <Border Style="{StaticResource StatCard}" Margin="0,0,12,0">
                     <Grid>
@@ -40,31 +40,8 @@
                     </Grid>
                 </Border>
 
-                <!-- Active Bookings -->
-                <Border Style="{StaticResource StatCard}" Margin="6,0,6,0">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Margin="0,0,14,0" ClipToBounds="True">
-                            <TextBlock Text="Booking đang chờ" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                            <TextBlock Text="{Binding ActiveBookings}" Style="{StaticResource StatNumberStyle}"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                <materialDesign:PackIcon Kind="ClockOutline" Width="14" Height="14" Foreground="{StaticResource WarningBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="Cần xử lý" FontSize="11" Foreground="{StaticResource WarningBrush}" FontFamily="{StaticResource AppFont}"/>
-                            </StackPanel>
-                        </StackPanel>
-                        <Grid Grid.Column="1" Width="44" Height="44" VerticalAlignment="Top">
-                            <Ellipse Width="44" Height="44" Fill="#1AFF9500"/>
-                            <materialDesign:PackIcon Kind="TicketConfirmationOutline" Width="24" Height="24" Foreground="{StaticResource WarningBrush}"
-                                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Grid>
-                    </Grid>
-                </Border>
-
                 <!-- Total Revenue -->
-                <Border Style="{StaticResource StatCard}" Margin="6,0,6,0">
+                <Border Style="{StaticResource StatCard}" Margin="12,0,0,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -89,29 +66,6 @@
                         <Grid Grid.Column="1" Width="44" Height="44" VerticalAlignment="Top">
                             <Ellipse Width="44" Height="44" Fill="#1A34C759"/>
                             <materialDesign:PackIcon Kind="CurrencyUsd" Width="24" Height="24" Foreground="{StaticResource SuccessBrush}"
-                                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Grid>
-                    </Grid>
-                </Border>
-
-                <!-- Total Customers -->
-                <Border Style="{StaticResource StatCard}" Margin="12,0,0,0">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Margin="0,0,14,0" ClipToBounds="True">
-                            <TextBlock Text="Khách hàng" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                            <TextBlock Text="{Binding TotalCustomers}" Style="{StaticResource StatNumberStyle}"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                <materialDesign:PackIcon Kind="AccountPlusOutline" Width="14" Height="14" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="Tổng số" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontFamily="{StaticResource AppFont}"/>
-                            </StackPanel>
-                        </StackPanel>
-                        <Grid Grid.Column="1" Width="44" Height="44" VerticalAlignment="Top">
-                            <Ellipse Width="44" Height="44" Fill="#1AAF52DE"/>
-                            <materialDesign:PackIcon Kind="AccountGroupOutline" Width="24" Height="24" Foreground="{StaticResource AccentBrush}"
                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                     </Grid>
