@@ -28,6 +28,9 @@
         <DataTemplate DataType="{x:Type viewmodels:RatingManagementViewModel}">
             <views:RatingManagementView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:GuideRatingManagementViewModel}">
+            <views:GuideRatingManagementView/>
+        </DataTemplate>
         <DataTemplate DataType="{x:Type viewmodels:UserManagementViewModel}">
             <views:UserManagementView/>
         </DataTemplate>
@@ -160,12 +163,24 @@
                                 </StackPanel>
                             </RadioButton>
 
+                            <TextBlock Text="ĐÁNH GIÁ" FontFamily="{StaticResource AppFont}" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextTertiaryBrush}" Margin="20,20,0,8"/>
+
                             <RadioButton Style="{StaticResource SidebarButton}"
-                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=Ratings, Mode=OneWay}"
-                                         Command="{Binding NavigateToPageCommand}" CommandParameter="Ratings">
+                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=TourRatings, Mode=OneWay}"
+                                         Command="{Binding NavigateToPageCommand}" CommandParameter="TourRatings">
                                 <StackPanel Orientation="Horizontal">
                                     <materialDesign:PackIcon Kind="StarBoxOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Đánh giá &amp; Bình luận" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Đánh giá Tour" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton Style="{StaticResource SidebarButton}"
+                                         IsChecked="{Binding SelectedMenuItem, Converter={StaticResource StringMatchConverter}, ConverterParameter=GuideRatings, Mode=OneWay}"
+                                         Command="{Binding NavigateToPageCommand}" CommandParameter="GuideRatings">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="AccountTieOutline" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Đánh giá HDV" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </RadioButton>
 

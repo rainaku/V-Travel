@@ -505,3 +505,33 @@ ON tour_ratings (customer_id);
 
 CREATE INDEX IF NOT EXISTS ix_tour_ratings_status_created_at
 ON tour_ratings (status, created_at DESC);
+
+-- ==========================================================
+-- 18. GUIDE RATING / REVIEW MANAGEMENT
+-- ==========================================================
+
+CREATE TABLE IF NOT EXISTS guide_ratings (
+    id SERIAL PRIMARY KEY,
+    booking_id INTEGER NOT NULL UNIQUE REFERENCES bookings(id) ON DELETE CASCADE,
+    departure_id INTEGER NOT NULL REFERENCES departures(id) ON DELETE CASCADE,
+    tour_id INTEGER NOT NULL REFERENCES tours(id) ON DELETE CASCADE,
+    guide_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE RESTRICT,
+    rating_value INTEGER NOT NULL CHECK (rating_value BETWEEN 1 AND 5),
+    comment TEXT NOT NULL DEFAULT '',
+    status VARCHAR(20) NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending', 'Approved', 'Hidden')),
+    admin_reply TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    moderated_at TIMESTAMP NULL,
+    moderated_by_user_id INTEGER NULL REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS ix_guide_ratings_guide_user_id
+ON guide_ratings (guide_user_id);
+
+CREATE INDEX IF NOT EXISTS ix_guide_ratings_customer_id
+ON guide_ratings (customer_id);
+
+CREATE INDEX IF NOT EXISTS ix_guide_ratings_status_created_at
+ON guide_ratings (status, created_at DESC);

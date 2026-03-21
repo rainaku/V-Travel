@@ -1,4 +1,4 @@
-<UserControl Style="{StaticResource AnimatedPageStyle}" x:Class="VietTravel.UI.Views.RatingManagementView"
+<UserControl Style="{StaticResource AnimatedPageStyle}" x:Class="VietTravel.UI.Views.GuideRatingManagementView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
@@ -9,8 +9,8 @@
         <StackPanel Margin="32,28,32,32">
             <Grid Margin="0,0,0,24">
                 <StackPanel>
-                    <TextBlock Text="Đánh giá Tour" Style="{StaticResource HeadingLargeStyle}"/>
-                    <TextBlock Text="Kiểm duyệt phản hồi tour và phản hồi cho khách hàng" Style="{StaticResource CaptionStyle}" Margin="0,4,0,0"/>
+                    <TextBlock Text="Đánh giá Hướng dẫn viên" Style="{StaticResource HeadingLargeStyle}"/>
+                    <TextBlock Text="Kiểm duyệt phản hồi về hướng dẫn viên và phản hồi cho khách hàng" Style="{StaticResource CaptionStyle}" Margin="0,4,0,0"/>
                 </StackPanel>
                 <Button Style="{StaticResource AppleGhostButton}" HorizontalAlignment="Right" VerticalAlignment="Center"
                         Command="{Binding RefreshCommand}">
@@ -84,7 +84,7 @@
             <Border Style="{StaticResource AppleCard}" Padding="24" Margin="0,0,0,20"
                     Visibility="{Binding IsModerationPanelVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <StackPanel>
-                    <TextBlock Text="Kiểm duyệt đánh giá" FontFamily="{StaticResource AppFont}" FontSize="18" FontWeight="SemiBold"
+                    <TextBlock Text="Kiểm duyệt đánh giá HDV" FontFamily="{StaticResource AppFont}" FontSize="18" FontWeight="SemiBold"
                                Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,14"/>
                     <Grid Margin="0,0,0,16">
                         <Grid.ColumnDefinitions>
@@ -93,9 +93,11 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" Margin="0,0,16,0">
                             <TextBlock FontFamily="{StaticResource AppFont}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}">
-                                <Run Text="{Binding SelectedRating.TourName, Mode=OneWay}"/>
+                                <Run Text="{Binding SelectedRating.GuideName, Mode=OneWay}"/>
                                 <Run Text=" • "/>
                                 <Run Text="{Binding SelectedRating.CustomerName, Mode=OneWay}"/>
+                                <Run Text=" • "/>
+                                <Run Text="{Binding SelectedRating.TourName, Mode=OneWay}"/>
                             </TextBlock>
                             <TextBlock Text="{Binding SelectedRating.StarsText}" FontFamily="{StaticResource AppFont}" FontSize="15"
                                        Foreground="{StaticResource WarningBrush}" Margin="0,6,0,0"/>
@@ -135,7 +137,7 @@
                     <Grid Grid.Column="0">
                         <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                                  Style="{StaticResource AppleSearchBox}"
-                                 materialDesign:HintAssist.Hint="Tìm theo khách hàng, tour, bình luận..."/>
+                                 materialDesign:HintAssist.Hint="Tìm theo khách hàng, HDV, tour, bình luận..."/>
                         <materialDesign:PackIcon Kind="Magnify" Width="18" Height="18" Foreground="{StaticResource TextTertiaryBrush}"
                                                  VerticalAlignment="Center" Margin="12,0,0,0" IsHitTestVisible="False"/>
                     </Grid>
@@ -153,7 +155,7 @@
                     <Grid Background="#FAFAFA">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="1.4*"/>
-                            <ColumnDefinition Width="1.4*"/>
+                            <ColumnDefinition Width="1.7*"/>
                             <ColumnDefinition Width="0.8*"/>
                             <ColumnDefinition Width="0.9*"/>
                             <ColumnDefinition Width="1.8*"/>
@@ -162,7 +164,7 @@
                         </Grid.ColumnDefinitions>
                         <Border CornerRadius="16,16,0,0" Background="#FAFAFA" Grid.ColumnSpan="7"/>
                         <TextBlock Text="Khách hàng" Grid.Column="0" Padding="20,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
-                        <TextBlock Text="Tour / Booking" Grid.Column="1" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
+                        <TextBlock Text="HDV / Tour / Booking" Grid.Column="1" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
                         <TextBlock Text="Sao" Grid.Column="2" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
                         <TextBlock Text="Trạng thái" Grid.Column="3" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
                         <TextBlock Text="Bình luận" Grid.Column="4" Padding="12,14" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource TextSecondaryBrush}" FontFamily="{StaticResource AppFont}"/>
@@ -181,7 +183,7 @@
                                         <Grid Margin="0,14">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="1.4*"/>
-                                                <ColumnDefinition Width="1.4*"/>
+                                                <ColumnDefinition Width="1.7*"/>
                                                 <ColumnDefinition Width="0.8*"/>
                                                 <ColumnDefinition Width="0.9*"/>
                                                 <ColumnDefinition Width="1.8*"/>
@@ -197,13 +199,15 @@
                                             </StackPanel>
 
                                             <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Top">
-                                                <TextBlock Text="{Binding TourName}" FontFamily="{StaticResource AppFont}" FontSize="13" FontWeight="SemiBold"
+                                                <TextBlock Text="{Binding GuideName}" FontFamily="{StaticResource AppFont}" FontSize="13" FontWeight="SemiBold"
                                                            Foreground="{StaticResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding TourName}" FontFamily="{StaticResource AppFont}" FontSize="12"
+                                                           Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
                                                 <TextBlock FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0">
                                                     <Run Text="Booking #"/>
                                                     <Run Text="{Binding BookingId, Mode=OneWay}"/>
-                                                    <Run Text=" • "/>
-                                                    <Run Text="{Binding CreatedAtText, Mode=OneWay}"/>
+                                                    <Run Text=" • Khởi hành "/>
+                                                    <Run Text="{Binding DepartureDateText, Mode=OneWay}"/>
                                                 </TextBlock>
                                             </StackPanel>
 
@@ -260,10 +264,10 @@
                                     Visibility="{Binding HasNoData, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <Grid Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16">
                                 <Ellipse Width="64" Height="64" Fill="#1A007AFF"/>
-                                <materialDesign:PackIcon Kind="StarOutline" Width="30" Height="30" Foreground="{StaticResource PrimaryBrush}"
+                                <materialDesign:PackIcon Kind="AccountTieOutline" Width="30" Height="30" Foreground="{StaticResource PrimaryBrush}"
                                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Grid>
-                            <TextBlock Text="Chưa có đánh giá nào" HorizontalAlignment="Center"
+                            <TextBlock Text="Chưa có đánh giá hướng dẫn viên" HorizontalAlignment="Center"
                                        FontFamily="{StaticResource AppFont}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
                             <TextBlock Text="Đánh giá từ khách hàng sẽ xuất hiện tại đây để admin kiểm duyệt" HorizontalAlignment="Center"
                                        FontFamily="{StaticResource AppFont}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,0"/>

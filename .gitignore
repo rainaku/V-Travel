@@ -53,3 +53,6 @@ database.sql
 /.codex-temp
 tasks/seed_tour_ratings.ps1
 tasks/todo.md
+/VietTravel.UI/artifacts
+/VietTravel.Core/artifacts
+/VietTravel.Data/artifacts

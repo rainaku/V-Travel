@@ -26,6 +26,7 @@ namespace VietTravel.UI.ViewModels
         private readonly CloudinaryImageService _cloudinaryImageService = new();
         private readonly PromoCodeService _promoCodeService = new();
         private readonly TourRatingService _tourRatingService = new();
+        private readonly GuideRatingService _guideRatingService = new();
 
         public string FullName => _mainViewModel.CurrentUser?.FullName ?? "Khách Hàng";
         public string UserInitials => GetInitials(FullName);
@@ -75,9 +76,12 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private ObservableCollection<BookingDisplayInfo> _myBookings = new();
         [ObservableProperty] private bool _isRatingFormVisible = false;
         [ObservableProperty] private BookingDisplayInfo? _selectedRatingBooking;
-        [ObservableProperty] private int _formRatingValue = 5;
-        [ObservableProperty] private string _formRatingComment = string.Empty;
+        [ObservableProperty] private int _formTourRatingValue = 5;
+        [ObservableProperty] private string _formTourRatingComment = string.Empty;
+        [ObservableProperty] private int _formGuideRatingValue = 5;
+        [ObservableProperty] private string _formGuideRatingComment = string.Empty;
         [ObservableProperty] private string _ratingSchemaWarningMessage = string.Empty;
+        [ObservableProperty] private string _guideRatingSchemaWarningMessage = string.Empty;
 
         // Personal Info
         [ObservableProperty] private string _infoFullName = string.Empty;
@@ -119,10 +123,36 @@ namespace VietTravel.UI.ViewModels
         public ReadOnlyObservableCollection<AppNotification> AccountNotifications => _mainViewModel.NotificationCenter.Notifications;
         public int UnreadNotificationCount => _mainViewModel.NotificationCenter.UnreadCount;
         public bool HasNoNotifications => AccountNotifications.Count == 0;
-        public bool HasRatingSchemaWarning => !string.IsNullOrWhiteSpace(RatingSchemaWarningMessage);
-        public string RatingFormTitle => SelectedRatingBooking?.HasRating == true ? "Chỉnh sửa đánh giá" : "Đánh giá tour";
-        public string RatingFormActionText => SelectedRatingBooking?.HasRating == true ? "Cập nhật đánh giá" : "Gửi đánh giá";
-        public string RatingFormStarsText => TourRatingDisplayHelper.ToStarsText(FormRatingValue);
+        public bool HasTourRatingSchemaWarning => !string.IsNullOrWhiteSpace(RatingSchemaWarningMessage);
+        public bool HasGuideRatingSchemaWarning => !string.IsNullOrWhiteSpace(GuideRatingSchemaWarningMessage);
+        public bool HasRatingSchemaWarning => HasTourRatingSchemaWarning || HasGuideRatingSchemaWarning;
+        public string RatingSchemaWarningSummary =>
+            string.Join(Environment.NewLine, new[] { RatingSchemaWarningMessage, GuideRatingSchemaWarningMessage }
+                .Where(x => !string.IsNullOrWhiteSpace(x)));
+        public string RatingFormTitle => SelectedRatingBooking?.HasBothRatings == true
+            ? "Chỉnh sửa đánh giá tour và HDV"
+            : "Đánh giá tour và hướng dẫn viên";
+        public string RatingFormActionText => SelectedRatingBooking?.HasBothRatings == true
+            ? "Cập nhật đánh giá"
+            : "Gửi đánh giá";
+        public string RatingFormScopeNotice =>
+            "Vui lòng hoàn thành cả đánh giá tour và hướng dẫn viên trong cùng một lần gửi.";
+        public string TourRatingFormCommentHint => "Chia sẻ trải nghiệm của bạn về tour này";
+        public string GuideRatingFormCommentHint => "Chia sẻ trải nghiệm của bạn với hướng dẫn viên trong chuyến đi này";
+        public string RatingFormContextText
+        {
+            get
+            {
+                if (SelectedRatingBooking == null)
+                {
+                    return string.Empty;
+                }
+
+                return $"{SelectedRatingBooking.TourName} • HDV: {SelectedRatingBooking.GuideName} • {SelectedRatingBooking.StartDateFormatted}";
+            }
+        }
+        public string TourRatingFormStarsText => TourRatingDisplayHelper.ToStarsText(FormTourRatingValue);
+        public string GuideRatingFormStarsText => TourRatingDisplayHelper.ToStarsText(FormGuideRatingValue);
 
         public CustomerViewModel(MainViewModel mainViewModel)
         {
@@ -173,12 +203,26 @@ namespace VietTravel.UI.ViewModels
             OnPropertyChanged(nameof(ChangeAvatarButtonText));
             ChangeAvatarCommand.NotifyCanExecuteChanged();
         }
-        partial void OnFormRatingValueChanged(int value) => OnPropertyChanged(nameof(RatingFormStarsText));
-        partial void OnRatingSchemaWarningMessageChanged(string value) => OnPropertyChanged(nameof(HasRatingSchemaWarning));
+        partial void OnFormTourRatingValueChanged(int value) => OnPropertyChanged(nameof(TourRatingFormStarsText));
+        partial void OnFormGuideRatingValueChanged(int value) => OnPropertyChanged(nameof(GuideRatingFormStarsText));
+        partial void OnRatingSchemaWarningMessageChanged(string value)
+        {
+            OnPropertyChanged(nameof(HasTourRatingSchemaWarning));
+            OnPropertyChanged(nameof(HasRatingSchemaWarning));
+            OnPropertyChanged(nameof(RatingSchemaWarningSummary));
+        }
+        partial void OnGuideRatingSchemaWarningMessageChanged(string value)
+        {
+            OnPropertyChanged(nameof(HasGuideRatingSchemaWarning));
+            OnPropertyChanged(nameof(HasRatingSchemaWarning));
+            OnPropertyChanged(nameof(RatingSchemaWarningSummary));
+        }
         partial void OnSelectedRatingBookingChanged(BookingDisplayInfo? value)
         {
             OnPropertyChanged(nameof(RatingFormTitle));
             OnPropertyChanged(nameof(RatingFormActionText));
+            OnPropertyChanged(nameof(RatingFormScopeNotice));
+            OnPropertyChanged(nameof(RatingFormContextText));
         }
 
         private void ApplyTourFilter()
@@ -420,9 +464,85 @@ namespace VietTravel.UI.ViewModels
                 // Load tours
                 var tours = (await client.From<Tour>().Get()).Models ?? new List<Tour>();
                 var approvedTourRatings = await LoadApprovedTourRatingsAsync();
+                try
+                {
+                    var transports = (await client.From<Transport>().Get()).Models ?? new List<Transport>();
+                    var hotels = (await client.From<Hotel>().Get()).Models ?? new List<Hotel>();
+                    var attractions = (await client.From<Attraction>().Get()).Models ?? new List<Attraction>();
+                    var tourTransports = (await client.From<TourTransport>().Get()).Models ?? new List<TourTransport>();
+                    var tourHotels = (await client.From<TourHotel>().Get()).Models ?? new List<TourHotel>();
+                    var tourAttractions = (await client.From<TourAttraction>().Get()).Models ?? new List<TourAttraction>();
 
-                // (Đã loại bỏ API fetch Transport/Hotel/Attraction để tối ưu hiệu suất, do View không hiển thị các thông tin này)
-                
+                    var transportById = transports.ToDictionary(x => x.Id);
+                    var hotelById = hotels.ToDictionary(x => x.Id);
+                    var attractionById = attractions.ToDictionary(x => x.Id);
+                    var tourTransportLookup = tourTransports.GroupBy(x => x.TourId).ToDictionary(g => g.Key, g => g.ToList());
+                    var tourHotelLookup = tourHotels.GroupBy(x => x.TourId).ToDictionary(g => g.Key, g => g.ToList());
+                    var tourAttractionLookup = tourAttractions
+                        .GroupBy(x => x.TourId)
+                        .ToDictionary(g => g.Key, g => g.OrderBy(x => x.OrderIndex).ToList());
+
+                    foreach (var tour in tours)
+                    {
+                        if (tourTransportLookup.TryGetValue(tour.Id, out var mappedTransports))
+                        {
+                            foreach (var mapped in mappedTransports)
+                            {
+                                mapped.Transport = transportById.TryGetValue(mapped.TransportId, out var transport) ? transport : null;
+                            }
+
+                            tour.TourTransports = mappedTransports
+                                .Where(x => x.Transport != null)
+                                .ToList();
+                        }
+                        else
+                        {
+                            tour.TourTransports = new List<TourTransport>();
+                        }
+
+                        if (tourHotelLookup.TryGetValue(tour.Id, out var mappedHotels))
+                        {
+                            foreach (var mapped in mappedHotels)
+                            {
+                                mapped.Hotel = hotelById.TryGetValue(mapped.HotelId, out var hotel) ? hotel : null;
+                            }
+
+                            tour.TourHotels = mappedHotels
+                                .Where(x => x.Hotel != null)
+                                .ToList();
+                        }
+                        else
+                        {
+                            tour.TourHotels = new List<TourHotel>();
+                        }
+
+                        if (tourAttractionLookup.TryGetValue(tour.Id, out var mappedAttractions))
+                        {
+                            foreach (var mapped in mappedAttractions)
+                            {
+                                mapped.Attraction = attractionById.TryGetValue(mapped.AttractionId, out var attraction) ? attraction : null;
+                            }
+
+                            tour.TourAttractions = mappedAttractions
+                                .Where(x => x.Attraction != null)
+                                .ToList();
+                        }
+                        else
+                        {
+                            tour.TourAttractions = new List<TourAttraction>();
+                        }
+                    }
+                }
+                catch
+                {
+                    foreach (var tour in tours)
+                    {
+                        tour.TourTransports = new List<TourTransport>();
+                        tour.TourHotels = new List<TourHotel>();
+                        tour.TourAttractions = new List<TourAttraction>();
+                    }
+                }
+
                 // Stable and destination-aware tour thumbnails (direct JPEG URLs).
                 var displayTours = tours.Select((t, i) =>
                 {
@@ -521,7 +641,9 @@ namespace VietTravel.UI.ViewModels
                 // Load payments only for these bookings
                 var paymentByBookingId = new Dictionary<int, Payment>();
                 var ratingByBookingId = new Dictionary<int, TourRating>();
+                var guideRatingByBookingId = new Dictionary<int, GuideRating>();
                 RatingSchemaWarningMessage = string.Empty;
+                GuideRatingSchemaWarningMessage = string.Empty;
                 if (bookings.Any())
                 {
                     var bookingIds = bookings.Select(b => (object)b.Id).Distinct().ToList();
@@ -547,6 +669,19 @@ namespace VietTravel.UI.ViewModels
                         RatingSchemaWarningMessage =
                             "Tính năng đánh giá chưa sẵn sàng. Vui lòng chạy update_ratings.sql trên Supabase để bật đánh giá tour.";
                     }
+
+                    try
+                    {
+                        var guideRatings = await _guideRatingService.GetByBookingIdsAsync(bookings.Select(b => b.Id));
+                        guideRatingByBookingId = guideRatings
+                            .GroupBy(r => r.BookingId)
+                            .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.UpdatedAt).First());
+                    }
+                    catch (Exception ex) when (GuideRatingService.HasMissingRatingSchema(ex))
+                    {
+                        GuideRatingSchemaWarningMessage =
+                            "Tính năng đánh giá hướng dẫn viên chưa sẵn sàng. Vui lòng chạy update_ratings.sql trên Supabase để bật đánh giá HDV.";
+                    }
                 }
 
                 MyBookings.Clear();
@@ -568,8 +703,15 @@ namespace VietTravel.UI.ViewModels
                     var paidTotalAmount = payment?.TotalAmount ?? fallbackTotalAmount;
                     var price = b.GuestCount > 0 ? paidTotalAmount / b.GuestCount : paidTotalAmount;
                     var cancelDisabledReason = GetCancelDisabledReason(b, dep);
-                    var ratingDisabledReason = GetRatingDisabledReason(b, dep);
                     ratingByBookingId.TryGetValue(b.Id, out var rating);
+                    guideRatingByBookingId.TryGetValue(b.Id, out var guideRating);
+                    var ratingDisabledReason = GetRatingDisabledReason(b, dep);
+                    var guideRatingDisabledReason = GetGuideRatingDisabledReason(b, dep, guideId);
+                    var combinedRatingDisabledReason = GetCombinedRatingDisabledReason(
+                        rating != null,
+                        guideRating != null,
+                        ratingDisabledReason,
+                        guideRatingDisabledReason);
 
                     MyBookings.Add(new BookingDisplayInfo
                     {
@@ -592,9 +734,13 @@ namespace VietTravel.UI.ViewModels
                         ShowCancelButton = !CancelledBookingStatuses.Contains(b.Status),
                         CanCancel = string.IsNullOrEmpty(cancelDisabledReason),
                         CancelDisabledReason = cancelDisabledReason,
+                        GuideUserId = guideId,
                         Rating = rating,
-                        CanRate = rating != null || string.IsNullOrEmpty(ratingDisabledReason),
-                        RatingDisabledReason = rating != null ? string.Empty : ratingDisabledReason
+                        CanRate = string.IsNullOrEmpty(combinedRatingDisabledReason),
+                        RatingDisabledReason = combinedRatingDisabledReason,
+                        GuideRating = guideRating,
+                        TourRatingDisabledReason = ratingDisabledReason,
+                        GuideRatingDisabledReason = guideRatingDisabledReason
                     });
                 }
 
@@ -797,23 +943,25 @@ namespace VietTravel.UI.ViewModels
 
             if (HasRatingSchemaWarning)
             {
-                ShowAppDialogInfo("Thiếu cấu hình", RatingSchemaWarningMessage);
+                ShowAppDialogInfo("Thiếu cấu hình", RatingSchemaWarningSummary);
                 return;
             }
 
-            if (!bookingInfo.CanRate && !bookingInfo.HasRating)
+            if (!bookingInfo.CanRate && !bookingInfo.HasBothRatings)
             {
                 ShowAppDialogInfo(
                     "Chưa thể đánh giá",
                     string.IsNullOrWhiteSpace(bookingInfo.RatingDisabledReason)
-                        ? "Booking này hiện chưa đủ điều kiện để đánh giá."
+                        ? "Booking này hiện chưa đủ điều kiện để đánh giá tour và hướng dẫn viên."
                         : bookingInfo.RatingDisabledReason);
                 return;
             }
 
             SelectedRatingBooking = bookingInfo;
-            FormRatingValue = bookingInfo.Rating?.RatingValue ?? 5;
-            FormRatingComment = bookingInfo.Rating?.Comment ?? string.Empty;
+            FormTourRatingValue = bookingInfo.Rating?.RatingValue ?? 5;
+            FormTourRatingComment = bookingInfo.Rating?.Comment ?? string.Empty;
+            FormGuideRatingValue = bookingInfo.GuideRating?.RatingValue ?? 5;
+            FormGuideRatingComment = bookingInfo.GuideRating?.Comment ?? string.Empty;
             IsRatingFormVisible = true;
             SelectedPage = "MyBookings";
         }
@@ -823,25 +971,15 @@ namespace VietTravel.UI.ViewModels
         {
             IsRatingFormVisible = false;
             SelectedRatingBooking = null;
-            FormRatingValue = 5;
-            FormRatingComment = string.Empty;
-        }
-
-        [RelayCommand]
-        private void SetRatingValue(int value)
-        {
-            FormRatingValue = Math.Clamp(value, 1, 5);
+            FormTourRatingValue = 5;
+            FormTourRatingComment = string.Empty;
+            FormGuideRatingValue = 5;
+            FormGuideRatingComment = string.Empty;
         }
 
         [RelayCommand]
         private async Task SaveRatingAsync()
         {
-            if (HasRatingSchemaWarning)
-            {
-                ShowAppDialogInfo("Thiếu cấu hình", RatingSchemaWarningMessage);
-                return;
-            }
-
             if (_customerProfile == null)
             {
                 ShowAppDialogInfo("Thiếu thông tin", "Vui lòng cập nhật hồ sơ khách hàng trước khi gửi đánh giá.");
@@ -854,9 +992,31 @@ namespace VietTravel.UI.ViewModels
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(FormRatingComment))
+            if (HasRatingSchemaWarning)
             {
-                ShowAppDialogInfo("Thiếu nhận xét", "Vui lòng nhập bình luận trước khi gửi đánh giá.");
+                ShowAppDialogInfo("Thiếu cấu hình", RatingSchemaWarningSummary);
+                return;
+            }
+
+            if (!SelectedRatingBooking.CanRate && !SelectedRatingBooking.HasBothRatings)
+            {
+                ShowAppDialogInfo(
+                    "Chưa thể đánh giá",
+                    string.IsNullOrWhiteSpace(SelectedRatingBooking.RatingDisabledReason)
+                        ? "Booking này hiện chưa đủ điều kiện để đánh giá tour và hướng dẫn viên."
+                        : SelectedRatingBooking.RatingDisabledReason);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(FormTourRatingComment) || string.IsNullOrWhiteSpace(FormGuideRatingComment))
+            {
+                ShowAppDialogInfo("Thiếu nhận xét", "Vui lòng nhập đầy đủ nhận xét cho cả tour và hướng dẫn viên.");
+                return;
+            }
+
+            if (!SelectedRatingBooking.GuideUserId.HasValue || SelectedRatingBooking.GuideUserId.Value <= 0)
+            {
+                ShowAppDialogInfo("Thiếu dữ liệu", "Booking này chưa có hướng dẫn viên để đánh giá.");
                 return;
             }
 
@@ -865,8 +1025,15 @@ namespace VietTravel.UI.ViewModels
                 await _tourRatingService.SaveCustomerRatingAsync(new TourRatingInput(
                     SelectedRatingBooking.Booking.Id,
                     _customerProfile.Id,
-                    FormRatingValue,
-                    FormRatingComment));
+                    Math.Clamp(FormTourRatingValue, 1, 5),
+                    FormTourRatingComment));
+
+                await _guideRatingService.SaveCustomerRatingAsync(new GuideRatingInput(
+                    SelectedRatingBooking.Booking.Id,
+                    _customerProfile.Id,
+                    SelectedRatingBooking.GuideUserId.Value,
+                    Math.Clamp(FormGuideRatingValue, 1, 5),
+                    FormGuideRatingComment));
 
                 CancelRatingForm();
                 await LoadDataAsync();
@@ -874,7 +1041,7 @@ namespace VietTravel.UI.ViewModels
 
                 ShowAppDialogInfo(
                     "Đã ghi nhận đánh giá",
-                    "Đánh giá của bạn đã được lưu thành công và đang chờ Admin kiểm duyệt.");
+                    "Đánh giá tour và hướng dẫn viên của bạn đã được lưu thành công và đang chờ Admin kiểm duyệt.");
             }
             catch (Exception ex)
             {
@@ -1250,6 +1417,63 @@ namespace VietTravel.UI.ViewModels
             }
 
             return string.Empty;
+        }
+
+        private static string GetGuideRatingDisabledReason(Booking booking, Departure? departure, int? guideUserId)
+        {
+            if (IsCancelledBookingStatus(booking.Status))
+            {
+                return "Booking đã hủy nên không thể gửi đánh giá hướng dẫn viên.";
+            }
+
+            if (!string.Equals(booking.Status, "Đã xác nhận", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Chỉ booking đã xác nhận mới có thể đánh giá hướng dẫn viên.";
+            }
+
+            if (departure == null)
+            {
+                return "Không thể kiểm tra lịch khởi hành cho booking này.";
+            }
+
+            if (!guideUserId.HasValue || guideUserId.Value <= 0)
+            {
+                return "Booking này chưa có hướng dẫn viên để đánh giá.";
+            }
+
+            return string.Empty;
+        }
+
+        private static string GetCombinedRatingDisabledReason(
+            bool hasTourRating,
+            bool hasGuideRating,
+            string tourRatingDisabledReason,
+            string guideRatingDisabledReason)
+        {
+            if (hasTourRating && hasGuideRating)
+            {
+                return string.Empty;
+            }
+
+            var missingTourReason = !hasTourRating ? tourRatingDisabledReason : string.Empty;
+            var missingGuideReason = !hasGuideRating ? guideRatingDisabledReason : string.Empty;
+
+            if (string.IsNullOrWhiteSpace(missingTourReason))
+            {
+                return missingGuideReason;
+            }
+
+            if (string.IsNullOrWhiteSpace(missingGuideReason))
+            {
+                return missingTourReason;
+            }
+
+            if (string.Equals(missingTourReason, missingGuideReason, StringComparison.Ordinal))
+            {
+                return missingTourReason;
+            }
+
+            return $"{missingTourReason} {missingGuideReason}";
         }
 
         private static string GetStatusColor(string status)
@@ -1862,6 +2086,7 @@ namespace VietTravel.UI.ViewModels
         public string EndDateFormatted { get; set; } = string.Empty;
         public int DurationDays { get; set; }
         public string GuideName { get; set; } = string.Empty;
+        public int? GuideUserId { get; set; }
         public decimal Price { get; set; }
         public string PriceFormatted { get; set; } = "0 đ";
         public int AvailableSlots { get; set; }
@@ -1875,11 +2100,20 @@ namespace VietTravel.UI.ViewModels
         public string CancelDisabledReason { get; set; } = string.Empty;
         public TourRating? Rating { get; set; }
         public bool HasRating => Rating != null;
+        public GuideRating? GuideRating { get; set; }
+        public bool HasGuideRating => GuideRating != null;
+        public bool HasBothRatings => HasRating && HasGuideRating;
+        public bool HasAnyRating => HasRating || HasGuideRating;
         public bool CanRate { get; set; }
         public string RatingDisabledReason { get; set; } = string.Empty;
-        public bool ShowRatingAction => HasRating || CanRate;
-        public string RatingActionText => HasRating ? "Chỉnh sửa đánh giá" : "Đánh giá tour";
-        public string RatingActionToolTip => string.IsNullOrWhiteSpace(RatingDisabledReason) ? "Đánh giá tour này" : RatingDisabledReason;
+        public string TourRatingDisabledReason { get; set; } = string.Empty;
+        public string GuideRatingDisabledReason { get; set; } = string.Empty;
+        public bool ShowRatingAction => HasAnyRating || CanRate;
+        public string RatingActionText => "Đánh giá";
+        public string RatingActionToolTip =>
+            string.IsNullOrWhiteSpace(RatingDisabledReason)
+                ? "Đánh giá tour và hướng dẫn viên"
+                : RatingDisabledReason;
         public string RatingStarsText => Rating == null ? string.Empty : TourRatingDisplayHelper.ToStarsText(Rating.RatingValue);
         public string RatingStatusLabel => TourRatingDisplayHelper.ToStatusLabel(Rating?.Status);
         public string RatingStatusColor => TourRatingDisplayHelper.ToStatusColor(Rating?.Status);
@@ -1890,6 +2124,16 @@ namespace VietTravel.UI.ViewModels
         public string RatingAdminReplyPreview => !HasAdminReply
             ? string.Empty
             : TourRatingDisplayHelper.Truncate(Rating?.AdminReply, 120);
+        public string GuideRatingStarsText => GuideRating == null ? string.Empty : TourRatingDisplayHelper.ToStarsText(GuideRating.RatingValue);
+        public string GuideRatingStatusLabel => TourRatingDisplayHelper.ToStatusLabel(GuideRating?.Status);
+        public string GuideRatingStatusColor => TourRatingDisplayHelper.ToStatusColor(GuideRating?.Status);
+        public string GuideRatingCommentPreview => GuideRating == null
+            ? string.Empty
+            : TourRatingDisplayHelper.Truncate(GuideRating.Comment, 120);
+        public bool HasGuideAdminReply => !string.IsNullOrWhiteSpace(GuideRating?.AdminReply);
+        public string GuideRatingAdminReplyPreview => !HasGuideAdminReply
+            ? string.Empty
+            : TourRatingDisplayHelper.Truncate(GuideRating?.AdminReply, 120);
     }
 
     public class TourDisplayInfo

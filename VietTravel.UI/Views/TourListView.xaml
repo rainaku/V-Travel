@@ -41,6 +41,9 @@
                             <RowDefinition/>
                             <RowDefinition/>
                             <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
                         </Grid.RowDefinitions>
 
                         <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,12">
@@ -96,6 +99,32 @@
                             <TextBox Text="{Binding FormDescription, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
                                      materialDesign:HintAssist.Hint="Mô tả ngắn về tour"
                                      AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,0,0,12">
+                            <TextBlock Text="Phương tiện xuyên suốt chuyến đi" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBlock Text="Mỗi dòng: Tên | Loại | Sức chứa | Chi phí" Style="{StaticResource CaptionStyle}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding FormTransportPlanText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
+                                     materialDesign:HintAssist.Hint="Ví dụ: Xe Limousine 16 chỗ | Xe khách | 16 | 1500000"
+                                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="84"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,0,0,12">
+                            <TextBlock Text="Địa danh sẽ tham quan" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBlock Text="Mỗi dòng: Tên | Địa chỉ | Giá vé" Style="{StaticResource CaptionStyle}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding FormAttractionPlanText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
+                                     materialDesign:HintAssist.Hint="Ví dụ: Vịnh Hạ Long | Quảng Ninh | 300000"
+                                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="84"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,0,0,12">
+                            <TextBlock Text="Khách sạn / nơi lưu trú" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBlock Text="Mỗi dòng: Tên | Địa chỉ | Số sao | Giá/đêm" Style="{StaticResource CaptionStyle}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding FormHotelPlanText, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource AppleSearchBox}"
+                                     materialDesign:HintAssist.Hint="Ví dụ: Khách sạn Mường Thanh | Đà Nẵng | 4 | 1200000"
+                                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="84"/>
+                            <TextBlock Text="Mẹo: thêm dòng để thêm mới, sửa nội dung dòng để cập nhật, xóa dòng rồi lưu để gỡ khỏi tour."
+                                       Style="{StaticResource CaptionStyle}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,6,0,0"/>
                         </StackPanel>
                     </Grid>
 

@@ -24,7 +24,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel>
+                        <StackPanel Margin="0,0,14,0" ClipToBounds="True">
                             <TextBlock Text="Tổng số Tour" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,8"/>
                             <TextBlock Text="{Binding TotalTours}" Style="{StaticResource StatNumberStyle}"/>
                             <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
@@ -32,10 +32,10 @@
                                 <TextBlock Text="Đang hoạt động" FontSize="11" Foreground="{StaticResource SuccessBrush}" FontFamily="{StaticResource AppFont}"/>
                             </StackPanel>
                         </StackPanel>
-                        <Grid Grid.Column="1" Width="48" Height="48" VerticalAlignment="Top">
-                            <Ellipse Width="48" Height="48" Fill="#1A007AFF"/>
+                        <Grid Grid.Column="1" Width="44" Height="44" VerticalAlignment="Top">
+                            <Ellipse Width="44" Height="44" Fill="#1A007AFF"/>
                             <materialDesign:PackIcon Kind="MapMarkerOutline" Width="24" Height="24" Foreground="{StaticResource PrimaryBrush}"
-                                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                     </Grid>
                 </Border>
@@ -47,7 +47,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel>
+                        <StackPanel Margin="0,0,14,0" ClipToBounds="True">
                             <TextBlock Text="Booking đang chờ" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,8"/>
                             <TextBlock Text="{Binding ActiveBookings}" Style="{StaticResource StatNumberStyle}"/>
                             <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
@@ -55,10 +55,10 @@
                                 <TextBlock Text="Cần xử lý" FontSize="11" Foreground="{StaticResource WarningBrush}" FontFamily="{StaticResource AppFont}"/>
                             </StackPanel>
                         </StackPanel>
-                        <Grid Grid.Column="1" Width="48" Height="48" VerticalAlignment="Top">
-                            <Ellipse Width="48" Height="48" Fill="#1AFF9500"/>
+                        <Grid Grid.Column="1" Width="44" Height="44" VerticalAlignment="Top">
+                            <Ellipse Width="44" Height="44" Fill="#1AFF9500"/>
                             <materialDesign:PackIcon Kind="TicketConfirmationOutline" Width="24" Height="24" Foreground="{StaticResource WarningBrush}"
-                                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                     </Grid>
                 </Border>
@@ -70,18 +70,26 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel>
+                        <StackPanel Margin="0,0,14,0" ClipToBounds="True">
                             <TextBlock Text="Doanh thu" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                            <TextBlock Text="{Binding TotalRevenue}" FontFamily="{StaticResource AppFont}" FontSize="26" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <TextBlock Text="{Binding TotalRevenue}"
+                                       ToolTip="{Binding TotalRevenue}"
+                                       FontFamily="{StaticResource AppFont}"
+                                       FontSize="24"
+                                       FontWeight="Bold"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       TextWrapping="Wrap"
+                                       LineHeight="28"
+                                       MaxHeight="56"/>
                             <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                                 <materialDesign:PackIcon Kind="TrendingUp" Width="14" Height="14" Foreground="{StaticResource SuccessBrush}" Margin="0,0,4,0" VerticalAlignment="Center"/>
                                 <TextBlock Text="Tháng này" FontSize="11" Foreground="{StaticResource SuccessBrush}" FontFamily="{StaticResource AppFont}"/>
                             </StackPanel>
                         </StackPanel>
-                        <Grid Grid.Column="1" Width="48" Height="48" VerticalAlignment="Top">
-                            <Ellipse Width="48" Height="48" Fill="#1A34C759"/>
+                        <Grid Grid.Column="1" Width="44" Height="44" VerticalAlignment="Top">
+                            <Ellipse Width="44" Height="44" Fill="#1A34C759"/>
                             <materialDesign:PackIcon Kind="CurrencyUsd" Width="24" Height="24" Foreground="{StaticResource SuccessBrush}"
-                                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                     </Grid>
                 </Border>
@@ -93,7 +101,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel>
+                        <StackPanel Margin="0,0,14,0" ClipToBounds="True">
                             <TextBlock Text="Khách hàng" Style="{StaticResource CaptionStyle}" FontWeight="SemiBold" Margin="0,0,0,8"/>
                             <TextBlock Text="{Binding TotalCustomers}" Style="{StaticResource StatNumberStyle}"/>
                             <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
@@ -101,10 +109,10 @@
                                 <TextBlock Text="Tổng số" FontSize="11" Foreground="{StaticResource PrimaryBrush}" FontFamily="{StaticResource AppFont}"/>
                             </StackPanel>
                         </StackPanel>
-                        <Grid Grid.Column="1" Width="48" Height="48" VerticalAlignment="Top">
-                            <Ellipse Width="48" Height="48" Fill="#1AAF52DE"/>
+                        <Grid Grid.Column="1" Width="44" Height="44" VerticalAlignment="Top">
+                            <Ellipse Width="44" Height="44" Fill="#1AAF52DE"/>
                             <materialDesign:PackIcon Kind="AccountGroupOutline" Width="24" Height="24" Foreground="{StaticResource AccentBrush}"
-                                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                     </Grid>
                 </Border>
