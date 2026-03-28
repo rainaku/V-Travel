@@ -702,6 +702,7 @@ namespace VietTravel.UI.ViewModels
                     var fallbackTotalAmount = basePricePerGuest * b.GuestCount;
                     var paidTotalAmount = payment?.TotalAmount ?? fallbackTotalAmount;
                     var price = b.GuestCount > 0 ? paidTotalAmount / b.GuestCount : paidTotalAmount;
+                    var isCompletedBooking = IsCompletedBooking(dep?.StartDate, durationDays);
                     var cancelDisabledReason = GetCancelDisabledReason(b, dep);
                     ratingByBookingId.TryGetValue(b.Id, out var rating);
                     guideRatingByBookingId.TryGetValue(b.Id, out var guideRating);
@@ -730,7 +731,7 @@ namespace VietTravel.UI.ViewModels
                         BookingDateFormatted = b.BookingDate.ToString("dd/MM/yyyy HH:mm"),
                         GuestCount = b.GuestCount,
                         Status = b.Status,
-                        StatusColor = GetStatusColor(b.Status),
+                        StatusColor = GetStatusColor(b.Status, isCompletedBooking),
                         ShowCancelButton = !CancelledBookingStatuses.Contains(b.Status),
                         CanCancel = string.IsNullOrEmpty(cancelDisabledReason),
                         CancelDisabledReason = cancelDisabledReason,
@@ -1482,8 +1483,13 @@ namespace VietTravel.UI.ViewModels
             return $"{missingTourReason} {missingGuideReason}";
         }
 
-        private static string GetStatusColor(string status)
+        private static string GetStatusColor(string status, bool isCompletedBooking)
         {
+            if (isCompletedBooking && string.Equals(status, "Đã xác nhận", StringComparison.OrdinalIgnoreCase))
+            {
+                return "#8E8E93";
+            }
+
             return (status ?? "").Trim() switch
             {
                 "Đã xác nhận" => "#34C759",
@@ -1494,6 +1500,18 @@ namespace VietTravel.UI.ViewModels
                 "Chờ thanh toán" => "#FF9500",
                 _ => "#8E8E93" // Default gray
             };
+        }
+
+        private static bool IsCompletedBooking(DateTime? departureStartDate, int durationDays)
+        {
+            if (!departureStartDate.HasValue)
+            {
+                return false;
+            }
+
+            var normalizedDuration = Math.Max(durationDays, 1);
+            var endDate = departureStartDate.Value.Date.AddDays(normalizedDuration - 1);
+            return endDate <= DateTime.Today;
         }
 
         private bool CanLoadMoreTours()
