@@ -706,8 +706,8 @@ namespace VietTravel.UI.ViewModels
                     var cancelDisabledReason = GetCancelDisabledReason(b, dep);
                     ratingByBookingId.TryGetValue(b.Id, out var rating);
                     guideRatingByBookingId.TryGetValue(b.Id, out var guideRating);
-                    var ratingDisabledReason = GetRatingDisabledReason(b, dep);
-                    var guideRatingDisabledReason = GetGuideRatingDisabledReason(b, dep, guideId);
+                    var ratingDisabledReason = GetRatingDisabledReason(b, dep, durationDays);
+                    var guideRatingDisabledReason = GetGuideRatingDisabledReason(b, dep, guideId, durationDays);
                     var combinedRatingDisabledReason = GetCombinedRatingDisabledReason(
                         rating != null,
                         guideRating != null,
@@ -1406,7 +1406,7 @@ namespace VietTravel.UI.ViewModels
             return string.Empty;
         }
 
-        private static string GetRatingDisabledReason(Booking booking, Departure? departure)
+        private static string GetRatingDisabledReason(Booking booking, Departure? departure, int durationDays)
         {
             if (IsCancelledBookingStatus(booking.Status))
             {
@@ -1423,10 +1423,15 @@ namespace VietTravel.UI.ViewModels
                 return "Không thể kiểm tra lịch khởi hành cho booking này.";
             }
 
+            if (!IsTourEndedForRating(departure, durationDays))
+            {
+                return "Chỉ có thể đánh giá sau khi tour kết thúc.";
+            }
+
             return string.Empty;
         }
 
-        private static string GetGuideRatingDisabledReason(Booking booking, Departure? departure, int? guideUserId)
+        private static string GetGuideRatingDisabledReason(Booking booking, Departure? departure, int? guideUserId, int durationDays)
         {
             if (IsCancelledBookingStatus(booking.Status))
             {
@@ -1443,12 +1448,24 @@ namespace VietTravel.UI.ViewModels
                 return "Không thể kiểm tra lịch khởi hành cho booking này.";
             }
 
+            if (!IsTourEndedForRating(departure, durationDays))
+            {
+                return "Chỉ có thể đánh giá sau khi tour kết thúc.";
+            }
+
             if (!guideUserId.HasValue || guideUserId.Value <= 0)
             {
                 return "Booking này chưa có hướng dẫn viên để đánh giá.";
             }
 
             return string.Empty;
+        }
+
+        private static bool IsTourEndedForRating(Departure departure, int durationDays)
+        {
+            var normalizedDuration = Math.Max(durationDays, 1);
+            var endDate = departure.StartDate.Date.AddDays(normalizedDuration - 1);
+            return endDate < DateTime.Today;
         }
 
         private static string GetCombinedRatingDisabledReason(
