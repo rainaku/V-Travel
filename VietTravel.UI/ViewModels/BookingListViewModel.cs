@@ -171,6 +171,11 @@ namespace VietTravel.UI.ViewModels
             var filteredDepartures = DepartureList
                 .Where(d =>
                 {
+                    if (!IsDepartureStillBookable(d))
+                    {
+                        return false;
+                    }
+
                     if (departureKeyword == null) return true;
 
                     var tourName = d.Tour?.Name?.ToLowerInvariant() ?? string.Empty;
@@ -328,6 +333,12 @@ namespace VietTravel.UI.ViewModels
                     return;
                 }
 
+                if (!IsDepartureStillBookable(latestDeparture))
+                {
+                    MessageBox.Show("Lịch khởi hành đã bị khóa đặt vé (từ 1 ngày trước ngày khởi hành).", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 if (latestDeparture.Status != "Mở bán")
                 {
                     MessageBox.Show("Lịch khởi hành hiện không mở bán.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -458,6 +469,11 @@ namespace VietTravel.UI.ViewModels
             {
                 MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private static bool IsDepartureStillBookable(Departure departure)
+        {
+            return departure.StartDate.Date > DateTime.Today.AddDays(1);
         }
     }
 }

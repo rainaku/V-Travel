@@ -30,12 +30,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="UI\**\*.mp4">
+    <Content Include="UI\**\*.mov">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <None Include="..\.env">
       <Link>.env</Link>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

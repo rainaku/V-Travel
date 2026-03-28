@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,7 +18,7 @@ namespace VietTravel.UI.Views
     public partial class CustomerView : UserControl
     {
         private const double TourLoadMoreThreshold = 260;
-        private const string SourceUiVideoDirectory = @"D:\CodeShii\Viet-Travel\VietTravel.UI\UI";
+        private const long PreferredHeroVideoMaxSizeBytes = 8L * 1024L * 1024L;
         private bool _isDraggingDetailsCard;
         private Point _dragStartPoint;
         private double _dragStartOffsetY;
@@ -27,12 +28,14 @@ namespace VietTravel.UI.Views
         private readonly Random _videoRandom = new();
         private readonly List<string> _heroVideoSources = new();
         private readonly Queue<string> _heroVideoQueue = new();
+        private INotifyPropertyChanged? _boundViewModel;
         private bool _isSwitchingHeroVideo;
         private bool _hasPlayedHeroVideo;
 
         public CustomerView()
         {
             InitializeComponent();
+            DataContextChanged += CustomerView_OnDataContextChanged;
             Loaded += CustomerView_OnLoaded;
             Unloaded += CustomerView_OnUnloaded;
         }
@@ -346,7 +349,33 @@ namespace VietTravel.UI.Views
         private async void CustomerView_OnLoaded(object sender, RoutedEventArgs e)
         {
             EnsureHeroVideoSources();
-            await PlayNextHeroVideoAsync(useFade: false);
+            await EnsureHeroVideoPlaybackStateAsync();
+        }
+
+        private void CustomerView_OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (_boundViewModel != null)
+            {
+                _boundViewModel.PropertyChanged -= BoundViewModel_OnPropertyChanged;
+            }
+
+            _boundViewModel = e.NewValue as INotifyPropertyChanged;
+            if (_boundViewModel != null)
+            {
+                _boundViewModel.PropertyChanged += BoundViewModel_OnPropertyChanged;
+            }
+
+            _ = EnsureHeroVideoPlaybackStateAsync();
+        }
+
+        private void BoundViewModel_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(CustomerViewModel.SelectedPage))
+            {
+                return;
+            }
+
+            _ = Dispatcher.InvokeAsync(EnsureHeroVideoPlaybackStateAsync);
         }
 
         private void ExploreHeroCardContent_OnLoaded(object sender, RoutedEventArgs e)
@@ -382,6 +411,12 @@ namespace VietTravel.UI.Views
 
         private void CustomerView_OnUnloaded(object sender, RoutedEventArgs e)
         {
+            if (_boundViewModel != null)
+            {
+                _boundViewModel.PropertyChanged -= BoundViewModel_OnPropertyChanged;
+                _boundViewModel = null;
+            }
+
             StopHeroVideo();
         }
 
@@ -402,28 +437,28 @@ namespace VietTravel.UI.Views
                 return;
             }
 
-            var candidateDirectories = new[]
+            var uiDirectory = Path.Combine(AppContext.BaseDirectory, "UI");
+            if (!Directory.Exists(uiDirectory))
             {
-                Path.Combine(AppContext.BaseDirectory, "UI"),
-                SourceUiVideoDirectory
-            };
+                return;
+            }
 
-            var distinctDirectories = candidateDirectories
-                .Where(Directory.Exists)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
+            var allVideoFiles = Directory.EnumerateFiles(uiDirectory, "*.mov", SearchOption.TopDirectoryOnly)
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            for (var i = 1; i <= 3; i++)
+            if (allVideoFiles.Count == 0)
             {
-                var fileName = $"{i}.mp4";
-                var candidatePath = distinctDirectories
-                    .Select(dir => Path.Combine(dir, fileName))
-                    .FirstOrDefault(File.Exists);
+                return;
+            }
 
-                if (!string.IsNullOrWhiteSpace(candidatePath))
-                {
-                    _heroVideoSources.Add(candidatePath);
-                }
+            var preferredFiles = allVideoFiles
+                .Where(path => new FileInfo(path).Length <= PreferredHeroVideoMaxSizeBytes)
+                .ToList();
+
+            foreach (var videoPath in (preferredFiles.Count > 0 ? preferredFiles : allVideoFiles))
+            {
+                _heroVideoSources.Add(videoPath);
             }
         }
 
@@ -518,6 +553,26 @@ namespace VietTravel.UI.Views
             finally
             {
                 _isSwitchingHeroVideo = false;
+            }
+        }
+
+        private async Task EnsureHeroVideoPlaybackStateAsync()
+        {
+            if (!IsLoaded || ExploreHeroVideo == null)
+            {
+                return;
+            }
+
+            if (DataContext is not CustomerViewModel vm ||
+                !string.Equals(vm.SelectedPage, "Explore", StringComparison.OrdinalIgnoreCase))
+            {
+                StopHeroVideo();
+                return;
+            }
+
+            if (ExploreHeroVideo.Source == null && !_isSwitchingHeroVideo)
+            {
+                await PlayNextHeroVideoAsync(useFade: _hasPlayedHeroVideo);
             }
         }
 

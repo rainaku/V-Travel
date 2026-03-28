@@ -570,7 +570,7 @@ namespace VietTravel.UI.ViewModels
 
                 // Create display info for available departures
                 var displayDeps = deps
-                    .Where(d => d.Status == "Mở bán" && d.AvailableSlots > 0)
+                    .Where(d => d.Status == "Mở bán" && d.AvailableSlots > 0 && IsDepartureStillBookable(d))
                     .OrderBy(d => d.StartDate)
                     .Select(d => {
                         var guideId = assignments.FirstOrDefault(a => a.DepartureId == d.Id)?.GuideUserId;
@@ -1379,6 +1379,12 @@ namespace VietTravel.UI.ViewModels
             return CancelledBookingStatuses.Any(s => string.Equals(s, status, StringComparison.OrdinalIgnoreCase));
         }
 
+        private static bool IsDepartureStillBookable(Departure departure)
+        {
+            // Booking closes from 1 day before departure date.
+            return departure.StartDate.Date > DateTime.Today.AddDays(1);
+        }
+
         private static string GetCancelDisabledReason(Booking booking, Departure? departure)
         {
             if (IsCancelledBookingStatus(booking.Status))
@@ -1391,9 +1397,9 @@ namespace VietTravel.UI.ViewModels
                 return "Không thể kiểm tra lịch khởi hành của booking này.";
             }
 
-            if (departure.StartDate <= DateTime.Now.AddDays(3))
+            if (departure.StartDate.Date <= DateTime.Today.AddDays(1))
             {
-                return "Không thể hủy tour trong vòng 3 ngày trước ngày khởi hành.";
+                return "Không thể hủy tour trong vòng 1 ngày trước ngày khởi hành.";
             }
 
             return string.Empty;
@@ -1585,6 +1591,11 @@ namespace VietTravel.UI.ViewModels
                     ShowAppDialogInfo("Lỗi", "Không tìm thấy lịch khởi hành.");
                     return false;
                 }
+                if (!IsDepartureStillBookable(latestDeparture))
+                {
+                    ShowAppDialogInfo("Thông báo", "Lịch khởi hành đã bị khóa đặt vé (từ 1 ngày trước ngày khởi hành).");
+                    return false;
+                }
                 if (latestDeparture.Status != "Mở bán")
                 {
                     ShowAppDialogInfo("Thông báo", "Lịch khởi hành hiện không mở bán.");
@@ -1694,7 +1705,7 @@ namespace VietTravel.UI.ViewModels
                     UserId = _mainViewModel.CurrentUser?.Id ?? 1,
                     BookingDate = DateTime.Now,
                     GuestCount = guests,
-                    Status = "Đợi xác nhận"
+                    Status = "Đã xác nhận"
                 };
 
                 var bookingResp = await client.From<Booking>().Insert(booking);
@@ -1712,7 +1723,7 @@ namespace VietTravel.UI.ViewModels
                     PaidAmount = finalAmount,
                     PromoCodeId = promoValidation?.PromoCode?.Id,
                     PromoCode = promoValidation?.NormalizedCode ?? string.Empty,
-                    Status = "Đợi xác nhận",
+                    Status = "Đã thanh toán đủ",
                     PaymentDate = DateTime.Now,
                     PaymentMethod = "Chuyển khoản QR (Mock)"
                 };
