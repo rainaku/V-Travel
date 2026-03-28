@@ -5,14 +5,16 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
-        Title="Viet Travel" Height="860" Width="1280"
+        Title="Viet Travel" Height="760" Width="1180"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
-        WindowStartupLocation="CenterScreen" MinHeight="700" MinWidth="980"
+        WindowStartupLocation="CenterScreen" MinHeight="560" MinWidth="900"
         ResizeMode="CanResizeWithGrip"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
         TextOptions.TextFormattingMode="Ideal"
         TextOptions.TextRenderingMode="Auto"
+        Loaded="Window_OnLoaded"
+        LocationChanged="Window_OnLocationChanged"
         PreviewKeyDown="Window_OnPreviewKeyDown">
     
     <Grid Margin="10">
