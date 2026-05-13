@@ -66,9 +66,8 @@ namespace VietTravel.Data.Services
             var user = response.Models.FirstOrDefault();
             if (user != null)
             {
-                // Verify password (temporarily fallback to plaintext check for easy testing if hash is empty)
                 string hashed = HashPassword(password);
-                if (user.PasswordHash == hashed || user.PasswordHash == password || user.PasswordHash == "admin_hash_placeholder")
+                if (user.PasswordHash == hashed)
                 {
                     return user;
                 }
