@@ -9,6 +9,9 @@
   <ItemGroup>
     <PackageReference Include="postgrest-csharp" Version="3.5.1" />
     <PackageReference Include="supabase-csharp" Version="0.16.2" />
+    <!-- Override vulnerable transitive JWT packages (CVE-2024-21319) -->
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="7.1.2" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.1.2" />
   </ItemGroup>
 
   <ItemGroup>

@@ -93,13 +93,12 @@ namespace VietTravel.Data.Services
                 throw new InvalidOperationException("Booking không thuộc khách hàng hiện tại.");
             }
 
-            if (string.Equals(booking.Status, "Đã hủy", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(booking.Status, "Hủy", StringComparison.OrdinalIgnoreCase))
+            if (BookingStatuses.IsCancelled(booking.Status))
             {
                 throw new InvalidOperationException("Không thể đánh giá booking đã hủy.");
             }
 
-            if (!string.Equals(booking.Status, "Đã xác nhận", StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(booking.Status, BookingStatuses.Confirmed, StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException("Chỉ booking đã xác nhận mới được đánh giá.");
             }

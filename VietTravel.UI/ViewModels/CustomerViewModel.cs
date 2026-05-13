@@ -27,6 +27,7 @@ namespace VietTravel.UI.ViewModels
         private readonly PromoCodeService _promoCodeService = new();
         private readonly TourRatingService _tourRatingService = new();
         private readonly GuideRatingService _guideRatingService = new();
+        private readonly DepartureSlotService _departureSlotService = new();
 
         public string FullName => _mainViewModel.CurrentUser?.FullName ?? "Khách Hàng";
         public string UserInitials => GetInitials(FullName);
@@ -111,7 +112,7 @@ namespace VietTravel.UI.ViewModels
         private static readonly Regex EmailPattern = new(@"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         private static readonly Regex VietnamMobilePattern = new(@"^0(?:3|5|7|8|9)\d{8}$", RegexOptions.Compiled);
         private static readonly Regex AddressPattern = new(@"^[\p{L}\p{M}\d\s,./\-#]+$", RegexOptions.Compiled);
-        private static readonly string[] CancelledBookingStatuses = { "Đã hủy", "Hủy" };
+        private static readonly string[] CancelledBookingStatuses = { BookingStatuses.Cancelled, BookingStatuses.CancelledLegacy };
 
         public bool HasMoreToursToLoad => _loadedTourCount < _filteredTourCache.Count;
         public bool IsBookingModalOverlayVisible => IsBookingFormVisible && !IsPaymentModalVisible && !IsAppDialogVisible;
@@ -570,7 +571,7 @@ namespace VietTravel.UI.ViewModels
 
                 // Create display info for available departures
                 var displayDeps = deps
-                    .Where(d => d.Status == "Mở bán" && d.AvailableSlots > 0 && IsDepartureStillBookable(d))
+                    .Where(d => d.Status == DepartureStatuses.Open && d.AvailableSlots > 0 && IsDepartureStillBookable(d))
                     .OrderBy(d => d.StartDate)
                     .Select(d => {
                         var guideId = assignments.FirstOrDefault(a => a.DepartureId == d.Id)?.GuideUserId;
@@ -746,8 +747,8 @@ namespace VietTravel.UI.ViewModels
                 }
 
                 TotalBookingsCount = MyBookings.Count;
-                PendingBookingsCount = MyBookings.Count(b => b.Status == "Chờ thanh toán" || b.Status == "Chờ xác nhận" || b.Status == "Đợi xác nhận");
-                ConfirmedBookingsCount = MyBookings.Count(b => b.Status == "Đã xác nhận");
+                PendingBookingsCount = MyBookings.Count(b => BookingStatuses.IsPending(b.Status));
+                ConfirmedBookingsCount = MyBookings.Count(b => b.Status == BookingStatuses.Confirmed);
                 TotalToursAvailable = tours.Count;
             }
             catch (Exception ex)
@@ -881,17 +882,10 @@ namespace VietTravel.UI.ViewModels
 
                 if (departure != null)
                 {
-                    departure.AvailableSlots = Math.Min(departure.MaxSlots, departure.AvailableSlots + booking.GuestCount);
-                    if (departure.Status != "Đóng")
-                    {
-                        departure.Status = departure.AvailableSlots > 0 ? "Mở bán" : "Hết chỗ";
-                    }
-
-                    departure.Tour = null;
-                    await client.From<Departure>().Update(departure);
+                    await _departureSlotService.ReleaseSlotsAsync(client, departure.Id, booking.GuestCount);
                 }
 
-                booking.Status = "Đã hủy";
+                booking.Status = BookingStatuses.Cancelled;
                 booking.Customer = null;
                 booking.Departure = null;
                 booking.User = null;
@@ -904,14 +898,14 @@ namespace VietTravel.UI.ViewModels
                     var previousStatus = payment.Status ?? string.Empty;
                     var shouldIssueRefund =
                         payment.PaidAmount > 0 ||
-                        string.Equals(previousStatus, "Đợi xác nhận", StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(previousStatus, "Đã cọc", StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(previousStatus, "Đã thanh toán", StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(previousStatus, "Đã thanh toán đủ", StringComparison.OrdinalIgnoreCase);
+                        string.Equals(previousStatus, PaymentStatuses.PendingConfirmation, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(previousStatus, PaymentStatuses.Deposit, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(previousStatus, PaymentStatuses.PaidLegacy, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(previousStatus, PaymentStatuses.FullyPaid, StringComparison.OrdinalIgnoreCase);
 
                     if (shouldIssueRefund)
                     {
-                        payment.Status = "Đã hoàn tiền";
+                        payment.Status = PaymentStatuses.Refunded;
                         payment.PaidAmount = 0;
                         payment.PaymentDate = DateTime.Now;
                         payment.Booking = null;
@@ -1413,7 +1407,7 @@ namespace VietTravel.UI.ViewModels
                 return "Booking đã hủy nên không thể gửi đánh giá.";
             }
 
-            if (!string.Equals(booking.Status, "Đã xác nhận", StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(booking.Status, BookingStatuses.Confirmed, StringComparison.OrdinalIgnoreCase))
             {
                 return "Chỉ booking đã xác nhận mới có thể đánh giá tour.";
             }
@@ -1438,7 +1432,7 @@ namespace VietTravel.UI.ViewModels
                 return "Booking đã hủy nên không thể gửi đánh giá hướng dẫn viên.";
             }
 
-            if (!string.Equals(booking.Status, "Đã xác nhận", StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(booking.Status, BookingStatuses.Confirmed, StringComparison.OrdinalIgnoreCase))
             {
                 return "Chỉ booking đã xác nhận mới có thể đánh giá hướng dẫn viên.";
             }
@@ -1502,19 +1496,19 @@ namespace VietTravel.UI.ViewModels
 
         private static string GetStatusColor(string status, bool isCompletedBooking)
         {
-            if (isCompletedBooking && string.Equals(status, "Đã xác nhận", StringComparison.OrdinalIgnoreCase))
+            if (isCompletedBooking && string.Equals(status, BookingStatuses.Confirmed, StringComparison.OrdinalIgnoreCase))
             {
                 return "#8E8E93";
             }
 
             return (status ?? "").Trim() switch
             {
-                "Đã xác nhận" => "#34C759",
-                "Đợi xác nhận" => "#5AC8FA",
-                "Chờ xử lý" => "#5AC8FA",
-                "Đã hủy" => "#FF3B30",
-                "Hủy" => "#FF3B30",
-                "Chờ thanh toán" => "#FF9500",
+                BookingStatuses.Confirmed => "#34C759",
+                BookingStatuses.PendingConfirmation => "#5AC8FA",
+                BookingStatuses.PendingProcessing => "#5AC8FA",
+                BookingStatuses.Cancelled => "#FF3B30",
+                BookingStatuses.CancelledLegacy => "#FF3B30",
+                BookingStatuses.PendingPayment => "#FF9500",
                 _ => "#8E8E93" // Default gray
             };
         }
@@ -1631,7 +1625,7 @@ namespace VietTravel.UI.ViewModels
                     ShowAppDialogInfo("Thông báo", "Lịch khởi hành đã bị khóa đặt vé (từ 1 ngày trước ngày khởi hành).");
                     return false;
                 }
-                if (latestDeparture.Status != "Mở bán")
+                if (latestDeparture.Status != DepartureStatuses.Open)
                 {
                     ShowAppDialogInfo("Thông báo", "Lịch khởi hành hiện không mở bán.");
                     return false;
@@ -1653,7 +1647,7 @@ namespace VietTravel.UI.ViewModels
                 var scheduleConflictType = DepartureDateConflictType.None;
                 foreach (var b in MyBookings)
                 {
-                    if (b.Status != "Đã hủy" && b.Status != "Hủy" && b.DepartureStartDate?.Date == latestDeparture.StartDate.Date)
+                    if (!BookingStatuses.IsCancelled(b.Status) && b.DepartureStartDate?.Date == latestDeparture.StartDate.Date)
                     {
                         if (IsSameDestination(b.Destination, tour.Destination))
                         {
@@ -1719,18 +1713,15 @@ namespace VietTravel.UI.ViewModels
                 finalAmount = Math.Max(originalAmount - discountAmount, 0);
                 UpdatePaymentSummary(originalAmount, promoValidation, latestDeparture.Id, guests);
 
-                originalAvailableSlots = latestDeparture.AvailableSlots;
-                originalDepartureStatus = latestDeparture.Status;
-
-                latestDeparture.AvailableSlots -= guests;
-                if (latestDeparture.AvailableSlots <= 0)
+                // Atomic slot reservation via DB-level lock (prevents overbooking)
+                var reserveResult = await _departureSlotService.ReserveSlotsAsync(client, latestDeparture.Id, guests);
+                if (!reserveResult.Success)
                 {
-                    latestDeparture.AvailableSlots = 0;
-                    if (latestDeparture.Status != "Đóng")
-                        latestDeparture.Status = "Hết chỗ";
+                    ShowAppDialogInfo("Không thể đặt tour", reserveResult.Message ?? "Lỗi đặt chỗ.");
+                    return false;
                 }
-                latestDeparture.Tour = null;
-                await client.From<Departure>().Update(latestDeparture);
+                originalAvailableSlots = reserveResult.PreviousAvailable;
+                originalDepartureStatus = reserveResult.PreviousStatus ?? latestDeparture.Status;
                 hasReservedSlots = true;
 
                 var booking = new Booking
@@ -1740,7 +1731,7 @@ namespace VietTravel.UI.ViewModels
                     UserId = _mainViewModel.CurrentUser?.Id ?? 1,
                     BookingDate = DateTime.Now,
                     GuestCount = guests,
-                    Status = "Đã xác nhận"
+                    Status = BookingStatuses.Confirmed
                 };
 
                 var bookingResp = await client.From<Booking>().Insert(booking);
@@ -1758,7 +1749,7 @@ namespace VietTravel.UI.ViewModels
                     PaidAmount = finalAmount,
                     PromoCodeId = promoValidation?.PromoCode?.Id,
                     PromoCode = promoValidation?.NormalizedCode ?? string.Empty,
-                    Status = "Đã thanh toán đủ",
+                    Status = PaymentStatuses.FullyPaid,
                     PaymentDate = DateTime.Now,
                     PaymentMethod = "Chuyển khoản QR (Mock)"
                 };
@@ -1790,10 +1781,7 @@ namespace VietTravel.UI.ViewModels
 
                     if (hasReservedSlots && latestDeparture != null)
                     {
-                        latestDeparture.AvailableSlots = originalAvailableSlots;
-                        latestDeparture.Status = originalDepartureStatus;
-                        latestDeparture.Tour = null;
-                        await client.From<Departure>().Update(latestDeparture);
+                        await _departureSlotService.ReleaseSlotsAsync(client, latestDeparture.Id, guests);
                     }
                 }
                 catch

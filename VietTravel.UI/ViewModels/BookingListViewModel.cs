@@ -7,12 +7,14 @@ using System.Threading.Tasks;
 using System.Windows;
 using VietTravel.Core.Models;
 using VietTravel.Data;
+using VietTravel.Data.Services;
 
 namespace VietTravel.UI.ViewModels
 {
     public partial class BookingListViewModel : PaginatedListViewModelBase<Booking>
     {
         private readonly MainViewModel _mainViewModel;
+        private readonly DepartureSlotService _departureSlotService = new();
 
         [ObservableProperty] private string _searchText = string.Empty;
         [ObservableProperty] private ObservableCollection<Booking> _bookings = new();
@@ -127,12 +129,9 @@ namespace VietTravel.UI.ViewModels
         private void UpdateStats()
         {
             TotalBookings = Bookings.Count;
-            PendingCount = Bookings.Count(b =>
-                b.Status == "Chờ xử lý" ||
-                b.Status == "Chờ thanh toán" ||
-                b.Status == "Đợi xác nhận");
-            ConfirmedCount = Bookings.Count(b => b.Status == "Đã xác nhận");
-            CancelledCount = Bookings.Count(b => b.Status == "Đã hủy" || b.Status == "Hủy");
+            PendingCount = Bookings.Count(b => BookingStatuses.IsPending(b.Status));
+            ConfirmedCount = Bookings.Count(b => b.Status == BookingStatuses.Confirmed);
+            CancelledCount = Bookings.Count(b => BookingStatuses.IsCancelled(b.Status));
         }
 
         private void ApplyFormFilters()
@@ -339,7 +338,7 @@ namespace VietTravel.UI.ViewModels
                     return;
                 }
 
-                if (latestDeparture.Status != "Mở bán")
+                if (latestDeparture.Status != DepartureStatuses.Open)
                 {
                     MessageBox.Show("Lịch khởi hành hiện không mở bán.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
@@ -359,18 +358,15 @@ namespace VietTravel.UI.ViewModels
                     return;
                 }
 
-                originalAvailableSlots = latestDeparture.AvailableSlots;
-                originalDepartureStatus = latestDeparture.Status;
-
-                latestDeparture.AvailableSlots -= guests;
-                if (latestDeparture.AvailableSlots <= 0)
+                // Atomic slot reservation via DB-level lock (prevents overbooking)
+                var reserveResult = await _departureSlotService.ReserveSlotsAsync(client, latestDeparture.Id, guests);
+                if (!reserveResult.Success)
                 {
-                    latestDeparture.AvailableSlots = 0;
-                    if (latestDeparture.Status != "Đóng")
-                        latestDeparture.Status = "Hết chỗ";
+                    MessageBox.Show(reserveResult.Message ?? "Lỗi đặt chỗ.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
                 }
-                latestDeparture.Tour = null;
-                await client.From<Departure>().Update(latestDeparture);
+                originalAvailableSlots = reserveResult.PreviousAvailable;
+                originalDepartureStatus = reserveResult.PreviousStatus ?? latestDeparture.Status;
                 hasReservedSlots = true;
 
                 var booking = new Booking
@@ -380,7 +376,7 @@ namespace VietTravel.UI.ViewModels
                     UserId = _mainViewModel.CurrentUser?.Id ?? 1,
                     BookingDate = DateTime.Now,
                     GuestCount = guests,
-                    Status = "Đã xác nhận"
+                    Status = BookingStatuses.Confirmed
                 };
 
                 var bookingResp = await client.From<Booking>().Insert(booking);
@@ -397,7 +393,7 @@ namespace VietTravel.UI.ViewModels
                     TotalAmount = tour.BasePrice * guests,
                     PaidAmount = 0,
                     PromoCode = string.Empty,
-                    Status = "Chưa thanh toán",
+                    Status = PaymentStatuses.Unpaid,
                     PaymentMethod = "Tiền mặt"
                 };
                 await client.From<Payment>().Insert(payment);
@@ -417,10 +413,7 @@ namespace VietTravel.UI.ViewModels
 
                     if (hasReservedSlots && latestDeparture != null)
                     {
-                        latestDeparture.AvailableSlots = originalAvailableSlots;
-                        latestDeparture.Status = originalDepartureStatus;
-                        latestDeparture.Tour = null;
-                        await client.From<Departure>().Update(latestDeparture);
+                        await _departureSlotService.ReleaseSlotsAsync(client, latestDeparture.Id, guests);
                     }
                 }
                 catch
@@ -436,7 +429,7 @@ namespace VietTravel.UI.ViewModels
         private async Task CancelBookingAsync(Booking booking)
         {
             if (booking == null) return;
-            if (booking.Status == "Đã hủy" || booking.Status == "Hủy") return;
+            if (BookingStatuses.IsCancelled(booking.Status)) return;
             var result = MessageBox.Show("Bạn có chắc chắn muốn hủy booking này?",
                 "Xác nhận hủy", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (result != MessageBoxResult.Yes) return;
@@ -449,16 +442,10 @@ namespace VietTravel.UI.ViewModels
                 var departure = depResp.Models.FirstOrDefault();
                 if (departure != null)
                 {
-                    departure.AvailableSlots = Math.Min(departure.MaxSlots, departure.AvailableSlots + booking.GuestCount);
-                    if (departure.Status != "Đóng")
-                    {
-                        departure.Status = departure.AvailableSlots > 0 ? "Mở bán" : "Hết chỗ";
-                    }
-                    departure.Tour = null;
-                    await client.From<Departure>().Update(departure);
+                    await _departureSlotService.ReleaseSlotsAsync(client, departure.Id, booking.GuestCount);
                 }
 
-                booking.Status = "Đã hủy";
+                booking.Status = BookingStatuses.Cancelled;
                 booking.Customer = null;
                 booking.Departure = null;
                 booking.User = null;

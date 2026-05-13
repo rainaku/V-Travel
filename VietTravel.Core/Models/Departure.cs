@@ -28,7 +28,7 @@ namespace VietTravel.Core.Models
         public int AvailableSlots { get; set; }
 
         [Column("status")]
-        public string Status { get; set; } = "Mở bán"; // "Mở bán", "Hết chỗ", "Đóng"
+        public string Status { get; set; } = DepartureStatuses.Open;
 
         [JsonIgnore]
         public string SearchDisplay

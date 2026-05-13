@@ -58,9 +58,9 @@ namespace VietTravel.UI.ViewModels
 
         private void UpdateStats()
         {
-            UnpaidCount = Payments.Count(p => p.Status == "Chưa thanh toán" || p.Status == "Đợi xác nhận");
-            DepositCount = Payments.Count(p => p.Status == "Đã cọc");
-            PaidCount = Payments.Count(p => p.Status == "Đã thanh toán đủ" || p.Status == "Đã thanh toán");
+            UnpaidCount = Payments.Count(p => p.Status == PaymentStatuses.Unpaid || p.Status == PaymentStatuses.PendingConfirmation);
+            DepositCount = Payments.Count(p => p.Status == PaymentStatuses.Deposit);
+            PaidCount = Payments.Count(p => PaymentStatuses.IsPaid(p.Status));
         }
 
         [RelayCommand]
@@ -113,12 +113,12 @@ namespace VietTravel.UI.ViewModels
             try
             {
                 var previousStatus = payment.Status;
-                if (payment.Status == "Đã thanh toán đủ" || payment.Status == "Đã thanh toán")
+                if (PaymentStatuses.IsPaid(payment.Status))
                 {
                     return;
                 }
 
-                if (payment.Status == "Đợi xác nhận")
+                if (payment.Status == PaymentStatuses.PendingConfirmation)
                 {
                     MessageBox.Show(
                         "Khoản thanh toán này đang ở trạng thái đợi xác nhận. Vui lòng dùng nút xác nhận thanh toán đủ.",
@@ -128,7 +128,7 @@ namespace VietTravel.UI.ViewModels
                     return;
                 }
 
-                payment.Status = "Đã cọc";
+                payment.Status = PaymentStatuses.Deposit;
                 if (payment.PaidAmount <= 0)
                 {
                     payment.PaidAmount = Math.Round(payment.TotalAmount * 0.3m, 0);
@@ -138,7 +138,7 @@ namespace VietTravel.UI.ViewModels
 
                 var client = await SupabaseClientFactory.GetClientAsync();
                 await client.From<Payment>().Update(payment);
-                var booking = await UpdateBookingStatusAsync(client, payment.BookingId, "Chờ xử lý");
+                var booking = await UpdateBookingStatusAsync(client, payment.BookingId, BookingStatuses.PendingProcessing);
                 await NotificationCenterService.Instance.NotifyPaymentStatusChangedAsync(payment, previousStatus, booking?.UserId);
                 await LoadDataAsync();
             }
@@ -154,20 +154,20 @@ namespace VietTravel.UI.ViewModels
             if (payment == null) return;
             try
             {
-                if (payment.Status == "Đã thanh toán đủ" || payment.Status == "Đã thanh toán")
+                if (PaymentStatuses.IsPaid(payment.Status))
                 {
                     return;
                 }
 
                 var previousStatus = payment.Status;
-                payment.Status = "Đã thanh toán đủ";
+                payment.Status = PaymentStatuses.FullyPaid;
                 payment.PaidAmount = payment.TotalAmount;
                 payment.PaymentDate = DateTime.Now;
                 payment.Booking = null;
 
                 var client = await SupabaseClientFactory.GetClientAsync();
                 await client.From<Payment>().Update(payment);
-                var booking = await UpdateBookingStatusAsync(client, payment.BookingId, "Đã xác nhận");
+                var booking = await UpdateBookingStatusAsync(client, payment.BookingId, BookingStatuses.Confirmed);
                 await NotificationCenterService.Instance.NotifyPaymentStatusChangedAsync(payment, previousStatus, booking?.UserId);
                 await LoadDataAsync();
             }
@@ -182,7 +182,7 @@ namespace VietTravel.UI.ViewModels
             var bookingResp = await client.From<Booking>().Get();
             var booking = bookingResp.Models.FirstOrDefault(b => b.Id == bookingId);
             if (booking == null) return null;
-            if (booking.Status == "Đã hủy" || booking.Status == "Hủy") return booking;
+            if (BookingStatuses.IsCancelled(booking.Status)) return booking;
             if (booking.Status == targetStatus) return booking;
 
             booking.Status = targetStatus;

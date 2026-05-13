@@ -38,7 +38,7 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private ObservableCollection<User> _availableGuides = new();
         [ObservableProperty] private ObservableCollection<Departure> _availableDepartures = new();
         [ObservableProperty] private ObservableCollection<string> _assignmentStatusOptions =
-            new(new[] { "Đang phân công", "Đã hoàn thành", "Đã hủy" });
+            new(new[] { "Đang phân công", "Đã hoàn thành", BookingStatuses.Cancelled });
 
         [ObservableProperty] private User? _formSelectedGuide;
         [ObservableProperty] private Departure? _formSelectedDeparture;
@@ -740,7 +740,7 @@ namespace VietTravel.UI.ViewModels
                     continue;
                 }
 
-                if (string.Equals(item.Status, "Đã hủy", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(item.Status, BookingStatuses.Cancelled, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
@@ -795,7 +795,7 @@ namespace VietTravel.UI.ViewModels
         private static bool IsActiveDeparture(Departure departure)
         {
             return departure.StartDate.Date >= DateTime.Today
-                   && !string.Equals(departure.Status, "Đóng", StringComparison.OrdinalIgnoreCase);
+                   && !string.Equals(departure.Status, DepartureStatuses.Closed, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

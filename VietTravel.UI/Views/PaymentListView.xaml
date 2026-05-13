@@ -138,7 +138,25 @@
                                             <TextBlock Text="{Binding BookingId, StringFormat=BK-{0}}" Grid.Column="1" Padding="12,0" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource PrimaryBrush}" VerticalAlignment="Center"/>
                                             <TextBlock Text="{Binding TotalAmount, StringFormat={}{0:N0} đ}" Grid.Column="2" Padding="12,0" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center" FontWeight="SemiBold"/>
                                             <TextBlock Text="{Binding PaidAmount, StringFormat={}{0:N0} đ}" Grid.Column="3" Padding="12,0" FontSize="13" Foreground="{StaticResource SuccessBrush}" VerticalAlignment="Center"/>
-                                            <TextBlock Text="{Binding Status}" Grid.Column="4" Padding="12,0" FontSize="13" Foreground="{StaticResource WarningBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Status}" Grid.Column="4" Padding="12,0" FontSize="13" VerticalAlignment="Center">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
+                                                        <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Status}" Value="Đã thanh toán đủ">
+                                                                <Setter Property="Foreground" Value="{StaticResource SuccessBrush}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="Đã thanh toán">
+                                                                <Setter Property="Foreground" Value="{StaticResource SuccessBrush}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="Đã hoàn tiền">
+                                                                <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
                                             <TextBlock Text="{Binding PaymentMethod}" Grid.Column="5" Padding="12,0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Center"/>
                                             <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                                 <Button Style="{StaticResource AppleGhostButton}" Width="32" Height="32" Padding="0" Cursor="Hand" ToolTip="Đánh dấu đã cọc"

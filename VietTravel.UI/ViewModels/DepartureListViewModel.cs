@@ -32,7 +32,7 @@ namespace VietTravel.UI.ViewModels
         [ObservableProperty] private DateTime _formStartDate = DateTime.Now.AddDays(7);
         [ObservableProperty] private string _formMaxSlots = string.Empty;
         [ObservableProperty] private string _formAvailableSlots = string.Empty;
-        [ObservableProperty] private string _formStatus = "Mở bán";
+        [ObservableProperty] private string _formStatus = DepartureStatuses.Open;
 
         private Departure? _editingDeparture;
 
@@ -120,7 +120,7 @@ namespace VietTravel.UI.ViewModels
             FormStartDate = DateTime.Now.AddDays(7);
             FormMaxSlots = string.Empty;
             FormAvailableSlots = string.Empty;
-            FormStatus = "Mở bán";
+            FormStatus = DepartureStatuses.Open;
             IsEditing = false;
             _editingDeparture = null;
             IsFormVisible = true;

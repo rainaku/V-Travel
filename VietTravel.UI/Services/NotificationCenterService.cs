@@ -16,9 +16,9 @@ namespace VietTravel.UI.Services
     public sealed partial class NotificationCenterService : ObservableObject
     {
         private static readonly Lazy<NotificationCenterService> _lazy = new(() => new NotificationCenterService());
-        private static readonly string[] PaidStatuses = { "Đã cọc", "Đã thanh toán", "Đã thanh toán đủ" };
-        private static readonly string[] RefundedStatuses = { "Đã hoàn tiền" };
-        private static readonly string[] AdminPendingReviewStatuses = { "Đợi xác nhận" };
+        private static readonly string[] PaidStatuses = { PaymentStatuses.Deposit, PaymentStatuses.PaidLegacy, PaymentStatuses.FullyPaid };
+        private static readonly string[] RefundedStatuses = { PaymentStatuses.Refunded };
+        private static readonly string[] AdminPendingReviewStatuses = { PaymentStatuses.PendingConfirmation };
         private static readonly TimeSpan DuplicateWindow = TimeSpan.FromMinutes(3);
         private const int MaxNotifications = 100;
 
