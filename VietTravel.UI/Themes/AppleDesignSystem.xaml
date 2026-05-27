@@ -152,13 +152,9 @@
         <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
         <Setter Property="RenderTransform">
             <Setter.Value>
-                <TransformGroup>
-                    <ScaleTransform ScaleX="1" ScaleY="1"/>
-                    <TranslateTransform Y="0"/>
-                </TransformGroup>
+                <ScaleTransform ScaleX="1" ScaleY="1"/>
             </Setter.Value>
         </Setter>
-        <Setter Property="Opacity" Value="0.98"/>
         <Style.Triggers>
             <EventTrigger RoutedEvent="FrameworkElement.Loaded">
                 <BeginStoryboard>
@@ -166,35 +162,30 @@
                         <DoubleAnimation Storyboard.TargetProperty="Opacity"
                                          From="0" To="1" Duration="0:0:0.36"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
-                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.Y)"
-                                         From="8" To="0" Duration="0:0:0.36"
-                                         EasingFunction="{StaticResource EaseOutCubic}"/>
                     </Storyboard>
                 </BeginStoryboard>
             </EventTrigger>
             <EventTrigger RoutedEvent="MouseEnter">
                 <BeginStoryboard>
                     <Storyboard>
-                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)"
+                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
                                          To="1.01" Duration="0:0:0.27"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
-                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)"
+                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
                                          To="1.01" Duration="0:0:0.27"
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
-
                     </Storyboard>
                 </BeginStoryboard>
             </EventTrigger>
             <EventTrigger RoutedEvent="MouseLeave">
                 <BeginStoryboard>
                     <Storyboard>
-                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)"
+                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
                                          To="1" Duration="0:0:0.33"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
-                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)"
+                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
                                          To="1" Duration="0:0:0.33"
                                          EasingFunction="{StaticResource EaseInOutCubic}"/>
-
                     </Storyboard>
                 </BeginStoryboard>
             </EventTrigger>
@@ -928,9 +919,7 @@
         <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
         <Setter Property="RenderTransform">
             <Setter.Value>
-                <TransformGroup>
-                    <TranslateTransform Y="20"/>
-                </TransformGroup>
+                <TranslateTransform Y="20"/>
             </Setter.Value>
         </Setter>
         <Setter Property="Opacity" Value="0"/>
@@ -941,7 +930,7 @@
                         <DoubleAnimation Storyboard.TargetProperty="Opacity" 
                                          From="0" To="1" Duration="0:0:0.35" 
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
-                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(TranslateTransform.Y)" 
+                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" 
                                          From="20" To="0" Duration="0:0:0.35" 
                                          EasingFunction="{StaticResource EaseOutCubic}"/>
                     </Storyboard>

@@ -462,17 +462,42 @@ namespace VietTravel.UI.ViewModels
             {
                 var client = await SupabaseClientFactory.GetClientAsync();
 
-                // Load tours
-                var tours = (await client.From<Tour>().Get()).Models ?? new List<Tour>();
-                var approvedTourRatings = await LoadApprovedTourRatingsAsync();
+                // ═══ PHASE 1: Load all independent data in parallel ═══
+                var toursTask = client.From<Tour>().Get();
+                var ratingsTask = LoadApprovedTourRatingsAsync();
+                var depsTask = client.From<Departure>().Get();
+                var assignmentsTask = client.From<TourGuideAssignment>().Get();
+                var usersTask = client.From<User>().Get();
+
+                // Tour resource tables (parallel)
+                var transportsTask = client.From<Transport>().Get();
+                var hotelsTask = client.From<Hotel>().Get();
+                var attractionsTask = client.From<Attraction>().Get();
+                var tourTransportsTask = client.From<TourTransport>().Get();
+                var tourHotelsTask = client.From<TourHotel>().Get();
+                var tourAttractionsTask = client.From<TourAttraction>().Get();
+
+                // Await all phase 1 queries together
+                await Task.WhenAll(
+                    toursTask, ratingsTask, depsTask, assignmentsTask, usersTask,
+                    transportsTask, hotelsTask, attractionsTask,
+                    tourTransportsTask, tourHotelsTask, tourAttractionsTask);
+
+                var tours = toursTask.Result.Models ?? new List<Tour>();
+                var approvedTourRatings = ratingsTask.Result;
+                var deps = depsTask.Result.Models ?? new List<Departure>();
+                var assignments = assignmentsTask.Result.Models ?? new List<TourGuideAssignment>();
+                var users = usersTask.Result.Models ?? new List<User>();
+
+                // Map tour resources
                 try
                 {
-                    var transports = (await client.From<Transport>().Get()).Models ?? new List<Transport>();
-                    var hotels = (await client.From<Hotel>().Get()).Models ?? new List<Hotel>();
-                    var attractions = (await client.From<Attraction>().Get()).Models ?? new List<Attraction>();
-                    var tourTransports = (await client.From<TourTransport>().Get()).Models ?? new List<TourTransport>();
-                    var tourHotels = (await client.From<TourHotel>().Get()).Models ?? new List<TourHotel>();
-                    var tourAttractions = (await client.From<TourAttraction>().Get()).Models ?? new List<TourAttraction>();
+                    var transports = transportsTask.Result.Models ?? new List<Transport>();
+                    var hotels = hotelsTask.Result.Models ?? new List<Hotel>();
+                    var attractions = attractionsTask.Result.Models ?? new List<Attraction>();
+                    var tourTransports = tourTransportsTask.Result.Models ?? new List<TourTransport>();
+                    var tourHotels = tourHotelsTask.Result.Models ?? new List<TourHotel>();
+                    var tourAttractions = tourAttractionsTask.Result.Models ?? new List<TourAttraction>();
 
                     var transportById = transports.ToDictionary(x => x.Id);
                     var hotelById = hotels.ToDictionary(x => x.Id);
@@ -561,11 +586,7 @@ namespace VietTravel.UI.ViewModels
                 ApplyTourFilter();
                 TotalToursAvailable = tours.Count;
 
-                // Load departures with tour info
-                var deps = (await client.From<Departure>().Get()).Models;
-                var assignments = (await client.From<TourGuideAssignment>().Get()).Models ?? new List<TourGuideAssignment>();
-                var users = (await client.From<User>().Get()).Models ?? new List<User>();
-
+                // Departures already loaded in parallel above
                 foreach (var d in deps) d.Tour = tours.FirstOrDefault(t => t.Id == d.TourId);
                 AllDepartures = new ObservableCollection<Departure>(deps);
 
@@ -596,8 +617,17 @@ namespace VietTravel.UI.ViewModels
                 AvailableDepartures = new ObservableCollection<DepartureDisplayInfo>(displayDeps);
                 ApplyDepartureFilter();
 
-                // Load customer profile linked to current user.
-                _customerProfile = await ResolveCustomerProfileAsync(client);
+                // ═══ PHASE 2: Load customer profile + user bookings in parallel ═══
+                var currentUserId = _mainViewModel.CurrentUser?.Id ?? -1;
+                var profileTask = ResolveCustomerProfileAsync(client);
+                var userBookingsTask = client.From<Booking>()
+                    .Where(b => b.UserId == currentUserId)
+                    .Order(b => b.BookingDate, Postgrest.Constants.Ordering.Descending)
+                    .Get();
+
+                await Task.WhenAll(profileTask, userBookingsTask);
+
+                _customerProfile = profileTask.Result;
                 AvatarUrl = _mainViewModel.CurrentUser?.AvatarUrl ?? string.Empty;
 
                 if (_customerProfile != null)
@@ -612,14 +642,8 @@ namespace VietTravel.UI.ViewModels
                     InfoFullName = _mainViewModel.CurrentUser?.FullName ?? "";
                 }
 
-                // Load my bookings (server-side filter for performance)
-                var currentUserId = _mainViewModel.CurrentUser?.Id ?? -1;
-                
-                var bookingsRes = await client.From<Booking>()
-                    .Where(b => b.UserId == currentUserId)
-                    .Order(b => b.BookingDate, Postgrest.Constants.Ordering.Descending)
-                    .Get();
-                var bookingsList = bookingsRes.Models ?? new List<Booking>();
+                // Merge customer bookings if profile exists
+                var bookingsList = userBookingsTask.Result.Models ?? new List<Booking>();
                 
                 if (_customerProfile != null)
                 {
@@ -639,7 +663,7 @@ namespace VietTravel.UI.ViewModels
 
                 var bookings = bookingsList;
 
-                // Load payments only for these bookings
+                // ═══ PHASE 3: Load payments + ratings in parallel ═══
                 var paymentByBookingId = new Dictionary<int, Payment>();
                 var ratingByBookingId = new Dictionary<int, TourRating>();
                 var guideRatingByBookingId = new Dictionary<int, GuideRating>();
@@ -648,10 +672,17 @@ namespace VietTravel.UI.ViewModels
                 if (bookings.Any())
                 {
                     var bookingIds = bookings.Select(b => (object)b.Id).Distinct().ToList();
-                    var paymentsResponse = await client.From<Payment>()
+                    var bookingIdInts = bookings.Select(b => b.Id);
+
+                    // Fire all three queries in parallel
+                    var paymentsTask2 = client.From<Payment>()
                         .Filter("booking_id", Postgrest.Constants.Operator.In, bookingIds)
                         .Get();
-                    
+                    var tourRatingsTask = _tourRatingService.GetByBookingIdsAsync(bookingIdInts);
+                    var guideRatingsTask = _guideRatingService.GetByBookingIdsAsync(bookingIdInts);
+
+                    // Await payments (always succeeds)
+                    var paymentsResponse = await paymentsTask2;
                     var payments = paymentsResponse.Models ?? new List<Payment>();
 
                     paymentByBookingId = payments
@@ -660,7 +691,7 @@ namespace VietTravel.UI.ViewModels
 
                     try
                     {
-                        var ratings = await _tourRatingService.GetByBookingIdsAsync(bookings.Select(b => b.Id));
+                        var ratings = await tourRatingsTask;
                         ratingByBookingId = ratings
                             .GroupBy(r => r.BookingId)
                             .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.UpdatedAt).First());
@@ -673,7 +704,7 @@ namespace VietTravel.UI.ViewModels
 
                     try
                     {
-                        var guideRatings = await _guideRatingService.GetByBookingIdsAsync(bookings.Select(b => b.Id));
+                        var guideRatings = await guideRatingsTask;
                         guideRatingByBookingId = guideRatings
                             .GroupBy(r => r.BookingId)
                             .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.UpdatedAt).First());

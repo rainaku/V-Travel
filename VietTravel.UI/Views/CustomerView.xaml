@@ -382,7 +382,7 @@
                         </Grid>
                     </Border>
 
-                    <!-- Tour Cards Grid -->
+                    <!-- Tour Cards Grid (Optimized) -->
                     <ItemsControl ItemsSource="{Binding FilteredTours}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -393,42 +393,24 @@
                             <DataTemplate>
                                 <Border Margin="0,0,14,18" CornerRadius="16" Background="White" ClipToBounds="True"
                                         RenderTransformOrigin="0.5,0.5"
-                                        Cursor="Hand">
+                                        Cursor="Hand"
+                                        BorderBrush="#10000000" BorderThickness="1"
+                                        CacheMode="BitmapCache">
                                     <Border.InputBindings>
                                         <MouseBinding MouseAction="LeftClick"
                                                       Command="{Binding DataContext.ShowTourDetailsCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                       CommandParameter="{Binding}"/>
                                     </Border.InputBindings>
                                     <Border.RenderTransform>
-                                        <TransformGroup>
-                                            <ScaleTransform ScaleX="1" ScaleY="1"/>
-                                            <TranslateTransform Y="0"/>
-                                        </TransformGroup>
+                                        <ScaleTransform ScaleX="1" ScaleY="1"/>
                                     </Border.RenderTransform>
-                                    <Border.Effect>
-                                        <DropShadowEffect Color="#000000" BlurRadius="16" ShadowDepth="2" Opacity="0.05" Direction="270"/>
-                                    </Border.Effect>
                                     <Border.Triggers>
                                         <EventTrigger RoutedEvent="FrameworkElement.Loaded">
                                             <BeginStoryboard>
                                                 <Storyboard>
                                                     <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                                                     From="0" To="1" Duration="0:0:0.42"
+                                                                     From="0" To="1" Duration="0:0:0.3"
                                                                      EasingFunction="{StaticResource MotionEaseOut}"/>
-                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)">
-                                                        <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.985"/>
-                                                        <EasingDoubleKeyFrame KeyTime="0:0:0.30" Value="1.004" EasingFunction="{StaticResource MotionSpringOut}"/>
-                                                        <EasingDoubleKeyFrame KeyTime="0:0:0.42" Value="1"/>
-                                                    </DoubleAnimationUsingKeyFrames>
-                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)">
-                                                        <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.985"/>
-                                                        <EasingDoubleKeyFrame KeyTime="0:0:0.30" Value="1.004" EasingFunction="{StaticResource MotionSpringOut}"/>
-                                                        <EasingDoubleKeyFrame KeyTime="0:0:0.42" Value="1"/>
-                                                    </DoubleAnimationUsingKeyFrames>
-                                                    <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(TranslateTransform.Y)">
-                                                        <EasingDoubleKeyFrame KeyTime="0:0:0" Value="9"/>
-                                                        <EasingDoubleKeyFrame KeyTime="0:0:0.42" Value="0" EasingFunction="{StaticResource MotionEaseOut}"/>
-                                                    </DoubleAnimationUsingKeyFrames>
                                                 </Storyboard>
                                             </BeginStoryboard>
                                         </EventTrigger>
@@ -436,11 +418,10 @@
                                         <EventTrigger RoutedEvent="MouseEnter">
                                             <BeginStoryboard>
                                                 <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)"
-                                                                     To="1.012" Duration="0:0:0.30" EasingFunction="{StaticResource MotionEaseOut}"/>
-                                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)"
-                                                                     To="1.012" Duration="0:0:0.30" EasingFunction="{StaticResource MotionEaseOut}"/>
-
+                                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                                     To="1.008" Duration="0:0:0.2" EasingFunction="{StaticResource MotionEaseOut}"/>
+                                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                     To="1.008" Duration="0:0:0.2" EasingFunction="{StaticResource MotionEaseOut}"/>
                                                 </Storyboard>
                                             </BeginStoryboard>
                                         </EventTrigger>
@@ -448,33 +429,10 @@
                                         <EventTrigger RoutedEvent="MouseLeave">
                                             <BeginStoryboard>
                                                 <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)"
-                                                                     To="1" Duration="0:0:0.36" EasingFunction="{StaticResource MotionEaseInOut}"/>
-                                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)"
-                                                                     To="1" Duration="0:0:0.36" EasingFunction="{StaticResource MotionEaseInOut}"/>
-
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </EventTrigger>
-
-                                        <EventTrigger RoutedEvent="PreviewMouseLeftButtonDown">
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)"
-                                                                     To="0.992" Duration="0:0:0.12" EasingFunction="{StaticResource MotionEaseOut}"/>
-                                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)"
-                                                                     To="0.992" Duration="0:0:0.12" EasingFunction="{StaticResource MotionEaseOut}"/>
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </EventTrigger>
-
-                                        <EventTrigger RoutedEvent="PreviewMouseLeftButtonUp">
-                                            <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleX)"
-                                                                     To="1.01" Duration="0:0:0.18" EasingFunction="{StaticResource MotionSpringOut}"/>
-                                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[0].(ScaleTransform.ScaleY)"
-                                                                     To="1.01" Duration="0:0:0.18" EasingFunction="{StaticResource MotionSpringOut}"/>
+                                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                                     To="1" Duration="0:0:0.2" EasingFunction="{StaticResource MotionEaseOut}"/>
+                                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                     To="1" Duration="0:0:0.2" EasingFunction="{StaticResource MotionEaseOut}"/>
                                                 </Storyboard>
                                             </BeginStoryboard>
                                         </EventTrigger>
@@ -487,7 +445,8 @@
                                         <!-- Tour Image Header -->
                                         <Border Grid.Row="0" Height="140" CornerRadius="16,16,0,0">
                                             <Border.Background>
-                                                <ImageBrush ImageSource="{Binding ImageUrl}" Stretch="UniformToFill"/>
+                                                <ImageBrush ImageSource="{Binding ImageUrl, IsAsync=True}" Stretch="UniformToFill"
+                                                            RenderOptions.BitmapScalingMode="LowQuality"/>
                                             </Border.Background>
                                             <Border.InputBindings>
                                                 <MouseBinding MouseAction="LeftClick" 
