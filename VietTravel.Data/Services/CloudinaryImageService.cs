@@ -3,7 +3,6 @@ using System.IO;
 using System.Threading.Tasks;
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
-using DotNetEnv;
 
 namespace VietTravel.Data.Services
 {
@@ -27,13 +26,13 @@ namespace VietTravel.Data.Services
                 throw new FileNotFoundException("Không tìm thấy file ảnh để upload.", filePath);
             }
 
-            Env.TraversePath().Load();
+            SupabaseClientFactory.EnsureEnvLoaded();
 
             var cloudName = Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME");
 
             if (string.IsNullOrWhiteSpace(cloudName))
             {
-                throw new InvalidOperationException("Thiếu CLOUDINARY_CLOUD_NAME trong file .env.");
+                throw new InvalidOperationException("Thiếu CLOUDINARY_CLOUD_NAME trong cấu hình.");
             }
 
             var apiKey = Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY");
@@ -41,7 +40,7 @@ namespace VietTravel.Data.Services
 
             if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(apiSecret))
             {
-                throw new InvalidOperationException("Thiếu CLOUDINARY_API_KEY hoặc CLOUDINARY_API_SECRET trong file .env.");
+                throw new InvalidOperationException("Thiếu CLOUDINARY_API_KEY hoặc CLOUDINARY_API_SECRET trong cấu hình.");
             }
 
             var account = new Account(cloudName, apiKey, apiSecret);

@@ -17,7 +17,7 @@ namespace VietTravel.Data.Services
 
         public EmailService()
         {
-            DotNetEnv.Env.Load();
+            SupabaseClientFactory.EnsureEnvLoaded();
             _smtpEmail = Environment.GetEnvironmentVariable("SMTP_EMAIL") ?? "";
             _smtpPassword = Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? "";
             _smtpDisplayName = Environment.GetEnvironmentVariable("SMTP_DISPLAY_NAME") ?? "Viet Travel";

@@ -26,4 +26,8 @@
     <None Remove="tmpbuild\**\*" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="..\.env" LogicalName="VietTravel.Data.env.embedded" Condition="Exists('..\.env')" />
+  </ItemGroup>
+
 </Project>
