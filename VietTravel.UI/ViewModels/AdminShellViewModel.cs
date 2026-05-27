@@ -25,11 +25,34 @@ namespace VietTravel.UI.ViewModels
         public bool IsGuideRole => string.Equals(UserRole, "Guide", System.StringComparison.OrdinalIgnoreCase);
         public bool IsNonGuideRole => !IsGuideRole;
         public bool IsAdminOrHigher => GetRoleLevel(UserRole) >= GetRoleLevel("Admin");
+        public bool IsEmployeeOrHigher => GetRoleLevel(UserRole) >= GetRoleLevel("Employee");
         public bool CanAccessAdminOnlyModules => IsAdminOrHigher;
         public string UserInitials => GetInitials(FullName);
         public int NotificationUnreadCount => _notificationCenter.UnreadCount;
         public bool HasUnreadNotifications => NotificationUnreadCount > 0;
         public bool IsDebugMenuVisible => _mainViewModel.IsDebugMenuVisible;
+
+        // Granular permissions (RBAC)
+        /// <summary>Tạo/sửa tour: chỉ Admin trở lên.</summary>
+        public bool CanManageTours => IsAdminOrHigher;
+        /// <summary>Sửa giá tour/departure: chỉ Admin trở lên.</summary>
+        public bool CanEditPricing => IsAdminOrHigher;
+        /// <summary>Tạo booking: Employee trở lên.</summary>
+        public bool CanCreateBooking => IsEmployeeOrHigher;
+        /// <summary>Xóa/hủy booking: chỉ Admin trở lên.</summary>
+        public bool CanCancelBooking => IsAdminOrHigher;
+        /// <summary>Quản lý khách hàng: chỉ Admin trở lên.</summary>
+        public bool CanManageCustomers => IsAdminOrHigher;
+        /// <summary>Quản lý user/phân quyền: chỉ Admin trở lên.</summary>
+        public bool CanManageUsers => IsAdminOrHigher;
+        /// <summary>Quản lý thanh toán: chỉ Admin trở lên.</summary>
+        public bool CanManagePayments => IsAdminOrHigher;
+        /// <summary>Quản lý mã giảm giá: chỉ Admin trở lên.</summary>
+        public bool CanManagePromotions => IsAdminOrHigher;
+        /// <summary>Xem báo cáo: Employee trở lên.</summary>
+        public bool CanViewReports => IsEmployeeOrHigher;
+        /// <summary>Quản lý departures: chỉ Admin trở lên.</summary>
+        public bool CanManageDepartures => IsAdminOrHigher;
 
         public AdminShellViewModel(MainViewModel mainViewModel)
         {
@@ -56,8 +79,14 @@ namespace VietTravel.UI.ViewModels
             if (IsGuideRole && !string.Equals(pageName, "Guides", System.StringComparison.Ordinal))
             {
                 pageName = "Guides";
+                isBlockedByPermission = true;
             }
             else if (IsAdminOnlyPage(pageName) && !CanAccessAdminOnlyModules)
+            {
+                pageName = "Dashboard";
+                isBlockedByPermission = true;
+            }
+            else if (IsEmployeeOrHigherPage(pageName) && !IsEmployeeOrHigher)
             {
                 pageName = "Dashboard";
                 isBlockedByPermission = true;
@@ -161,7 +190,18 @@ namespace VietTravel.UI.ViewModels
                 OnPropertyChanged(nameof(IsGuideRole));
                 OnPropertyChanged(nameof(IsNonGuideRole));
                 OnPropertyChanged(nameof(IsAdminOrHigher));
+                OnPropertyChanged(nameof(IsEmployeeOrHigher));
                 OnPropertyChanged(nameof(CanAccessAdminOnlyModules));
+                OnPropertyChanged(nameof(CanManageTours));
+                OnPropertyChanged(nameof(CanEditPricing));
+                OnPropertyChanged(nameof(CanCreateBooking));
+                OnPropertyChanged(nameof(CanCancelBooking));
+                OnPropertyChanged(nameof(CanManageCustomers));
+                OnPropertyChanged(nameof(CanManageUsers));
+                OnPropertyChanged(nameof(CanManagePayments));
+                OnPropertyChanged(nameof(CanManagePromotions));
+                OnPropertyChanged(nameof(CanViewReports));
+                OnPropertyChanged(nameof(CanManageDepartures));
 
                 if (IsAdminOnlyPage(SelectedMenuItem) && !CanAccessAdminOnlyModules)
                 {
@@ -175,7 +215,20 @@ namespace VietTravel.UI.ViewModels
             return string.Equals(pageName, "Customers", System.StringComparison.Ordinal)
                    || string.Equals(pageName, "Users", System.StringComparison.Ordinal)
                    || string.Equals(pageName, "Payments", System.StringComparison.Ordinal)
-                   || string.Equals(pageName, "Promotions", System.StringComparison.Ordinal);
+                   || string.Equals(pageName, "Promotions", System.StringComparison.Ordinal)
+                   || string.Equals(pageName, "Tours", System.StringComparison.Ordinal)
+                   || string.Equals(pageName, "Departures", System.StringComparison.Ordinal)
+                   || string.Equals(pageName, "Debug", System.StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Pages that require at least Employee role (not accessible by Guide/Customer).
+        /// </summary>
+        private static bool IsEmployeeOrHigherPage(string? pageName)
+        {
+            return string.Equals(pageName, "Bookings", System.StringComparison.Ordinal)
+                   || string.Equals(pageName, "Reports", System.StringComparison.Ordinal)
+                   || string.Equals(pageName, "Notifications", System.StringComparison.Ordinal);
         }
 
         private static int GetRoleLevel(string? role)

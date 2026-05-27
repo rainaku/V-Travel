@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using VietTravel.Core.Models;
@@ -127,22 +128,51 @@ namespace VietTravel.Data.Services
 
             if (promo.OnlyNewCustomers && context.CustomerId > 0)
             {
+                // Fix: Check if customer has ever completed a payment (payment_date != null),
+                // not just non-cancelled bookings. This prevents abuse where a customer creates
+                // a booking, cancels it, and reuses the "new customer" promo code again.
                 var bookings = (await client
                         .From<Booking>()
                         .Where(x => x.CustomerId == context.CustomerId)
                         .Get())
                     .Models;
 
-                var hasPriorBooking = bookings.Any(b =>
-                    !CancelledBookingStatuses.Any(s => string.Equals(s, b.Status, StringComparison.OrdinalIgnoreCase)));
-
-                if (hasPriorBooking)
+                if (bookings.Any())
                 {
-                    return PromoValidationResult.Fail(
-                        reason: "Mã chỉ áp dụng cho khách hàng mới.",
-                        code: normalizedCode,
-                        failureReason: PromoCodeFailureReason.NewCustomerOnly,
-                        promoCode: promo);
+                    // Check for any confirmed booking — definitive proof of prior purchase
+                    var hasConfirmedBooking = bookings.Any(b =>
+                        string.Equals(b.Status, BookingStatuses.Confirmed, StringComparison.OrdinalIgnoreCase));
+
+                    if (hasConfirmedBooking)
+                    {
+                        return PromoValidationResult.Fail(
+                            reason: "Mã chỉ áp dụng cho khách hàng mới.",
+                            code: normalizedCode,
+                            failureReason: PromoCodeFailureReason.NewCustomerOnly,
+                            promoCode: promo);
+                    }
+
+                    // Also check if any booking has a completed payment (covers edge cases
+                    // where booking was cancelled after payment was recorded)
+                    var bookingIds = bookings.Select(b => b.Id.ToString()).ToList();
+                    if (bookingIds.Any())
+                    {
+                        var payments = (await client
+                                .From<Payment>()
+                                .Filter("booking_id", Postgrest.Constants.Operator.In, bookingIds)
+                                .Get())
+                            .Models;
+
+                        var hasCompletedPayment = payments.Any(p => p.PaymentDate != null);
+                        if (hasCompletedPayment)
+                        {
+                            return PromoValidationResult.Fail(
+                                reason: "Mã chỉ áp dụng cho khách hàng mới.",
+                                code: normalizedCode,
+                                failureReason: PromoCodeFailureReason.NewCustomerOnly,
+                                promoCode: promo);
+                        }
+                    }
                 }
             }
 

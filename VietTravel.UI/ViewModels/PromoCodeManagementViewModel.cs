@@ -269,6 +269,17 @@ namespace VietTravel.UI.ViewModels
                 return;
             }
 
+            // Warn when deactivating an active promo code
+            if (item.PromoCode.IsActive)
+            {
+                var confirm = MessageBox.Show(
+                    $"Mã \"{item.Code}\" đang hoạt động. Tắt mã sẽ ảnh hưởng đến các booking đang pending sử dụng mã này.\n\nBạn có chắc muốn tắt?",
+                    "Xác nhận tắt mã giảm giá",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+                if (confirm != MessageBoxResult.Yes) return;
+            }
+
             try
             {
                 var client = await SupabaseClientFactory.GetClientAsync();

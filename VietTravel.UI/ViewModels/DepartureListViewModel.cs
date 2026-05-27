@@ -162,6 +162,16 @@ namespace VietTravel.UI.ViewModels
                 MessageBox.Show("Chỗ còn lại phải là số >= 0.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+            if (availSlots > maxSlots)
+            {
+                MessageBox.Show($"Chỗ còn lại ({availSlots}) không được vượt quá tổng chỗ ({maxSlots}).", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (!IsEditing && FormStartDate.Date <= DateTime.Today)
+            {
+                MessageBox.Show("Ngày khởi hành phải là ngày trong tương lai.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
             try
             {

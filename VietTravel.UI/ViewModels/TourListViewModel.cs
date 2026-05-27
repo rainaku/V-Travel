@@ -934,7 +934,20 @@ namespace VietTravel.UI.ViewModels
                 .Replace(".", string.Empty)
                 .Replace(",", string.Empty);
 
-            return decimal.TryParse(cleaned, NumberStyles.Number, CultureInfo.InvariantCulture, out value) && value > 0;
+            if (!decimal.TryParse(cleaned, NumberStyles.Number, CultureInfo.InvariantCulture, out value) || value <= 0)
+            {
+                return false;
+            }
+
+            // Upper limit: 10 tỷ VND (reasonable max for a tour package)
+            const decimal MaxTourPrice = 10_000_000_000m;
+            if (value > MaxTourPrice)
+            {
+                value = 0;
+                return false;
+            }
+
+            return true;
         }
 
         [RelayCommand]

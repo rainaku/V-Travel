@@ -320,6 +320,13 @@ namespace VietTravel.UI.ViewModels
                 return;
             }
 
+            // Validate against departure available slots (early check before DB re-fetch)
+            if (FormDeparture.AvailableSlots > 0 && guests > FormDeparture.AvailableSlots)
+            {
+                MessageBox.Show($"Số khách ({guests}) vượt quá số chỗ còn trống ({FormDeparture.AvailableSlots}). Vui lòng giảm số khách.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             Departure? latestDeparture = null;
             int originalAvailableSlots = 0;
             string originalDepartureStatus = string.Empty;
@@ -448,18 +455,33 @@ namespace VietTravel.UI.ViewModels
             {
                 var client = await SupabaseClientFactory.GetClientAsync();
 
-                var depResp = await client.From<Departure>().Where(d => d.Id == booking.DepartureId).Get();
+                // Re-fetch booking from DB to prevent double-cancel race condition
+                var bookingResp = await client.From<Booking>().Where(b => b.Id == booking.Id).Get();
+                var freshBooking = bookingResp.Models.FirstOrDefault();
+                if (freshBooking == null)
+                {
+                    MessageBox.Show("Không tìm thấy booking.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                if (BookingStatuses.IsCancelled(freshBooking.Status))
+                {
+                    MessageBox.Show("Booking này đã được hủy trước đó.", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                    await LoadDataAsync();
+                    return;
+                }
+
+                var depResp = await client.From<Departure>().Where(d => d.Id == freshBooking.DepartureId).Get();
                 var departure = depResp.Models.FirstOrDefault();
                 if (departure != null)
                 {
-                    await _departureSlotService.ReleaseSlotsAsync(client, departure.Id, booking.GuestCount);
+                    await _departureSlotService.ReleaseSlotsAsync(client, departure.Id, freshBooking.GuestCount);
                 }
 
-                booking.Status = BookingStatuses.Cancelled;
-                booking.Customer = null;
-                booking.Departure = null;
-                booking.User = null;
-                await client.From<Booking>().Update(booking);
+                freshBooking.Status = BookingStatuses.Cancelled;
+                freshBooking.Customer = null;
+                freshBooking.Departure = null;
+                freshBooking.User = null;
+                await client.From<Booking>().Update(freshBooking);
                 await LoadDataAsync();
             }
             catch (Exception ex)

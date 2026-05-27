@@ -186,6 +186,14 @@ namespace VietTravel.UI.ViewModels
                 }
 
                 TotalGuides = Users.Count(x => string.Equals(x.Role, "Guide", StringComparison.OrdinalIgnoreCase));
+                // Audit log for role change
+                AuditLogService.LogFireAndForget(
+                    client: client,
+                    userId: _mainViewModel.CurrentUser?.Id ?? 0,
+                    action: "USER_ROLE_CHANGE",
+                    entityType: "User",
+                    entityId: userItem.Id,
+                    details: $"Target: {userItem.Username}, NewRole: {verifiedUser.Role}");
                 MessageBox.Show($"Đã cập nhật role: {verifiedUser.Role}", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
@@ -293,9 +301,16 @@ namespace VietTravel.UI.ViewModels
                 // Reset password if provided
                 if (!string.IsNullOrWhiteSpace(EditNewPassword))
                 {
-                    if (EditNewPassword.Length < 4)
+                    if (EditNewPassword.Length < 8)
                     {
-                        MessageBox.Show("Mật khẩu mới phải có ít nhất 4 ký tự.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        MessageBox.Show("Mật khẩu mới phải có ít nhất 8 ký tự.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        IsSaving = false;
+                        return;
+                    }
+
+                    if (!EditNewPassword.Any(char.IsUpper) || !EditNewPassword.Any(char.IsLower) || !EditNewPassword.Any(char.IsDigit))
+                    {
+                        MessageBox.Show("Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 số.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
                         IsSaving = false;
                         return;
                     }
@@ -306,6 +321,15 @@ namespace VietTravel.UI.ViewModels
                         .Set(u => u.PasswordHash, hashedPassword)
                         .Where(u => u.Id == EditingUser.Id)
                         .Update();
+
+                    // Audit log for password reset
+                    AuditLogService.LogFireAndForget(
+                        client: client,
+                        userId: _mainViewModel.CurrentUser?.Id ?? 0,
+                        action: "USER_PASSWORD_RESET",
+                        entityType: "User",
+                        entityId: EditingUser.Id,
+                        details: $"Target: {EditingUser.Username}, By: {adminName}");
                 }
 
                 // Verify and update local state
@@ -341,6 +365,14 @@ namespace VietTravel.UI.ViewModels
                 }
 
                 UpdateStats();
+                // Audit log for user edit
+                AuditLogService.LogFireAndForget(
+                    client: client,
+                    userId: _mainViewModel.CurrentUser?.Id ?? 0,
+                    action: "USER_EDIT",
+                    entityType: "User",
+                    entityId: EditingUser?.Id ?? 0,
+                    details: $"Target: {EditingUser?.Username}, Role: {normalizedRole}, Active: {EditIsActive}, By: {adminName}");
                 MessageBox.Show("Đã cập nhật tài khoản thành công.", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
                 CloseEditForm();
             }
@@ -363,6 +395,24 @@ namespace VietTravel.UI.ViewModels
             if (_mainViewModel.CurrentUser != null && _mainViewModel.CurrentUser.Id == userItem.Id)
             {
                 MessageBox.Show("Bạn không thể tự khóa tài khoản của chính mình.", "Không hợp lệ", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Prevent banning users of equal or higher role (hierarchy protection)
+            var currentRoleLevel = GetRoleLevel(_mainViewModel.CurrentUser?.Role);
+            var targetRoleLevel = GetRoleLevel(userItem.Role);
+            if (targetRoleLevel >= currentRoleLevel)
+            {
+                MessageBox.Show(
+                    $"Bạn không thể khóa tài khoản có cùng cấp hoặc cao hơn ({userItem.Role}).",
+                    "Không đủ quyền", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Protect SuperAdmin account
+            if (string.Equals(userItem.Username, SuperAdminUsername, StringComparison.OrdinalIgnoreCase))
+            {
+                MessageBox.Show("Không thể khóa tài khoản Super Admin.", "Không hợp lệ", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -403,6 +453,15 @@ namespace VietTravel.UI.ViewModels
                         .Update();
                 }
 
+                // Audit log
+                AuditLogService.LogFireAndForget(
+                    client: client,
+                    userId: _mainViewModel.CurrentUser?.Id ?? 0,
+                    action: newStatus ? "USER_UNBAN" : "USER_BAN",
+                    entityType: "User",
+                    entityId: userItem.Id,
+                    details: $"Target: {userItem.Username}, By: {adminName}");
+
                 userItem.IsActive = newStatus;
                 if (_userCache.TryGetValue(userItem.Id, out var cached))
                 {
@@ -441,6 +500,20 @@ namespace VietTravel.UI.ViewModels
                 var role when role.Equals("guide", StringComparison.OrdinalIgnoreCase) => "Guide",
                 var role when role.Equals("customer", StringComparison.OrdinalIgnoreCase) => "Customer",
                 _ => value.Trim()
+            };
+        }
+
+        private static int GetRoleLevel(string? role)
+        {
+            return (role ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "customer" => 0,
+                "guide" => 1,
+                "employee" => 2,
+                "admin" => 3,
+                "superadmin" => 4,
+                "owner" => 5,
+                _ => 0
             };
         }
 
