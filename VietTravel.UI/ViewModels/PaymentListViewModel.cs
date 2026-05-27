@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using VietTravel.Core.Models;
 using VietTravel.Data;
+using VietTravel.Data.Services;
 using VietTravel.UI.Services;
 namespace VietTravel.UI.ViewModels
 {
@@ -128,16 +129,41 @@ namespace VietTravel.UI.ViewModels
                     return;
                 }
 
+                // Validate payment amounts
+                if (payment.TotalAmount <= 0)
+                {
+                    MessageBox.Show("Tổng tiền thanh toán phải lớn hơn 0.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 payment.Status = PaymentStatuses.Deposit;
                 if (payment.PaidAmount <= 0)
                 {
                     payment.PaidAmount = Math.Round(payment.TotalAmount * 0.3m, 0);
                 }
+
+                // Ensure PaidAmount does not exceed TotalAmount
+                if (payment.PaidAmount > payment.TotalAmount)
+                {
+                    payment.PaidAmount = payment.TotalAmount;
+                }
+
                 payment.PaymentDate = DateTime.Now;
                 payment.Booking = null;
 
                 var client = await SupabaseClientFactory.GetClientAsync();
                 await client.From<Payment>().Update(payment);
+
+                // Audit log
+                await AuditLogService.LogAsync(client,
+                    userId: _mainViewModel.CurrentUser?.Id ?? 0,
+                    action: "PAYMENT_MARK_DEPOSIT",
+                    entityType: "Payment",
+                    entityId: payment.Id,
+                    oldValue: previousStatus,
+                    newValue: payment.Status,
+                    details: $"PaidAmount={payment.PaidAmount}, TotalAmount={payment.TotalAmount}");
+
                 var booking = await UpdateBookingStatusAsync(client, payment.BookingId, BookingStatuses.PendingProcessing);
                 await NotificationCenterService.Instance.NotifyPaymentStatusChangedAsync(payment, previousStatus, booking?.UserId);
                 await LoadDataAsync();
@@ -159,6 +185,13 @@ namespace VietTravel.UI.ViewModels
                     return;
                 }
 
+                // Validate payment amounts
+                if (payment.TotalAmount <= 0)
+                {
+                    MessageBox.Show("Tổng tiền thanh toán phải lớn hơn 0.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 var previousStatus = payment.Status;
                 payment.Status = PaymentStatuses.FullyPaid;
                 payment.PaidAmount = payment.TotalAmount;
@@ -167,6 +200,17 @@ namespace VietTravel.UI.ViewModels
 
                 var client = await SupabaseClientFactory.GetClientAsync();
                 await client.From<Payment>().Update(payment);
+
+                // Audit log
+                await AuditLogService.LogAsync(client,
+                    userId: _mainViewModel.CurrentUser?.Id ?? 0,
+                    action: "PAYMENT_MARK_PAID",
+                    entityType: "Payment",
+                    entityId: payment.Id,
+                    oldValue: previousStatus,
+                    newValue: payment.Status,
+                    details: $"PaidAmount={payment.PaidAmount}, TotalAmount={payment.TotalAmount}");
+
                 var booking = await UpdateBookingStatusAsync(client, payment.BookingId, BookingStatuses.Confirmed);
                 await NotificationCenterService.Instance.NotifyPaymentStatusChangedAsync(payment, previousStatus, booking?.UserId);
                 await LoadDataAsync();

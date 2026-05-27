@@ -131,8 +131,8 @@
                             <Ellipse Width="56" Height="56">
                                 <Ellipse.Fill>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                        <GradientStop Color="#007AFF" Offset="0"/>
-                                        <GradientStop Color="#5AC8FA" Offset="1"/>
+                                        <GradientStop Color="#004643" Offset="0"/>
+                                        <GradientStop Color="#2D7A76" Offset="1"/>
                                     </LinearGradientBrush>
                                 </Ellipse.Fill>
                             </Ellipse>
@@ -670,8 +670,8 @@
                                         <Border Grid.Column="0" CornerRadius="16,0,0,16">
                                             <Border.Background>
                                                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                                    <GradientStop Color="#007AFF" Offset="0"/>
-                                                    <GradientStop Color="#5AC8FA" Offset="1"/>
+                                                    <GradientStop Color="#004643" Offset="0"/>
+                                                    <GradientStop Color="#2D7A76" Offset="1"/>
                                                 </LinearGradientBrush>
                                             </Border.Background>
                                         </Border>
@@ -1204,8 +1204,8 @@
                                     <Ellipse Width="80" Height="80">
                                         <Ellipse.Fill>
                                             <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                                <GradientStop Color="#007AFF" Offset="0"/>
-                                                <GradientStop Color="#5AC8FA" Offset="1"/>
+                                                <GradientStop Color="#004643" Offset="0"/>
+                                                <GradientStop Color="#2D7A76" Offset="1"/>
                                             </LinearGradientBrush>
                                         </Ellipse.Fill>
                                     </Ellipse>

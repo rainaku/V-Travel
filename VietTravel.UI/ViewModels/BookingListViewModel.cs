@@ -313,6 +313,13 @@ namespace VietTravel.UI.ViewModels
                 return;
             }
 
+            // Upper limit validation: prevent unreasonable guest counts
+            if (guests > 500)
+            {
+                MessageBox.Show("Số khách không được vượt quá 500.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             Departure? latestDeparture = null;
             int originalAvailableSlots = 0;
             string originalDepartureStatus = string.Empty;
@@ -344,9 +351,10 @@ namespace VietTravel.UI.ViewModels
                     return;
                 }
 
-                if (guests > latestDeparture.AvailableSlots)
+                // Validate guest count against max_slots (hard upper limit)
+                if (guests > latestDeparture.MaxSlots)
                 {
-                    MessageBox.Show($"Chỉ còn {latestDeparture.AvailableSlots} chỗ trống.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show($"Số khách không được vượt quá sức chứa tối đa ({latestDeparture.MaxSlots} chỗ).", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
 
@@ -358,11 +366,13 @@ namespace VietTravel.UI.ViewModels
                     return;
                 }
 
-                // Atomic slot reservation via DB-level lock (prevents overbooking)
+                // Atomic slot reservation via DB-level lock (prevents overbooking).
+                // This is the single source of truth - no pre-check of AvailableSlots needed.
+                // The RPC uses SELECT ... FOR UPDATE to guarantee atomicity.
                 var reserveResult = await _departureSlotService.ReserveSlotsAsync(client, latestDeparture.Id, guests);
                 if (!reserveResult.Success)
                 {
-                    MessageBox.Show(reserveResult.Message ?? "Lỗi đặt chỗ.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show(reserveResult.Message ?? "Không đủ chỗ trống. Vui lòng thử lại.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
                 originalAvailableSlots = reserveResult.PreviousAvailable;

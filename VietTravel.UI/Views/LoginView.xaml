@@ -20,7 +20,7 @@
             <Ellipse Width="400" Height="400" Opacity="0.08" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-100,-100,0,0">
                 <Ellipse.Fill>
                     <RadialGradientBrush>
-                        <GradientStop Color="#007AFF" Offset="0"/>
+                        <GradientStop Color="#004643" Offset="0"/>
                         <GradientStop Color="Transparent" Offset="1"/>
                     </RadialGradientBrush>
                 </Ellipse.Fill>
@@ -28,7 +28,7 @@
             <Ellipse Width="350" Height="350" Opacity="0.06" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-80,-80">
                 <Ellipse.Fill>
                     <RadialGradientBrush>
-                        <GradientStop Color="#5AC8FA" Offset="0"/>
+                        <GradientStop Color="#2D7A76" Offset="0"/>
                         <GradientStop Color="Transparent" Offset="1"/>
                     </RadialGradientBrush>
                 </Ellipse.Fill>
@@ -94,12 +94,6 @@
                             <materialDesign:PackIcon Kind="ArrowRight" Width="18" Height="18" Margin="8,0,0,0"
                                                      VerticalAlignment="Center"/>
                         </StackPanel>
-                    </Button>
-
-                    <!-- Register Link -->
-                    <Button Command="{Binding ToRegisterPageCommand}" Style="{StaticResource AppleGhostButton}"
-                            Height="32" Margin="0,12,0,0">
-                        <TextBlock Text="Chưa có tài khoản? Đăng ký ngay" FontSize="13" Foreground="{StaticResource PrimaryBrush}"/>
                     </Button>
 
                     <!-- Loading -->

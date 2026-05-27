@@ -45,11 +45,11 @@ namespace VietTravel.UI.Views
                     break;
                 case MessageBoxImage.Information:
                     DialogIcon.Kind = PackIconKind.InformationOutline;
-                    DialogIcon.Foreground = ResolveBrush("PrimaryBrush", "#007AFF");
+                    DialogIcon.Foreground = ResolveBrush("PrimaryBrush", "#004643");
                     break;
                 case MessageBoxImage.Question:
                     DialogIcon.Kind = PackIconKind.HelpCircleOutline;
-                    DialogIcon.Foreground = ResolveBrush("PrimaryBrush", "#007AFF");
+                    DialogIcon.Foreground = ResolveBrush("PrimaryBrush", "#004643");
                     break;
                 default:
                     DialogIcon.Kind = PackIconKind.BellOutline;

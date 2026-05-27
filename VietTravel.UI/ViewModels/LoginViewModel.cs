@@ -43,17 +43,19 @@ namespace VietTravel.UI.ViewModels
         }
 
         [RelayCommand]
-        public void ToRegisterPage()
-        {
-            _mainViewModel.NavigateTo(new RegistrationViewModel(_mainViewModel));
-        }
-
-        [RelayCommand]
         public async Task LoginAsync()
         {
             if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
             {
                 ErrorMessage = "Vui lòng nhập tài khoản và mật khẩu.";
+                return;
+            }
+
+            // Check lockout before making network call
+            if (_authService.IsAccountLocked(Username))
+            {
+                var minutes = _authService.GetRemainingLockoutMinutes(Username);
+                ErrorMessage = $"Tài khoản tạm khóa. Vui lòng thử lại sau {minutes} phút.";
                 return;
             }
 
@@ -82,6 +84,11 @@ namespace VietTravel.UI.ViewModels
                 {
                     ErrorMessage = "Sai tài khoản hoặc mật khẩu.";
                 }
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Rate limiting lockout message
+                ErrorMessage = ex.Message;
             }
             catch (System.Exception ex)
             {

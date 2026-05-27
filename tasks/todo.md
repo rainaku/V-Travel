@@ -34,3 +34,6 @@
 ## Giai đoạn 6: Module Thanh Toán & Báo Cáo
 - [ ] Quản lý Thanh toán mô phỏng (Chưa thanh toán, Đã cọc, Đã thanh toán đủ)
 - [ ] Màn hình Báo cáo (Tổng số tour, booking, doanh thu tạm tính, tour hot nhất)
+
+## Giai đoạn 7: Cải thiện Trải Nghiệm Người Dùng (UX)
+- [x] Thêm animation load page cho UI mượt mà (Fade In & Slide Up trên UserControl)

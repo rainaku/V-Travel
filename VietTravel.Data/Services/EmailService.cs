@@ -120,14 +120,14 @@ namespace VietTravel.Data.Services
 <head><meta charset=""utf-8""></head>
 <body style=""margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif;background:#f0f4f8"">
   <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""max-width:480px;margin:40px auto"">
-    <tr><td style=""background:linear-gradient(135deg,#007AFF,#5AC8FA);padding:32px 24px;border-radius:16px 16px 0 0;text-align:center"">
+    <tr><td style=""background:linear-gradient(135deg,#004643,#2D7A76);padding:32px 24px;border-radius:16px 16px 0 0;text-align:center"">
       <h1 style=""color:#fff;margin:0;font-size:22px"">🌏 Viet Travel</h1>
       <p style=""color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:14px"">Xác nhận đăng ký tài khoản</p>
     </td></tr>
     <tr><td style=""background:#fff;padding:32px 24px;text-align:center"">
       <p style=""color:#333;font-size:15px;margin:0 0 24px"">Mã xác nhận của bạn là:</p>
       <div style=""background:#f0f4f8;border-radius:12px;padding:20px;display:inline-block"">
-        <span style=""font-size:36px;font-weight:700;letter-spacing:8px;color:#007AFF"">{otp}</span>
+        <span style=""font-size:36px;font-weight:700;letter-spacing:8px;color:#004643"">{otp}</span>
       </div>
       <p style=""color:#888;font-size:13px;margin:24px 0 0"">Mã có hiệu lực trong <strong>5 phút</strong>.<br>Vui lòng không chia sẻ mã này với ai.</p>
     </td></tr>

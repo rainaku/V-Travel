@@ -5,14 +5,14 @@
     <!-- ═══════════════════════════════════════════════════════ -->
 
     <!-- ─── COLORS ─── -->
-    <Color x:Key="PrimaryColor">#007AFF</Color>
-    <Color x:Key="PrimaryLightColor">#5AC8FA</Color>
-    <Color x:Key="PrimaryDarkColor">#0055D4</Color>
-    <Color x:Key="AccentColor">#AF52DE</Color>
+    <Color x:Key="PrimaryColor">#004643</Color>
+    <Color x:Key="PrimaryLightColor">#2D7A76</Color>
+    <Color x:Key="PrimaryDarkColor">#002F2D</Color>
+    <Color x:Key="AccentColor">#007A75</Color>
     
-    <Color x:Key="BackgroundColor">#F5F5F7</Color>
+    <Color x:Key="BackgroundColor">#F0EDE5</Color>
     <Color x:Key="SurfaceColor">#FFFFFF</Color>
-    <Color x:Key="SidebarColor">#F9F9FB</Color>
+    <Color x:Key="SidebarColor">#F7F5F0</Color>
     <Color x:Key="CardColor">#FFFFFF</Color>
     
     <Color x:Key="TextPrimaryColor">#1D1D1F</Color>
@@ -22,12 +22,12 @@
     <Color x:Key="SuccessColor">#34C759</Color>
     <Color x:Key="WarningColor">#FF9500</Color>
     <Color x:Key="ErrorColor">#FF3B30</Color>
-    <Color x:Key="InfoColor">#5AC8FA</Color>
+    <Color x:Key="InfoColor">#2D7A76</Color>
     
-    <Color x:Key="BorderColor">#E5E5EA</Color>
-    <Color x:Key="DividerColor">#F2F2F7</Color>
-    <Color x:Key="HoverColor">#F2F2F7</Color>
-    <Color x:Key="SelectedColor">#E8F0FE</Color>
+    <Color x:Key="BorderColor">#D9D5CC</Color>
+    <Color x:Key="DividerColor">#E8E5DD</Color>
+    <Color x:Key="HoverColor">#E8E5DD</Color>
+    <Color x:Key="SelectedColor">#D6EDE9</Color>
     
     <Color x:Key="ShadowColor">#1A000000</Color>
     <Color x:Key="GlassColor">#B3FFFFFF</Color>
@@ -64,8 +64,8 @@
 
     <!-- ─── GRADIENT BRUSHES ─── -->
     <LinearGradientBrush x:Key="PrimaryGradient" StartPoint="0,0" EndPoint="1,1">
-        <GradientStop Color="#007AFF" Offset="0"/>
-        <GradientStop Color="#5AC8FA" Offset="1"/>
+        <GradientStop Color="#004643" Offset="0"/>
+        <GradientStop Color="#2D7A76" Offset="1"/>
     </LinearGradientBrush>
     
     <LinearGradientBrush x:Key="SuccessGradient" StartPoint="0,0" EndPoint="1,1">
@@ -84,13 +84,13 @@
     </LinearGradientBrush>
 
     <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,1">
-        <GradientStop Color="#AF52DE" Offset="0"/>
-        <GradientStop Color="#DA8FFF" Offset="1"/>
+        <GradientStop Color="#007A75" Offset="0"/>
+        <GradientStop Color="#2D7A76" Offset="1"/>
     </LinearGradientBrush>
 
     <LinearGradientBrush x:Key="BackgroundGradient" StartPoint="0,0" EndPoint="0,1">
         <GradientStop Color="#FFFFFF" Offset="0"/>
-        <GradientStop Color="#F5F5F7" Offset="1"/>
+        <GradientStop Color="#F0EDE5" Offset="1"/>
     </LinearGradientBrush>
 
     <!-- ─── TYPOGRAPHY ─── -->

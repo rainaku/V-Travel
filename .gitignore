@@ -56,3 +56,13 @@ tasks/todo.md
 /VietTravel.UI/artifacts
 /VietTravel.Core/artifacts
 /VietTravel.Data/artifacts
+InnoSetupOutput/VietTravel_Setup.exe
+update_database.sql
+update_ratings.sql
+VietTravel_Install.iss
+tasks/todo.md
+README.md
+crash.txt
+crash.txt
+*.md
+*.md

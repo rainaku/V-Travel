@@ -23,8 +23,8 @@
             <!-- Legacy compatibility for MainWindow.xaml -->
             <SolidColorBrush x:Key="AppBackground" Color="White"/>
             <SolidColorBrush x:Key="AppText" Color="Black"/>
-            <SolidColorBrush x:Key="AppPrimaryAccent" Color="#007AFF"/>
-            <Color x:Key="BlurShadowColor">#007AFF</Color>
+            <SolidColorBrush x:Key="AppPrimaryAccent" Color="#004643"/>
+            <Color x:Key="BlurShadowColor">#004643</Color>
 
             <Style TargetType="Window">
                 <Setter Property="UseLayoutRounding" Value="True"/>
@@ -47,9 +47,7 @@
             <DataTemplate DataType="{x:Type viewmodels:LoginViewModel}">
                 <views:LoginView />
             </DataTemplate>
-            <DataTemplate DataType="{x:Type viewmodels:RegistrationViewModel}">
-                <views:RegisterView />
-            </DataTemplate>
+
             <DataTemplate DataType="{x:Type viewmodels:AdminShellViewModel}">
                 <views:AdminShellView />
             </DataTemplate>

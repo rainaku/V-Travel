@@ -10,7 +10,9 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
+DisableDirPage=yes
 DisableProgramGroupPage=yes
+DisableReadyPage=yes
 ; If you have an icon, uncomment the next line and provide path
 SetupIconFile=VietTravel.UI\UI\Assets\logo.ico
 OutputBaseFilename=VietTravel_Setup
@@ -26,14 +28,13 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 ; but you can add custom if you have it. Removed Vietnamese to prevent compile error in standard Inno Setup.
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
-; IMPORTANT: Run 'dotnet publish VietTravel.UI/VietTravel.UI.csproj -c Release -r win-x64 --self-contained false -p:CopyOutputSymbolsToPublishDirectory=false -p:DebugType=none' first.
-Source: "VietTravel.UI\bin\Release\net10.0-windows\win-x64\publish\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "VietTravel.UI\bin\Release\net10.0-windows\win-x64\publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; IMPORTANT: Build project in Debug|x64 first (no publish required).
+Source: "VietTravel.UI\bin\Debug\net10.0-windows\win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "publish\*,*.pdb"
 Source: ".env"; DestDir: "{app}"; Flags: ignoreversion
-Source: "VietTravel.UI\Fonts\SF-Pro-Display-Bold.otf"; DestDir: "{fonts}"; FontInstall: "SF Pro Display Bold"; Flags: onlyifdestfileexists uninsneveruninstall
+Source: "VietTravel.UI\Fonts\Roboto-VF.ttf"; DestDir: "{fonts}"; FontInstall: "Roboto"; Flags: onlyifdoesntexist uninsneveruninstall
 ; Exclude tmpbuild or other unneeded directories if any
 
 [Icons]

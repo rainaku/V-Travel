@@ -125,9 +125,9 @@ ON tour_guide_assignments (guide_user_id);
 -- Không tự động tạo guide hay tự động phân công.
 -- Admin tự tạo user role Guide và tự gán phân công trong giao diện quản trị.
 
--- Insert 1 Admin User (Password is 'admin' hashed - just dummy hash for now, you will need to hash properly in code)
+-- Insert 1 Admin User (Password is 'admin' hashed with SHA-256)
 INSERT INTO users (username, password_hash, full_name, role, is_active, avatar_url)
-SELECT 'admin', 'admin_hash_placeholder', 'Administrator', 'Admin', TRUE, ''
+SELECT 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'Administrator', 'Admin', TRUE, ''
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');
 
 -- 10. Table transports (Phương tiện)

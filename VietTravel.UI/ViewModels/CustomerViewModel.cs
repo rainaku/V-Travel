@@ -1504,8 +1504,8 @@ namespace VietTravel.UI.ViewModels
             return (status ?? "").Trim() switch
             {
                 BookingStatuses.Confirmed => "#34C759",
-                BookingStatuses.PendingConfirmation => "#5AC8FA",
-                BookingStatuses.PendingProcessing => "#5AC8FA",
+                BookingStatuses.PendingConfirmation => "#2D7A76",
+                BookingStatuses.PendingProcessing => "#2D7A76",
                 BookingStatuses.Cancelled => "#FF3B30",
                 BookingStatuses.CancelledLegacy => "#FF3B30",
                 BookingStatuses.PendingPayment => "#FF9500",
