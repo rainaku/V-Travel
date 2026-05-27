@@ -49,31 +49,37 @@ $$;
 
 -- 2. PAYMENT AMOUNT CONSTRAINTS
 -- Ensure paid_amount never exceeds total_amount and amounts are non-negative
-ALTER TABLE payments
-ADD CONSTRAINT IF NOT EXISTS chk_payments_total_positive
-    CHECK (total_amount >= 0);
-
-ALTER TABLE payments
-ADD CONSTRAINT IF NOT EXISTS chk_payments_paid_non_negative
-    CHECK (paid_amount >= 0);
-
-ALTER TABLE payments
-ADD CONSTRAINT IF NOT EXISTS chk_payments_paid_lte_total
-    CHECK (paid_amount <= total_amount);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_payments_total_positive') THEN
+        ALTER TABLE payments ADD CONSTRAINT chk_payments_total_positive CHECK (total_amount >= 0);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_payments_paid_non_negative') THEN
+        ALTER TABLE payments ADD CONSTRAINT chk_payments_paid_non_negative CHECK (paid_amount >= 0);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_payments_paid_lte_total') THEN
+        ALTER TABLE payments ADD CONSTRAINT chk_payments_paid_lte_total CHECK (paid_amount <= total_amount);
+    END IF;
+END $$;
 
 -- 3. BOOKING GUEST COUNT CONSTRAINTS
-ALTER TABLE bookings
-ADD CONSTRAINT IF NOT EXISTS chk_bookings_guest_count_positive
-    CHECK (guest_count > 0);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_bookings_guest_count_positive') THEN
+        ALTER TABLE bookings ADD CONSTRAINT chk_bookings_guest_count_positive CHECK (guest_count > 0);
+    END IF;
+END $$;
 
 -- 4. DEPARTURE SLOT CONSTRAINTS
-ALTER TABLE departures
-ADD CONSTRAINT IF NOT EXISTS chk_departures_available_slots_non_negative
-    CHECK (available_slots >= 0);
-
-ALTER TABLE departures
-ADD CONSTRAINT IF NOT EXISTS chk_departures_available_lte_max
-    CHECK (available_slots <= max_slots);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_departures_available_slots_non_negative') THEN
+        ALTER TABLE departures ADD CONSTRAINT chk_departures_available_slots_non_negative CHECK (available_slots >= 0);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_departures_available_lte_max') THEN
+        ALTER TABLE departures ADD CONSTRAINT chk_departures_available_lte_max CHECK (available_slots <= max_slots);
+    END IF;
+END $$;
 
 -- 5. ROW-LEVEL SECURITY POLICIES
 -- Enable RLS on sensitive tables
@@ -83,11 +89,13 @@ ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- Policy: audit_logs is append-only (no UPDATE/DELETE via API)
-CREATE POLICY IF NOT EXISTS audit_logs_insert_only ON audit_logs
+DROP POLICY IF EXISTS audit_logs_insert_only ON audit_logs;
+CREATE POLICY audit_logs_insert_only ON audit_logs
     FOR INSERT
     WITH CHECK (true);
 
-CREATE POLICY IF NOT EXISTS audit_logs_select_admin ON audit_logs
+DROP POLICY IF EXISTS audit_logs_select_admin ON audit_logs;
+CREATE POLICY audit_logs_select_admin ON audit_logs
     FOR SELECT
     USING (true);  -- Admin app can read all logs
 

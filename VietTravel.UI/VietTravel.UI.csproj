@@ -28,6 +28,7 @@
   <ItemGroup>
     <Resource Include="UI\**\*.png" />
     <Resource Include="UI\**\*.jpg" />
+    <Resource Include="UI\**\*.webp" />
     <Resource Include="Fonts\**\*.otf" />
     <Resource Include="Fonts\**\*.ttf" />
   </ItemGroup>

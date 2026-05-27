@@ -14,11 +14,31 @@ namespace VietTravel.UI.Views
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             ApplyAdaptiveLayout(ActualWidth);
+            UpdateScrollFades();
         }
 
         private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             ApplyAdaptiveLayout(e.NewSize.Width);
+        }
+
+        private void NavScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            UpdateScrollFades();
+        }
+
+        private void UpdateScrollFades()
+        {
+            if (NavScrollViewer == null) return;
+
+            var verticalOffset = NavScrollViewer.VerticalOffset;
+            var scrollableHeight = NavScrollViewer.ScrollableHeight;
+
+            // Top fade: visible when scrolled down
+            TopFade.Opacity = verticalOffset > 0 ? 1 : 0;
+
+            // Bottom fade: visible when not scrolled to bottom
+            BottomFade.Opacity = (scrollableHeight > 0 && verticalOffset < scrollableHeight) ? 1 : 0;
         }
 
         private void ApplyAdaptiveLayout(double width)

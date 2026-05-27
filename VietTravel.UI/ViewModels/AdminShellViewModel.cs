@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using VietTravel.UI.Services;
@@ -10,6 +11,7 @@ namespace VietTravel.UI.ViewModels
     {
         private readonly MainViewModel _mainViewModel;
         private readonly NotificationCenterService _notificationCenter;
+        private readonly Dictionary<string, ObservableObject> _viewModelCache = new();
 
         [ObservableProperty]
         private ObservableObject _currentPageViewModel;
@@ -38,11 +40,11 @@ namespace VietTravel.UI.ViewModels
             if (IsGuideRole)
             {
                 _selectedMenuItem = "Guides";
-                _currentPageViewModel = new GuideManagementViewModel(_mainViewModel);
+                _currentPageViewModel = GetOrCreateViewModel("Guides");
             }
             else
             {
-                _currentPageViewModel = new DashboardViewModel(_mainViewModel, this);
+                _currentPageViewModel = GetOrCreateViewModel("Dashboard");
             }
         }
 
@@ -73,9 +75,17 @@ namespace VietTravel.UI.ViewModels
             if (SelectedMenuItem == pageName) return;
             SelectedMenuItem = pageName;
 
-            CurrentPageViewModel = pageName switch
+            CurrentPageViewModel = GetOrCreateViewModel(pageName);
+        }
+
+        private ObservableObject GetOrCreateViewModel(string pageName)
+        {
+            if (_viewModelCache.TryGetValue(pageName, out var cached))
+                return cached;
+
+            var vm = pageName switch
             {
-                "Dashboard" => new DashboardViewModel(_mainViewModel, this),
+                "Dashboard" => (ObservableObject)new DashboardViewModel(_mainViewModel, this),
                 "Tours" => new TourListViewModel(_mainViewModel),
                 "Departures" => new DepartureListViewModel(_mainViewModel),
                 "Bookings" => new BookingListViewModel(_mainViewModel),
@@ -93,6 +103,26 @@ namespace VietTravel.UI.ViewModels
                 "Profile" => new AdminProfileViewModel(_mainViewModel),
                 _ => new DashboardViewModel(_mainViewModel, this)
             };
+
+            _viewModelCache[pageName] = vm;
+            return vm;
+        }
+
+        /// <summary>
+        /// Xóa cache của một trang cụ thể, buộc reload lần tiếp theo.
+        /// Gọi khi cần refresh data (ví dụ sau khi tạo/sửa/xóa dữ liệu từ trang khác).
+        /// </summary>
+        public void InvalidateCache(string pageName)
+        {
+            _viewModelCache.Remove(pageName);
+        }
+
+        /// <summary>
+        /// Xóa toàn bộ cache, buộc tất cả trang reload.
+        /// </summary>
+        public void InvalidateAllCaches()
+        {
+            _viewModelCache.Clear();
         }
 
         [RelayCommand]
@@ -100,6 +130,7 @@ namespace VietTravel.UI.ViewModels
         {
             _notificationCenter.PropertyChanged -= NotificationCenterOnPropertyChanged;
             _mainViewModel.PropertyChanged -= MainViewModelOnPropertyChanged;
+            _viewModelCache.Clear();
             _mainViewModel.StopNotifications();
             _mainViewModel.CurrentUser = null;
             _mainViewModel.NavigateTo(new LoginViewModel(_mainViewModel));

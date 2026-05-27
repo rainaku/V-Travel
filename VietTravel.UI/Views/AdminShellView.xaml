@@ -86,7 +86,9 @@
                     </StackPanel>
 
                     <!-- Navigation Items -->
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <Grid Grid.Row="1">
+                    <ScrollViewer x:Name="NavScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                  ScrollChanged="NavScrollViewer_ScrollChanged">
                         <StackPanel Margin="4,0">
                             <StackPanel Visibility="{Binding IsGuideRole, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <TextBlock Text="LỊCH CÔNG VIỆC" FontFamily="{StaticResource AppFont}" FontSize="11" FontWeight="SemiBold"
@@ -290,6 +292,27 @@
                             </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
+
+                        <!-- Top fade overlay -->
+                        <Border x:Name="TopFade" Height="32" VerticalAlignment="Top" IsHitTestVisible="False" Opacity="0">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#F7F5F0" Offset="0"/>
+                                    <GradientStop Color="#00F7F5F0" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+
+                        <!-- Bottom fade overlay -->
+                        <Border x:Name="BottomFade" Height="32" VerticalAlignment="Bottom" IsHitTestVisible="False" Opacity="1">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#00F7F5F0" Offset="0"/>
+                                    <GradientStop Color="#F7F5F0" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+                    </Grid>
 
                     <!-- User Profile -->
                     <Border Grid.Row="2" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0"

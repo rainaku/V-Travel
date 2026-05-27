@@ -9,12 +9,9 @@
             <!-- Background Image -->
             <Border CornerRadius="0,0,16,16">
                 <Border.Background>
-                    <ImageBrush ImageSource="pack://application:,,,/UI/travel.png" Stretch="UniformToFill" />
+                    <ImageBrush ImageSource="pack://application:,,,/UI/ao.png" Stretch="UniformToFill" />
                 </Border.Background>
             </Border>
-
-            <!-- Blue Overlay -->
-            <Border CornerRadius="0,0,16,16" Background="#4D007AFF"/>
 
             <!-- Decorative Circles -->
             <Ellipse Width="400" Height="400" Opacity="0.08" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-100,-100,0,0">
