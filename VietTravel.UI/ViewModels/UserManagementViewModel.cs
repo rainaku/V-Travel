@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using VietTravel.Core.Models;
 using VietTravel.Data;
+using VietTravel.Data.Services;
 using VietTravel.UI.Models;
 
 namespace VietTravel.UI.ViewModels
@@ -16,6 +17,7 @@ namespace VietTravel.UI.ViewModels
     {
         private readonly MainViewModel _mainViewModel;
         private readonly Dictionary<int, User> _userCache = new();
+        private const string SuperAdminUsername = "GL_13";
 
         [ObservableProperty] private string _searchText = string.Empty;
         [ObservableProperty] private bool _isLoading;
@@ -30,11 +32,28 @@ namespace VietTravel.UI.ViewModels
 
         [ObservableProperty] private int _totalUsers;
         [ObservableProperty] private int _totalGuides;
+        [ObservableProperty] private int _totalBanned;
+
+        // Edit form
+        [ObservableProperty] private bool _isEditFormVisible;
+        [ObservableProperty] private UserRoleItem? _editingUser;
+        [ObservableProperty] private string _editFullName = string.Empty;
+        [ObservableProperty] private string _editUsername = string.Empty;
+        [ObservableProperty] private string _editRole = "Employee";
+        [ObservableProperty] private bool _editIsActive = true;
+        [ObservableProperty] private string _editNewPassword = string.Empty;
+        [ObservableProperty] private bool _isSaving;
 
         public bool CanManageRoles =>
-            string.Equals(_mainViewModel.CurrentUser?.Role, "Admin", StringComparison.OrdinalIgnoreCase);
+            string.Equals(_mainViewModel.CurrentUser?.Role, "Admin", StringComparison.OrdinalIgnoreCase) ||
+            IsSuperAdmin;
+
+        public bool IsSuperAdmin =>
+            string.Equals(_mainViewModel.CurrentUser?.Username, SuperAdminUsername, StringComparison.OrdinalIgnoreCase);
 
         public bool HasNoData => !IsLoading && FilteredUsers.Count == 0;
+
+        public string EditFormTitle => EditingUser != null ? $"Chỉnh sửa tài khoản #{EditingUser.Id}" : "Chỉnh sửa tài khoản";
 
         public UserManagementViewModel(MainViewModel mainViewModel)
         {
@@ -84,6 +103,7 @@ namespace VietTravel.UI.ViewModels
 
                 TotalUsers = Users.Count;
                 TotalGuides = Users.Count(x => string.Equals(x.Role, "Guide", StringComparison.OrdinalIgnoreCase));
+                TotalBanned = Users.Count(x => !x.IsActive);
                 ApplyFilter();
             }
             catch (Exception ex)
@@ -172,6 +192,239 @@ namespace VietTravel.UI.ViewModels
             {
                 MessageBox.Show($"Lỗi cập nhật role: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        [RelayCommand]
+        private void ShowEditForm(UserRoleItem? userItem)
+        {
+            if (userItem == null || !CanManageRoles) return;
+
+            EditingUser = userItem;
+            EditFullName = userItem.FullName;
+            EditUsername = userItem.Username;
+            EditRole = userItem.Role;
+            EditIsActive = userItem.IsActive;
+            EditNewPassword = string.Empty;
+            IsEditFormVisible = true;
+            OnPropertyChanged(nameof(EditFormTitle));
+        }
+
+        [RelayCommand]
+        private void CloseEditForm()
+        {
+            IsEditFormVisible = false;
+            EditingUser = null;
+            EditNewPassword = string.Empty;
+        }
+
+        [RelayCommand]
+        private async Task SaveEditAsync()
+        {
+            if (EditingUser == null || IsSaving) return;
+
+            if (string.IsNullOrWhiteSpace(EditFullName))
+            {
+                MessageBox.Show("Họ tên không được để trống.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(EditUsername))
+            {
+                MessageBox.Show("Username không được để trống.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var normalizedRole = NormalizeRole(EditRole);
+            if (string.IsNullOrWhiteSpace(normalizedRole) || !RoleOptions.Contains(normalizedRole))
+            {
+                MessageBox.Show("Role không hợp lệ.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Prevent self-demotion
+            if (_mainViewModel.CurrentUser != null &&
+                _mainViewModel.CurrentUser.Id == EditingUser.Id &&
+                !string.Equals(normalizedRole, _mainViewModel.CurrentUser.Role, StringComparison.OrdinalIgnoreCase))
+            {
+                MessageBox.Show("Bạn không thể tự thay đổi role của chính mình.", "Không hợp lệ", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Prevent self-ban
+            if (_mainViewModel.CurrentUser != null &&
+                _mainViewModel.CurrentUser.Id == EditingUser.Id &&
+                !EditIsActive)
+            {
+                MessageBox.Show("Bạn không thể tự khóa tài khoản của chính mình.", "Không hợp lệ", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            IsSaving = true;
+            try
+            {
+                var client = await SupabaseClientFactory.GetClientAsync();
+                var adminName = _mainViewModel.CurrentUser?.Username ?? "Unknown";
+
+                // Update user fields
+                var query = client
+                    .From<User>()
+                    .Set(u => u.FullName, EditFullName.Trim())
+                    .Set(u => u.Username, EditUsername.Trim())
+                    .Set(u => u.Role, normalizedRole)
+                    .Set(u => u.IsActive, EditIsActive);
+
+                // Track ban info
+                if (!EditIsActive)
+                {
+                    query = query
+                        .Set(u => u.BannedBy, adminName)
+                        .Set(u => u.BannedAt, DateTime.UtcNow);
+                }
+                else
+                {
+                    query = query
+                        .Set(u => u.BannedBy, string.Empty);
+                }
+
+                await query
+                    .Where(u => u.Id == EditingUser.Id)
+                    .Update();
+
+                // Reset password if provided
+                if (!string.IsNullOrWhiteSpace(EditNewPassword))
+                {
+                    if (EditNewPassword.Length < 4)
+                    {
+                        MessageBox.Show("Mật khẩu mới phải có ít nhất 4 ký tự.", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        IsSaving = false;
+                        return;
+                    }
+
+                    var hashedPassword = AuthService.HashPassword(EditNewPassword);
+                    await client
+                        .From<User>()
+                        .Set(u => u.PasswordHash, hashedPassword)
+                        .Where(u => u.Id == EditingUser.Id)
+                        .Update();
+                }
+
+                // Verify and update local state
+                var verifyResponse = await client
+                    .From<User>()
+                    .Where(u => u.Id == EditingUser.Id)
+                    .Get();
+                var verifiedUser = verifyResponse.Models.FirstOrDefault();
+
+                if (verifiedUser != null)
+                {
+                    if (_userCache.TryGetValue(EditingUser.Id, out var cached))
+                    {
+                        cached.FullName = verifiedUser.FullName;
+                        cached.Username = verifiedUser.Username;
+                        cached.Role = verifiedUser.Role;
+                        cached.IsActive = verifiedUser.IsActive;
+                    }
+
+                    EditingUser.FullName = verifiedUser.FullName;
+                    EditingUser.Username = verifiedUser.Username;
+                    EditingUser.Role = verifiedUser.Role;
+                    EditingUser.IsActive = verifiedUser.IsActive;
+
+                    // Update current user if editing self
+                    if (_mainViewModel.CurrentUser != null && _mainViewModel.CurrentUser.Id == verifiedUser.Id)
+                    {
+                        _mainViewModel.CurrentUser.FullName = verifiedUser.FullName;
+                        _mainViewModel.CurrentUser.Username = verifiedUser.Username;
+                        _mainViewModel.CurrentUser.Role = verifiedUser.Role;
+                        _mainViewModel.CurrentUser.IsActive = verifiedUser.IsActive;
+                    }
+                }
+
+                UpdateStats();
+                MessageBox.Show("Đã cập nhật tài khoản thành công.", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+                CloseEditForm();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi cập nhật tài khoản: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                IsSaving = false;
+            }
+        }
+
+        [RelayCommand]
+        private async Task ToggleBanAsync(UserRoleItem? userItem)
+        {
+            if (userItem == null || !CanManageRoles) return;
+
+            // Prevent self-ban
+            if (_mainViewModel.CurrentUser != null && _mainViewModel.CurrentUser.Id == userItem.Id)
+            {
+                MessageBox.Show("Bạn không thể tự khóa tài khoản của chính mình.", "Không hợp lệ", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var newStatus = !userItem.IsActive;
+            var action = newStatus ? "mở khóa" : "khóa";
+            var result = MessageBox.Show(
+                $"Bạn có chắc muốn {action} tài khoản \"{userItem.FullName}\" ({userItem.Username})?",
+                "Xác nhận",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes) return;
+
+            try
+            {
+                var client = await SupabaseClientFactory.GetClientAsync();
+                var adminName = _mainViewModel.CurrentUser?.Username ?? "Unknown";
+
+                if (newStatus)
+                {
+                    // Unban: clear banned info
+                    await client
+                        .From<User>()
+                        .Set(u => u.IsActive, true)
+                        .Set(u => u.BannedBy, string.Empty)
+                        .Where(u => u.Id == userItem.Id)
+                        .Update();
+                }
+                else
+                {
+                    // Ban: record who banned
+                    await client
+                        .From<User>()
+                        .Set(u => u.IsActive, false)
+                        .Set(u => u.BannedBy, adminName)
+                        .Set(u => u.BannedAt, DateTime.UtcNow)
+                        .Where(u => u.Id == userItem.Id)
+                        .Update();
+                }
+
+                userItem.IsActive = newStatus;
+                if (_userCache.TryGetValue(userItem.Id, out var cached))
+                {
+                    cached.IsActive = newStatus;
+                    cached.BannedBy = newStatus ? null : adminName;
+                    cached.BannedAt = newStatus ? null : DateTime.UtcNow;
+                }
+
+                UpdateStats();
+                MessageBox.Show($"Đã {action} tài khoản \"{userItem.Username}\".", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void UpdateStats()
+        {
+            TotalUsers = Users.Count;
+            TotalGuides = Users.Count(x => string.Equals(x.Role, "Guide", StringComparison.OrdinalIgnoreCase));
+            TotalBanned = Users.Count(x => !x.IsActive);
         }
 
         private static string NormalizeRole(string? value)

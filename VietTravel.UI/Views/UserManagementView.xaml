@@ -5,6 +5,7 @@
              xmlns:views="clr-namespace:VietTravel.UI.Views"
              Background="{StaticResource BackgroundBrush}">
 
+    <Grid>
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="32,28,32,32">
 
@@ -43,7 +44,7 @@
             </Border>
 
             <!-- Stats -->
-            <UniformGrid Columns="2" Margin="0,0,0,20">
+            <UniformGrid Columns="3" Margin="0,0,0,20">
                 <Border Style="{StaticResource StatCard}" Margin="0,0,10,0">
                     <StackPanel Orientation="Horizontal">
                         <Grid Width="40" Height="40" Margin="0,0,12,0">
@@ -56,7 +57,7 @@
                         </StackPanel>
                     </StackPanel>
                 </Border>
-                <Border Style="{StaticResource StatCard}" Margin="10,0,0,0">
+                <Border Style="{StaticResource StatCard}" Margin="5,0">
                     <StackPanel Orientation="Horizontal">
                         <Grid Width="40" Height="40" Margin="0,0,12,0">
                             <Ellipse Width="40" Height="40" Fill="#1A34C759"/>
@@ -65,6 +66,18 @@
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="{Binding TotalGuides}" FontFamily="{StaticResource AppFont}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
                             <TextBlock Text="User role Guide" FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource StatCard}" Margin="10,0,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Grid Width="40" Height="40" Margin="0,0,12,0">
+                            <Ellipse Width="40" Height="40" Fill="#1AFF3B30"/>
+                            <materialDesign:PackIcon Kind="AccountOffOutline" Width="20" Height="20" Foreground="{StaticResource ErrorBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding TotalBanned}" FontFamily="{StaticResource AppFont}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <TextBlock Text="Bị khóa" FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -164,7 +177,7 @@
                                                             <Setter Property="Foreground" Value="{StaticResource SuccessBrush}"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsActive}" Value="False">
-                                                                    <Setter Property="Text" Value="Tạm khóa"/>
+                                                                    <Setter Property="Text" Value="Bị khóa"/>
                                                                     <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
                                                                 </DataTrigger>
                                                             </Style.Triggers>
@@ -173,15 +186,41 @@
                                                 </TextBlock>
                                             </Border>
 
-                                            <Button Grid.Column="5" Style="{StaticResource AppleGhostButton}" Padding="12,0" MinWidth="100" HorizontalAlignment="Center"
-                                                    IsEnabled="{Binding DataContext.CanManageRoles, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                    Command="{Binding DataContext.SaveUserRoleCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                    CommandParameter="{Binding}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <materialDesign:PackIcon Kind="ContentSaveOutline" Width="15" Height="15" Margin="0,0,4,0" VerticalAlignment="Center"/>
-                                                    <TextBlock Text="Lưu role" VerticalAlignment="Center"/>
-                                                </StackPanel>
-                                            </Button>
+                                            <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <Button Style="{StaticResource AppleGhostButton}" Width="32" Height="32" Padding="0" Cursor="Hand" ToolTip="Chỉnh sửa"
+                                                        IsEnabled="{Binding DataContext.CanManageRoles, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        Command="{Binding DataContext.ShowEditFormCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}">
+                                                    <materialDesign:PackIcon Kind="PencilOutline" Width="16" Height="16" Foreground="{StaticResource PrimaryBrush}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource AppleGhostButton}" Width="32" Height="32" Padding="0" Margin="4,0,0,0" Cursor="Hand"
+                                                        IsEnabled="{Binding DataContext.CanManageRoles, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        Command="{Binding DataContext.ToggleBanCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}">
+                                                    <materialDesign:PackIcon Width="16" Height="16">
+                                                        <materialDesign:PackIcon.Style>
+                                                            <Style TargetType="materialDesign:PackIcon">
+                                                                <Setter Property="Kind" Value="AccountOffOutline"/>
+                                                                <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
+                                                                <Setter Property="ToolTip" Value="Khóa tài khoản"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsActive}" Value="False">
+                                                                        <Setter Property="Kind" Value="AccountCheckOutline"/>
+                                                                        <Setter Property="Foreground" Value="{StaticResource SuccessBrush}"/>
+                                                                        <Setter Property="ToolTip" Value="Mở khóa tài khoản"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </materialDesign:PackIcon.Style>
+                                                    </materialDesign:PackIcon>
+                                                </Button>
+                                                <Button Style="{StaticResource AppleGhostButton}" Width="32" Height="32" Padding="0" Margin="4,0,0,0" Cursor="Hand" ToolTip="Lưu role"
+                                                        IsEnabled="{Binding DataContext.CanManageRoles, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        Command="{Binding DataContext.SaveUserRoleCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}">
+                                                    <materialDesign:PackIcon Kind="ContentSaveOutline" Width="16" Height="16" Foreground="{StaticResource PrimaryBrush}"/>
+                                                </Button>
+                                            </StackPanel>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
@@ -211,4 +250,83 @@
                                       NextCommand="{Binding NextPageCommand}"/>
         </StackPanel>
     </ScrollViewer>
+
+    <!-- Edit Form Overlay -->
+    <Grid Visibility="{Binding IsEditFormVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+        <!-- Backdrop -->
+        <Border Background="#60000000">
+            <Border.InputBindings>
+                <MouseBinding MouseAction="LeftClick" Command="{Binding CloseEditFormCommand}"/>
+            </Border.InputBindings>
+        </Border>
+
+        <!-- Edit Form Card -->
+        <Border Background="White" CornerRadius="16" Padding="32" MaxWidth="480" MaxHeight="520"
+                HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Border.Effect>
+                <DropShadowEffect Color="#000000" BlurRadius="32" ShadowDepth="4" Opacity="0.15" Direction="270"/>
+            </Border.Effect>
+            <StackPanel>
+                <!-- Header -->
+                <Grid Margin="0,0,0,24">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="AccountEditOutline" Width="22" Height="22" Foreground="{StaticResource PrimaryBrush}" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding EditFormTitle}" FontFamily="{StaticResource AppFont}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Button Style="{StaticResource AppleGhostButton}" HorizontalAlignment="Right" Width="32" Height="32" Padding="0"
+                            Command="{Binding CloseEditFormCommand}">
+                        <materialDesign:PackIcon Kind="Close" Width="18" Height="18"/>
+                    </Button>
+                </Grid>
+
+                <!-- Full Name -->
+                <TextBlock Text="Họ tên" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                <TextBox Text="{Binding EditFullName, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource AppleSearchBox}" Margin="0,0,0,16" Padding="12,10"
+                         FontFamily="{StaticResource AppFont}" FontSize="14"/>
+
+                <!-- Username -->
+                <TextBlock Text="Username" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                <TextBox Text="{Binding EditUsername, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource AppleSearchBox}" Margin="0,0,0,16" Padding="12,10"
+                         FontFamily="{StaticResource AppFont}" FontSize="14"/>
+
+                <!-- Role -->
+                <TextBlock Text="Vai trò" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                <ComboBox ItemsSource="{Binding RoleOptions}" SelectedItem="{Binding EditRole}"
+                          Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                          Margin="0,0,0,16" Padding="12,10"
+                          FontFamily="{StaticResource AppFont}" FontSize="14"/>
+
+                <!-- New Password -->
+                <TextBlock Text="Mật khẩu mới (để trống nếu không đổi)" FontFamily="{StaticResource AppFont}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                <TextBox Text="{Binding EditNewPassword, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource AppleSearchBox}" Margin="0,0,0,16" Padding="12,10"
+                         FontFamily="{StaticResource AppFont}" FontSize="14"
+                         materialDesign:HintAssist.Hint="Nhập mật khẩu mới..."/>
+
+                <!-- IsActive Toggle -->
+                <Grid Margin="0,0,0,24">
+                    <TextBlock Text="Trạng thái tài khoản" FontFamily="{StaticResource AppFont}" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                    <ToggleButton IsChecked="{Binding EditIsActive}" HorizontalAlignment="Right"
+                                  Style="{StaticResource MaterialDesignSwitchToggleButton}"/>
+                </Grid>
+
+                <!-- Actions -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Style="{StaticResource AppleGhostButton}" Content="Hủy" Padding="20,10" Margin="0,0,12,0"
+                            Command="{Binding CloseEditFormCommand}"/>
+                    <Button Style="{StaticResource ApplePrimaryButton}" Padding="20,10"
+                            Command="{Binding SaveEditCommand}"
+                            IsEnabled="{Binding IsSaving, Converter={StaticResource InverseBooleanConverter}}">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="ContentSaveOutline" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Lưu thay đổi" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+    </Grid>
 </UserControl>

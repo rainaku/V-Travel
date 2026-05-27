@@ -27,5 +27,11 @@ namespace VietTravel.Core.Models
 
         [Column("is_active")]
         public bool IsActive { get; set; } = true;
+
+        [Column("banned_by")]
+        public string? BannedBy { get; set; }
+
+        [Column("banned_at")]
+        public DateTime? BannedAt { get; set; }
     }
 }

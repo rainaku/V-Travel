@@ -171,8 +171,14 @@ namespace VietTravel.Data.Services
             {
                 if (!user.IsActive)
                 {
-                    RecordFailedLogin(username);
-                    return null;
+                    var bannedByInfo = !string.IsNullOrWhiteSpace(user.BannedBy)
+                        ? $" bởi {user.BannedBy}"
+                        : string.Empty;
+                    var bannedAtInfo = user.BannedAt.HasValue
+                        ? $" vào {user.BannedAt.Value:dd/MM/yyyy HH:mm}"
+                        : string.Empty;
+                    throw new InvalidOperationException(
+                        $"Tài khoản đã bị khóa{bannedByInfo}{bannedAtInfo}. Vui lòng liên hệ quản trị viên.");
                 }
 
                 if (VerifyPassword(password, user.PasswordHash))

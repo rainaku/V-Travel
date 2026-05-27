@@ -88,6 +88,25 @@ ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
+-- Policy: Allow all operations for authenticated app (desktop app uses service role or anon with full access)
+DROP POLICY IF EXISTS customers_all_access ON customers;
+CREATE POLICY customers_all_access ON customers
+    FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
+DROP POLICY IF EXISTS bookings_all_access ON bookings;
+CREATE POLICY bookings_all_access ON bookings
+    FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
+DROP POLICY IF EXISTS payments_all_access ON payments;
+CREATE POLICY payments_all_access ON payments
+    FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
 -- Policy: audit_logs is append-only (no UPDATE/DELETE via API)
 DROP POLICY IF EXISTS audit_logs_insert_only ON audit_logs;
 CREATE POLICY audit_logs_insert_only ON audit_logs

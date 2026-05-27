@@ -462,42 +462,45 @@ namespace VietTravel.UI.ViewModels
             {
                 var client = await SupabaseClientFactory.GetClientAsync();
 
-                // ═══ PHASE 1: Load all independent data in parallel ═══
+                // ═══ PHASE 1: Load core data in parallel (small batch) ═══
                 var toursTask = client.From<Tour>().Get();
-                var ratingsTask = LoadApprovedTourRatingsAsync();
                 var depsTask = client.From<Departure>().Get();
+                var ratingsTask = LoadApprovedTourRatingsAsync();
+
+                await Task.WhenAll(toursTask, depsTask, ratingsTask);
+
+                var tours = (await toursTask).Models ?? new List<Tour>();
+                var approvedTourRatings = await ratingsTask;
+                var deps = (await depsTask).Models ?? new List<Departure>();
+
+                // ═══ PHASE 2: Load supporting data ═══
                 var assignmentsTask = client.From<TourGuideAssignment>().Get();
                 var usersTask = client.From<User>().Get();
-
-                // Tour resource tables (parallel)
                 var transportsTask = client.From<Transport>().Get();
                 var hotelsTask = client.From<Hotel>().Get();
                 var attractionsTask = client.From<Attraction>().Get();
+
+                await Task.WhenAll(assignmentsTask, usersTask, transportsTask, hotelsTask, attractionsTask);
+
+                var assignments = (await assignmentsTask).Models ?? new List<TourGuideAssignment>();
+                var users = (await usersTask).Models ?? new List<User>();
+
+                // ═══ PHASE 3: Load tour resource mappings ═══
                 var tourTransportsTask = client.From<TourTransport>().Get();
                 var tourHotelsTask = client.From<TourHotel>().Get();
                 var tourAttractionsTask = client.From<TourAttraction>().Get();
 
-                // Await all phase 1 queries together
-                await Task.WhenAll(
-                    toursTask, ratingsTask, depsTask, assignmentsTask, usersTask,
-                    transportsTask, hotelsTask, attractionsTask,
-                    tourTransportsTask, tourHotelsTask, tourAttractionsTask);
-
-                var tours = toursTask.Result.Models ?? new List<Tour>();
-                var approvedTourRatings = ratingsTask.Result;
-                var deps = depsTask.Result.Models ?? new List<Departure>();
-                var assignments = assignmentsTask.Result.Models ?? new List<TourGuideAssignment>();
-                var users = usersTask.Result.Models ?? new List<User>();
+                await Task.WhenAll(tourTransportsTask, tourHotelsTask, tourAttractionsTask);
 
                 // Map tour resources
                 try
                 {
-                    var transports = transportsTask.Result.Models ?? new List<Transport>();
-                    var hotels = hotelsTask.Result.Models ?? new List<Hotel>();
-                    var attractions = attractionsTask.Result.Models ?? new List<Attraction>();
-                    var tourTransports = tourTransportsTask.Result.Models ?? new List<TourTransport>();
-                    var tourHotels = tourHotelsTask.Result.Models ?? new List<TourHotel>();
-                    var tourAttractions = tourAttractionsTask.Result.Models ?? new List<TourAttraction>();
+                    var transports = (await transportsTask).Models ?? new List<Transport>();
+                    var hotels = (await hotelsTask).Models ?? new List<Hotel>();
+                    var attractions = (await attractionsTask).Models ?? new List<Attraction>();
+                    var tourTransports = (await tourTransportsTask).Models ?? new List<TourTransport>();
+                    var tourHotels = (await tourHotelsTask).Models ?? new List<TourHotel>();
+                    var tourAttractions = (await tourAttractionsTask).Models ?? new List<TourAttraction>();
 
                     var transportById = transports.ToDictionary(x => x.Id);
                     var hotelById = hotels.ToDictionary(x => x.Id);
@@ -627,7 +630,7 @@ namespace VietTravel.UI.ViewModels
 
                 await Task.WhenAll(profileTask, userBookingsTask);
 
-                _customerProfile = profileTask.Result;
+                _customerProfile = await profileTask;
                 AvatarUrl = _mainViewModel.CurrentUser?.AvatarUrl ?? string.Empty;
 
                 if (_customerProfile != null)
@@ -643,7 +646,7 @@ namespace VietTravel.UI.ViewModels
                 }
 
                 // Merge customer bookings if profile exists
-                var bookingsList = userBookingsTask.Result.Models ?? new List<Booking>();
+                var bookingsList = (await userBookingsTask).Models ?? new List<Booking>();
                 
                 if (_customerProfile != null)
                 {
