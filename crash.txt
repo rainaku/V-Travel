@@ -1,6 +1,0 @@
-DispatcherUnhandledException: System.NullReferenceException: Object reference not set to an instance of an object.
-   at System.Windows.Media.MediaContext.Render(ICompositionTarget resizedCompositionTarget)
-   at System.Windows.Media.MediaContext.RenderMessageHandlerCore(Object resizedCompositionTarget)
-   at System.Windows.Media.MediaContext.RenderMessageHandler(Object resizedCompositionTarget)
-   at System.Windows.Threading.ExceptionWrapper.InternalRealCall(Delegate callback, Object args, Int32 numArgs)
-   at System.Windows.Threading.ExceptionWrapper.TryCatchWhen(Object source, Delegate callback, Object args, Int32 numArgs, Delegate catchHandler)
