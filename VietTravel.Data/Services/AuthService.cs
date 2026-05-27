@@ -174,9 +174,11 @@ namespace VietTravel.Data.Services
                     var bannedByInfo = !string.IsNullOrWhiteSpace(user.BannedBy)
                         ? $" bởi {user.BannedBy}"
                         : string.Empty;
-                    var bannedAtInfo = user.BannedAt.HasValue
-                        ? $" vào {user.BannedAt.Value:dd/MM/yyyy HH:mm}"
-                        : string.Empty;
+                    var bannedAtInfo = string.Empty;
+                    if (!string.IsNullOrWhiteSpace(user.BannedAt) && DateTime.TryParse(user.BannedAt, out var bannedDate))
+                    {
+                        bannedAtInfo = $" vào {bannedDate.ToLocalTime():dd/MM/yyyy HH:mm}";
+                    }
                     throw new InvalidOperationException(
                         $"Tài khoản đã bị khóa{bannedByInfo}{bannedAtInfo}. Vui lòng liên hệ quản trị viên.");
                 }

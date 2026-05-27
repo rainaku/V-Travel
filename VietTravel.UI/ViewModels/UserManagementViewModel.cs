@@ -278,7 +278,7 @@ namespace VietTravel.UI.ViewModels
                 {
                     query = query
                         .Set(u => u.BannedBy, adminName)
-                        .Set(u => u.BannedAt, DateTime.UtcNow);
+                        .Set(u => u.BannedAt, DateTime.UtcNow.ToString("o"));
                 }
                 else
                 {
@@ -398,7 +398,7 @@ namespace VietTravel.UI.ViewModels
                         .From<User>()
                         .Set(u => u.IsActive, false)
                         .Set(u => u.BannedBy, adminName)
-                        .Set(u => u.BannedAt, DateTime.UtcNow)
+                        .Set(u => u.BannedAt, DateTime.UtcNow.ToString("o"))
                         .Where(u => u.Id == userItem.Id)
                         .Update();
                 }
@@ -407,8 +407,8 @@ namespace VietTravel.UI.ViewModels
                 if (_userCache.TryGetValue(userItem.Id, out var cached))
                 {
                     cached.IsActive = newStatus;
-                    cached.BannedBy = newStatus ? null : adminName;
-                    cached.BannedAt = newStatus ? null : DateTime.UtcNow;
+                    cached.BannedBy = newStatus ? string.Empty : adminName;
+                    cached.BannedAt = newStatus ? string.Empty : DateTime.UtcNow.ToString("o");
                 }
 
                 UpdateStats();
